@@ -4,3 +4,7 @@ node_modules/
 
 # Optional npm cache directory
 .npm
+
+#Next.js build output
+.next/
+next-env.d.ts

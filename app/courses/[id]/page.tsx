@@ -1,0 +1,177 @@
+import { fetchCourseDetail } from '@/lib/scraper';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { FileText, ArrowLeft, Clock, Award, BookOpen, GraduationCap, Link as LinkIcon, Download, Info, Layers } from 'lucide-react';
+import Link from 'next/link';
+
+export default async function CoursePage({ 
+  params, 
+  searchParams 
+}: { 
+  params: Promise<{ id: string }>,
+  searchParams: Promise<{ dept?: string, deg?: string, year?: string, sem?: string }>
+}) {
+  const { id } = await params;
+  const sParams = await searchParams;
+  
+  const course = await fetchCourseDetail({
+    courseId: id,
+    dept: sParams.dept || '202',
+    degree: sParams.deg || '1',
+    year: sParams.year || '2026',
+    semester: sParams.sem || '2',
+  });
+
+  return (
+    <div className="min-h-screen bg-slate-50/30" dir="rtl">
+      {/* Dynamic Header */}
+      <header className="border-b bg-white sticky top-0 z-50">
+        <div className="container max-w-6xl h-20 flex items-center px-4 justify-between">
+          <Link href={`/departments/${sParams.dept || '202'}`} className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-bold group">
+            <div className="p-1.5 rounded-full group-hover:bg-primary/10 transition-colors">
+              <ArrowLeft className="h-5 w-5 rotate-180" />
+            </div>
+            <span>חזרה לרשימה</span>
+          </Link>
+          <div className="flex items-center gap-4">
+             {course.syllabusParams && (
+                <Button variant="outline" className="hidden sm:flex rounded-xl font-bold border-primary/20 hover:bg-primary/5 text-primary">
+                   <Download className="ml-2 h-4 w-4" />
+                   סילבוס
+                </Button>
+             )}
+             <div className="h-8 w-[1px] bg-slate-200 hidden sm:block mx-2" />
+             <span className="font-mono text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">
+               {course.id}
+             </span>
+          </div>
+        </div>
+      </header>
+
+      <main className="container max-w-6xl px-4 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          
+          {/* Main Content (Left/Center) */}
+          <div className="lg:col-span-2 space-y-10">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-700">
+               <div className="flex items-center gap-3">
+                  <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors py-1 px-3 rounded-lg font-bold">
+                    {course.semesterName}
+                  </Badge>
+                  <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                  <span className="text-slate-500 font-bold">מדעי המחשב</span>
+               </div>
+               <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-[1.1] tracking-tighter">
+                 {course.name}
+               </h1>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-in fade-in duration-1000">
+              {[
+                { label: 'נקודות זכות', val: course.points, icon: Award, color: 'text-blue-600', bg: 'bg-blue-50' },
+                { label: 'שעות שבועיות', val: course.hours, icon: Clock, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                { label: 'רמת תואר', val: 'ראשון', icon: GraduationCap, color: 'text-purple-600', bg: 'bg-purple-50' }
+              ].map((stat, i) => (
+                <Card key={i} className="border-none shadow-sm ring-1 ring-slate-100 bg-white group hover:ring-primary/30 transition-all duration-300">
+                  <CardContent className="p-6">
+                    <div className={`${stat.bg} ${stat.color} h-10 w-10 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                      <stat.icon className="h-5 w-5" />
+                    </div>
+                    <p className="text-sm font-bold text-slate-400 mb-1">{stat.label}</p>
+                    <p className="text-2xl font-black text-slate-800">{stat.val}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Abstract Section */}
+            <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden bg-white">
+               <CardHeader className="p-8 pb-4 border-b border-slate-50 flex flex-row items-center justify-between">
+                  <CardTitle className="text-2xl font-black flex items-center gap-3">
+                    <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white">
+                        <FileText className="h-5 w-5" />
+                    </div>
+                    תקציר הקורס
+                  </CardTitle>
+               </CardHeader>
+               <CardContent className="p-10">
+                  <div className="relative">
+                    <div className="absolute -right-4 top-0 w-1 h-full bg-primary/10 rounded-full" />
+                    <p className="text-xl leading-[1.8] text-slate-700 font-medium text-justify">
+                      {course.abstract}
+                    </p>
+                  </div>
+               </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar (Right) */}
+          <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-700">
+            {/* Quick Info Card */}
+            <Card className="border-none shadow-lg bg-slate-900 text-white rounded-[2rem]">
+                <CardHeader>
+                    <CardTitle className="text-xl font-bold flex items-center gap-2">
+                        <Info className="h-5 w-5 text-primary" />
+                        מידע מהיר
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6 pt-0">
+                    <div className="flex justify-between items-center py-4 border-b border-white/10">
+                        <span className="text-slate-400 font-bold">מזהה קורס</span>
+                        <span className="font-mono text-primary">{id}</span>
+                    </div>
+                    {course.syllabusParams && (
+                         <Button className="w-full h-14 bg-primary hover:bg-primary/90 rounded-2xl text-lg font-black gap-3 shadow-lg shadow-primary/30">
+                            <Download className="h-5 w-5" />
+                            צפה בסילבוס המלא
+                         </Button>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Related Courses Section */}
+            {course.relatedCourses.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-xl font-black flex items-center gap-2 text-slate-800 px-2">
+                    <Layers className="h-5 w-5 text-primary" />
+                    קורסים קשורים
+                </h3>
+                <div className="space-y-3">
+                  {course.relatedCourses.map((rel, idx) => (
+                    <Link 
+                      key={idx} 
+                      href={`/courses/${rel.params.course}?dept=${rel.params.dept}&deg=${rel.params.degree}&year=${rel.params.year}&sem=${rel.params.semester}`}
+                      className="block group"
+                    >
+                      <Card className="border-none shadow-sm hover:shadow-md ring-1 ring-slate-100 hover:ring-primary/20 transition-all bg-white rounded-2xl overflow-hidden">
+                        <CardContent className="p-4 flex items-center gap-4">
+                           <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                              <BookOpen className="h-6 w-6 text-slate-400 group-hover:text-primary transition-colors" />
+                           </div>
+                           <div className="flex-1 overflow-hidden">
+                             <div className="flex items-center gap-2 mb-0.5">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">{rel.id}</span>
+                                <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-auto leading-tight font-bold bg-slate-100">
+                                    {rel.relation}
+                                </Badge>
+                             </div>
+                             <p className="font-bold text-slate-800 truncate group-hover:text-primary transition-colors">
+                                {rel.name}
+                             </p>
+                           </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </main>
+    </div>
+  );
+}
