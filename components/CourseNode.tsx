@@ -3,7 +3,7 @@ import { BookOpen, AlertCircle, Trash2, Plus } from 'lucide-react';
 import { useState, useContext } from 'react';
 import { CourseMapContext } from './DependencyMap';
 
-export function CourseNode({ id, data, selected }: any) {
+export function CourseNode({ id, data, selected, xPos, yPos }: any) {
   const context = useContext(CourseMapContext);
   const isHebrew = data.locale === 'he';
   const [isHovered, setIsHovered] = useState(false);
@@ -59,7 +59,8 @@ export function CourseNode({ id, data, selected }: any) {
 
       {/* Hover Card */}
       {isHovered && !data.loading && (
-        <div className={`absolute top-full mt-2 w-64 bg-slate-900 text-white p-4 rounded-xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 flex flex-col gap-2 ${isHebrew ? 'right-0' : 'left-0'}`}>
+        <div className={`absolute top-[calc(100%-8px)] pt-2 w-64 z-50 nowheel nopan ${isHebrew ? 'right-0' : 'left-0'}`}>
+          <div className="bg-slate-900 text-white p-4 rounded-xl shadow-2xl animate-in fade-in slide-in-from-top-2 flex flex-col gap-2">
           <div className="flex items-center gap-2 mb-1">
             <AlertCircle className="h-4 w-4 text-primary" />
             <span className="font-bold text-sm">{dictionary?.department?.courseDetails}</span>
@@ -93,26 +94,28 @@ export function CourseNode({ id, data, selected }: any) {
             ) : (
               <div className="flex flex-col gap-1 max-h-32 overflow-y-auto pr-1">
                 {data.relatedCourses.map((rc: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between bg-white/5 p-1.5 rounded-md hover:bg-white/10 transition-colors">
-                    <div className="flex flex-col text-[10px] truncate pr-2">
+                  <div 
+                    key={idx} 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      fetchCourseData?.(
+                        rc.params.course, rc.params.dept, rc.params.degree, rc.params.year, rc.params.semester, rc.name,
+                        { x: xPos || 0, y: yPos || 0 }
+                      );
+                    }}
+                    className="flex items-center justify-between bg-white/5 p-1.5 rounded-md hover:bg-white/10 transition-colors cursor-pointer group"
+                    title={dictionary?.map?.addToMap}
+                  >
+                    <div className="flex flex-col text-[10px] truncate pr-2 pointer-events-none">
                        <span className="font-bold text-white truncate" title={rc.name}>{rc.name}</span>
                        <span className="text-slate-400">{rc.id} • {rc.relation}</span>
                     </div>
-                    <button
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        fetchCourseData?.(rc.params.course, rc.params.dept, rc.params.degree, rc.params.year, rc.params.semester, rc.name);
-                      }}
-                      className="h-6 w-6 rounded bg-primary/20 hover:bg-primary text-primary hover:text-white flex items-center justify-center transition-colors shrink-0"
-                      title={dictionary?.map?.addToMap}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
                   </div>
                 ))}
               </div>
             )}
           </div>
+        </div>
         </div>
       )}
 

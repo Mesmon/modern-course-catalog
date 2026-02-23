@@ -71,15 +71,26 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     [setEdges],
   );
 
-  const fetchCourseData = async (courseId: string, dept: string, degree: string, year: string, semester: string, name: string) => {
+  const fetchCourseData = async (courseId: string, dept: string, degree: string, year: string, semester: string, name: string, sourcePos?: {x: number, y: number}) => {
     // Add pending node
     const newNodeId = courseId;
     if (nodes.some(n => n.id === newNodeId)) return; // Already exists
 
+    const getNewPosition = () => {
+      if (sourcePos) {
+        // Place relative to source: slight random X offset, fixed Y offset (below)
+        return { 
+          x: sourcePos.x + (Math.random() * 200 - 100), 
+          y: sourcePos.y + 200 
+        };
+      }
+      return { x: Math.random() * 300 + 100, y: Math.random() * 300 + 100 };
+    };
+
     const newNode = {
       id: newNodeId,
       type: 'course',
-      position: { x: Math.random() * 300 + 100, y: Math.random() * 300 + 100 }, // Random position around center
+      position: getNewPosition(),
       data: {
         id: newNodeId,
         courseId, dept, degree, name, locale,
