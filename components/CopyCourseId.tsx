@@ -36,7 +36,7 @@ export function CopyCourseId({ id, className, iconClassName }: CopyCourseIdProps
     >
       <span>{id}</span>
       {copied ? (
-        <Check className={cn("h-3 w-3 text-emerald-500", iconClassName)} />
+        <Check className={cn("h-3 w-3 text-emerald-500 dark:text-emerald-400", iconClassName)} />
       ) : (
         <Copy className={cn("h-3 w-3 opacity-70", iconClassName)} />
       )}

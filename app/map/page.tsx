@@ -12,7 +12,7 @@ export default async function MapPage() {
   const dictionary = getDictionary(locale);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-slate-50/30" dir={locale === 'en' ? 'ltr' : 'rtl'}>
+    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-slate-50/30 dark:bg-slate-950/30" dir={locale === 'en' ? 'ltr' : 'rtl'}>
       <TourGuideClient page="map" />
       <main className="flex-1 w-full relative">
          <DependencyMap dictionary={dictionary} locale={locale} />

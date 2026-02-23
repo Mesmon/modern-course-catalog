@@ -56,9 +56,9 @@ export default async function CoursePage({
   const uniqueRelated = Object.values(groupedRelated);
 
   return (
-    <div className="min-h-screen bg-slate-50/30" dir={locale === 'en' ? 'ltr' : 'rtl'}>
+    <div className="min-h-screen bg-slate-50/30 dark:bg-slate-950/30" dir={locale === 'en' ? 'ltr' : 'rtl'}>
       {/* Dynamic Header */}
-      <header className="border-b bg-white sticky top-0 z-50">
+      <header className="border-b dark:border-slate-800 bg-white dark:bg-slate-950 sticky top-0 z-50">
         <div className="container max-w-6xl h-20 flex items-center px-4 justify-between">
           <Link href={`/departments/${sParams.dept || '202'}`} className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-bold group">
             <div className="p-1.5 rounded-full group-hover:bg-primary/10 transition-colors">
@@ -80,8 +80,8 @@ export default async function CoursePage({
                   {dictionary.course.noSyllabus}
                 </Button>
              )}
-             <div className="h-8 w-[1px] bg-slate-200 hidden sm:block mx-2" />
-             <CopyCourseId id={fullId} className="font-mono text-xs font-bold text-slate-400 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded transition-colors" iconClassName="h-3 w-3" />
+             <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-800 hidden sm:block mx-2" />
+             <CopyCourseId id={fullId} className="font-mono text-xs font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-2 py-1 rounded transition-colors" iconClassName="h-3 w-3" />
           </div>
         </div>
       </header>
@@ -96,10 +96,10 @@ export default async function CoursePage({
                   <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors py-1 px-3 rounded-lg font-bold">
                     {course.semesterName}
                   </Badge>
-                  <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                  <span className="text-slate-500 font-bold">{dictionary.course.computerScience}</span>
+                  <div className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+                  <span className="text-slate-500 dark:text-slate-400 font-bold">{dictionary.course.computerScience}</span>
                </div>
-               <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-[1.1] tracking-tighter">
+               <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-slate-100 leading-[1.1] tracking-tighter">
                  {course.name}
                </h1>
             </div>
@@ -107,17 +107,17 @@ export default async function CoursePage({
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-in fade-in duration-1000">
               {[
-                { label: dictionary.course.points, val: course.points, icon: Award, color: 'text-blue-600', bg: 'bg-blue-50' },
-                { label: dictionary.course.hours, val: course.hours, icon: Clock, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                { label: dictionary.course.degreeLevel, val: dictionary.course.bachelor, icon: GraduationCap, color: 'text-purple-600', bg: 'bg-purple-50' }
+                { label: dictionary.course.points, val: course.points, icon: Award, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10' },
+                { label: dictionary.course.hours, val: course.hours, icon: Clock, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-500/10' },
+                { label: dictionary.course.degreeLevel, val: dictionary.course.bachelor, icon: GraduationCap, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-500/10' }
               ].map((stat, i) => (
-                <Card key={i} className="border-none shadow-sm ring-1 ring-slate-100 bg-white group hover:ring-primary/30 transition-all duration-300">
+                <Card key={i} className="border-none shadow-sm ring-1 ring-slate-100 dark:ring-slate-800 bg-white dark:bg-slate-900 group hover:ring-primary/30 transition-all duration-300">
                   <CardContent className="p-6">
                     <div className={`${stat.bg} ${stat.color} h-10 w-10 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                       <stat.icon className="h-5 w-5" />
                     </div>
-                    <p className="text-sm font-bold text-slate-400 mb-1">{stat.label}</p>
-                    <p className="text-2xl font-black text-slate-800">{stat.val}</p>
+                    <p className="text-sm font-bold text-slate-400 dark:text-slate-500 mb-1">{stat.label}</p>
+                    <p className="text-2xl font-black text-slate-800 dark:text-slate-200">{stat.val}</p>
                   </CardContent>
                 </Card>
               ))}
@@ -171,8 +171,8 @@ export default async function CoursePage({
             </Card>
 
             {/* Abstract Section */}
-            <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden bg-white">
-               <CardHeader className="p-8 pb-4 border-b border-slate-50 flex flex-row items-center justify-between">
+            <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 rounded-[2rem] overflow-hidden bg-white dark:bg-slate-900">
+               <CardHeader className="p-8 pb-4 border-b border-slate-50 dark:border-slate-800/50 flex flex-row items-center justify-between">
                   <CardTitle className="text-2xl font-black flex items-center gap-3">
                     <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white">
                         <FileText className="h-5 w-5" />
@@ -183,7 +183,7 @@ export default async function CoursePage({
                <CardContent className="p-10">
                   <div className="relative">
                     <div className={`absolute ${locale === 'he' ? '-right-4' : '-left-4'} top-0 w-1 h-full bg-primary/10 rounded-full`} />
-                    <p className="text-xl leading-[1.8] text-slate-700 font-medium text-justify">
+                    <p className="text-xl leading-[1.8] text-slate-700 dark:text-slate-300 font-medium text-justify">
                       {course.abstract || dictionary.course.noAbstract}
                     </p>
                   </div>
@@ -242,22 +242,22 @@ export default async function CoursePage({
 
             {/* Lecturers Section */}
             {course.lecturers && course.lecturers.length > 0 && (
-              <Card className="border-none shadow-sm ring-1 ring-slate-100 bg-white rounded-2xl overflow-hidden">
-                <CardHeader className="bg-slate-50 border-b border-slate-100 py-4">
-                  <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-800">
+              <Card className="border-none shadow-sm ring-1 ring-slate-100 dark:ring-slate-800 bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
+                <CardHeader className="bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 py-4">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-slate-200">
                     <Award className="h-5 w-5 text-primary" />
                     {dictionary.course.teachingStaff}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">
                   {course.lecturers.map((lecturer, idx) => (
-                    <div key={idx} className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                    <div key={idx} className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
                         {lecturer.split(':')[1]?.trim()?.charAt(0) || lecturer.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-bold text-slate-800 text-sm">{lecturer.split(':')[1]?.trim() || lecturer}</p>
-                        <p className="text-xs text-slate-500">{lecturer.split(':')[0]?.trim() || ''}</p>
+                        <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{lecturer.split(':')[1]?.trim() || lecturer}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{lecturer.split(':')[0]?.trim() || ''}</p>
                       </div>
                     </div>
                   ))}
@@ -269,7 +269,7 @@ export default async function CoursePage({
             {/* Related Courses Section */}
             {course.relatedCourses && course.relatedCourses.length > 0 && (
               <div className="space-y-4">
-                <h3 className="text-xl font-black flex items-center gap-2 text-slate-800 px-2">
+                <h3 className="text-xl font-black flex items-center gap-2 text-slate-800 dark:text-slate-200 px-2">
                     <Layers className="h-5 w-5 text-primary" />
                     {dictionary.course.relatedCourses}
                 </h3>
@@ -280,24 +280,24 @@ export default async function CoursePage({
                       href={`/courses/${rel.params.course}?dept=${rel.params.dept}&deg=${rel.degrees[0]}&year=${rel.params.year}&sem=${rel.params.semester}`}
                       className="block group"
                     >
-                      <Card className="border-none shadow-sm hover:shadow-md ring-1 ring-slate-100 hover:ring-primary/20 transition-all bg-white rounded-2xl overflow-hidden">
+                      <Card className="border-none shadow-sm hover:shadow-md ring-1 ring-slate-100 dark:ring-slate-800 hover:ring-primary/20 transition-all bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
                         <CardContent className="p-4 flex items-center gap-4">
-                           <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                              <BookOpen className="h-6 w-6 text-slate-400 group-hover:text-primary transition-colors" />
+                           <div className="h-12 w-12 rounded-xl bg-slate-50 dark:bg-slate-950 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                              <BookOpen className="h-6 w-6 text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors" />
                            </div>
                            <div className="flex-1 overflow-hidden">
                              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase">{rel.params.dept}.{rel.degrees.length > 1 ? 'X' : rel.degrees[0]}.{rel.params.course}</span>
-                                <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-auto leading-tight font-bold bg-slate-100">
+                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">{rel.params.dept}.{rel.degrees.length > 1 ? 'X' : rel.degrees[0]}.{rel.params.course}</span>
+                                <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-auto leading-tight font-bold bg-slate-100 dark:bg-slate-800">
                                     {rel.relation}
                                 </Badge>
                                 {rel.degrees.length > 0 && (
-                                  <span className="text-[10px] font-bold text-slate-400">
+                                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
                                     ({dictionary.course.degree} {rel.degrees.sort().join(', ')})
                                   </span>
                                 )}
                              </div>
-                             <p className="font-bold text-slate-800 truncate group-hover:text-primary transition-colors">
+                             <p className="font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-primary transition-colors">
                                 {rel.name}
                              </p>
                            </div>
