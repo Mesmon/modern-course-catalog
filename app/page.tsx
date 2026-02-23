@@ -39,6 +39,14 @@ export default async function Home() {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             {dictionary.home.description}
           </p>
+          <div className="pt-4" id="tour-map-link">
+            <Button asChild size="lg" className="rounded-2xl font-black text-lg h-14 px-8 shadow-lg shadow-primary/20 gap-3">
+              <Link href="/map">
+                <BookOpen className="h-5 w-5" />
+                {dictionary.map.title}
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <Card className="w-full max-w-2xl shadow-2xl shadow-primary/10 border-primary/10 backdrop-blur-sm bg-white/80" id="tour-search">
