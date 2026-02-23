@@ -4,11 +4,17 @@ import { CourseCard } from '@/components/CourseCard';
 import { useAllCourses } from '@/hooks/useCourses';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 export function CourseList() {
   const { data: courses, isLoading, error } = useAllCourses();
+  const [isMounted, setIsMounted] = useState(false);
 
-  if (isLoading) {
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (isLoading || !isMounted) {
     return (
       <div className="flex justify-center items-center py-20 col-span-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
