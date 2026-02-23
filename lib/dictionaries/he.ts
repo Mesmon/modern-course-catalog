@@ -90,7 +90,8 @@ export const he: Dictionary = {
     relatedCourses: 'קורסים קשורים',
     degree: 'תואר',
     syllabus: 'סילבוס',
-    noSyllabus: 'אין סילבוס'
+    noSyllabus: 'אין סילבוס',
+    copiedToClipboard: 'מזהה הקורס הועתק'
   },
   navbar: {
     title: 'קטלוג BGU',

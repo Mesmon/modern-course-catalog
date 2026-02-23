@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { getDictionary, Locale } from "@/lib/dictionaries";
 import { DictionaryProvider } from "@/components/providers/DictionaryProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,6 +33,18 @@ export default async function RootLayout({
           <QueryProvider>
             <Navbar />
             {children}
+            <Toaster 
+              position="top-center" 
+              toastOptions={{
+                classNames: {
+                  toast: "bg-white border-2 border-emerald-500 shadow-2xl rounded-[1.5rem] p-6 !w-fit !mx-auto min-w-[300px] flex items-center justify-center gap-4",
+                  title: "!text-2xl md:!text-3xl font-black !text-emerald-500 block w-full text-center",
+                  description: "!text-emerald-500",
+                  icon: "!w-10 !h-10 !text-emerald-500",
+                },
+                duration: 4000
+              }}
+            />
           </QueryProvider>
         </DictionaryProvider>
       </body>

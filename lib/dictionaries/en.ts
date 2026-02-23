@@ -88,7 +88,8 @@ export const en = {
     relatedCourses: 'Related Courses',
     degree: 'Degree',
     syllabus: 'Syllabus',
-    noSyllabus: 'No Syllabus'
+    noSyllabus: 'No Syllabus',
+    copiedToClipboard: 'Course ID copied to clipboard'
   },
   navbar: {
     title: 'BGU Catalog',

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { getDictionary, Locale } from '@/lib/dictionaries';
 import { notFound } from 'next/navigation';
+import { CopyCourseId } from '@/components/CopyCourseId';
 
 export default async function CoursePage({ 
   params, 
@@ -34,6 +35,8 @@ export default async function CoursePage({
   if (!course) {
     return notFound();
   }
+
+  const fullId = `${sParams.dept || '202'}.${sParams.deg || '1'}.${id}`;
 
   const sP = course.syllabusParams;
   const syllabusLink = sP ? `/api/syllabus?dept=${sP[0]}&degree=${sP[1]}&course=${sP[2]}&year=${sP[3]}&semester=${sP[4]}&courseName=${encodeURIComponent(course.name)}` : null;
@@ -78,9 +81,7 @@ export default async function CoursePage({
                 </Button>
              )}
              <div className="h-8 w-[1px] bg-slate-200 hidden sm:block mx-2" />
-             <span className="font-mono text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">
-               {course.id}
-             </span>
+             <CopyCourseId id={fullId} className="font-mono text-xs font-bold text-slate-400 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded transition-colors" iconClassName="h-3 w-3" />
           </div>
         </div>
       </header>
@@ -154,9 +155,9 @@ export default async function CoursePage({
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6 pt-0">
-                    <div className="flex justify-between items-center py-4 border-b border-white/10">
-                        <span className="text-slate-400 font-bold">{dictionary.course.courseId}</span>
-                        <span className="font-mono text-primary">{id}</span>
+                    <div className="pt-2 pb-5 border-b border-white/10 space-y-3">
+                        <div className="text-slate-400 font-bold">{dictionary.course.courseId}</div>
+                        <CopyCourseId id={fullId} className="w-full h-14 bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/10 rounded-2xl flex items-center justify-center gap-3 text-2xl font-black font-mono text-white transition-all shadow-inner" iconClassName="h-6 w-6" />
                     </div>
                     {course.type && (
                         <div className="flex justify-between items-center py-4 border-b border-white/10">
