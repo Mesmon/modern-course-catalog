@@ -19,11 +19,7 @@ export async function Navbar() {
             <GraduationCap className="h-6 w-6 text-primary" />
           </div>
           <span className="font-black text-xl tracking-tight hidden sm:inline-block text-slate-900">
-            {locale === 'en' ? (
-               <>{dictionary.navbar.logoText1} <span className="text-primary gap-1">{dictionary.navbar.logoText2}</span></>
-            ) : (
-               <>{dictionary.navbar.logoText1}<span className="text-primary gap-1"> .</span>{dictionary.navbar.logoText2}</>
-            )}
+            { dictionary.navbar.logoText1} <span className="text-primary gap-1">{dictionary.navbar.logoText2}</span>
           </span>
         </Link>
         <div className="flex-1 flex justify-center max-w-2xl mx-auto px-2">

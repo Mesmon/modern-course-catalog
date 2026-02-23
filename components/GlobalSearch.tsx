@@ -11,13 +11,13 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-import { getAllCourses } from "@/lib/courses"
+import { useAllCourses } from "@/hooks/useCourses"
 import { Button } from "@/components/ui/button"
 import { useDictionary } from "@/components/providers/DictionaryProvider"
 
 export function GlobalSearch() {
   const [open, setOpen] = React.useState(false)
-  const courses = getAllCourses()
+  const { data: courses = [] } = useAllCourses()
   const router = useRouter()
   const { dictionary, locale } = useDictionary()
 

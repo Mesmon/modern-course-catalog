@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { fetchCourseList } from '@/lib/scraper';
+import { getDepartmentCoursesFromDB } from '@/lib/courses';
 import { ArrowLeft, BookOpen, ChevronLeft, Filter, Search } from 'lucide-react';
 import { cookies } from 'next/headers';
 import { getDictionary, Locale } from '@/lib/dictionaries';
@@ -21,7 +21,7 @@ export default async function DepartmentPage({
   const year = sParams.year || '2026';
   const semester = sParams.sem || '2';
 
-  const courses = await fetchCourseList(dept, degree, year, semester);
+  const courses = await getDepartmentCoursesFromDB(dept, degree, year, semester);
   
   const cookieStore = await cookies();
   const localeCookie = cookieStore.get('NEXT_LOCALE')?.value as Locale | undefined;

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import clientPromise from '@/lib/mongodb';
-import { fetchCourseDetail } from '@/lib/scraper';
+import { getCourseDetailFromDB } from '@/lib/courses';
 
 export async function GET(
   req: Request,
@@ -14,36 +13,10 @@ export async function GET(
     const year = searchParams.get('year') || '2026';
     const semester = searchParams.get('semester') || '2';
 
-    const client = await clientPromise;
-    const db = client.db('course_catalog');
-    const collection = db.collection('course_details');
+    const courseDetail = await getCourseDetailFromDB(id, dept, degree, year, semester);
 
-    // Check DB first
-    const existingCourse = await collection.findOne({ id, year, semester });
-    
-    if (existingCourse) {
-      const { _id, ...rest } = existingCourse;
-      return NextResponse.json(rest);
-    }
-
-    // Fallback to scraping
-    console.log(`Course ${id} not found in DB, scraping...`);
-    const courseDetail = await fetchCourseDetail({
-      courseId: id,
-      dept,
-      degree,
-      year,
-      semester,
-    });
-
-    if (courseDetail) {
-      // Save to DB
-      await collection.insertOne({
-        ...courseDetail,
-        year,
-        semester,
-        lastUpdated: new Date()
-      });
+    if (!courseDetail) {
+      return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
 
     return NextResponse.json(courseDetail);

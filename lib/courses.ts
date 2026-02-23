@@ -1,4 +1,6 @@
-import coursesData from '@/courses.json';
+import clientPromise from '@/lib/mongodb';
+import { fetchCourseList, fetchCourseDetail } from '@/lib/scraper';
+import { CourseDetail } from '@/types/course';
 
 export interface Course {
   id: string;
@@ -6,29 +8,76 @@ export interface Course {
   activeIn: string;
 }
 
-const courses: Course[] = coursesData as Course[];
+export async function getDepartmentCoursesFromDB(dept: string, degree: string, year: string, semester: string): Promise<any[]> {
+  const client = await clientPromise;
+  const db = client.db('course_catalog');
+  const collection = db.collection('courses');
 
-export function getAllCourses(): Course[] {
-  return courses;
+  const coursesCursor = await collection.find({
+    id: { $regex: `^${dept}\\.` }
+  });
+  const existingCourses = await coursesCursor.toArray();
+
+  if (existingCourses.length > 0) {
+    return existingCourses.map(c => {
+      const { _id, ...rest } = c;
+      return rest;
+    });
+  }
+
+  console.log(`Department ${dept} courses not found in DB, scraping...`);
+  const scrapedCourses = await fetchCourseList(dept, degree, year, semester);
+
+  if (scrapedCourses && scrapedCourses.length > 0) {
+    const coursesToInsert = scrapedCourses.map((c: any) => ({
+      ...c,
+      lastUpdated: new Date()
+    }));
+    for (const course of coursesToInsert) {
+      await collection.updateOne(
+        { id: course.id },
+        { $set: course },
+        { upsert: true }
+      );
+    }
+  }
+
+  return scrapedCourses;
 }
 
-export function searchCourses(query: string): Course[] {
-  if (!query) return [];
-  
-  const lowerQuery = query.toLowerCase();
-  
-  return courses.filter((course) => 
-    course.name.toLowerCase().includes(lowerQuery) || 
-    course.id.includes(lowerQuery)
-  );
-}
+export async function getCourseDetailFromDB(id: string, dept: string, degree: string, year: string, semester: string): Promise<CourseDetail | null> {
+  const client = await clientPromise;
+  const db = client.db('course_catalog');
+  const collection = db.collection('course_details');
 
-export function getCoursesByDepartment(deptId: string): Course[] {
-  if (!deptId) return [];
+  const existingCourse = await collection.findOne({ id, year, semester });
   
-  return courses.filter((course) => course.id.startsWith(deptId + '.'));
-}
+  if (existingCourse) {
+    const { _id, ...rest } = existingCourse;
+    return rest as CourseDetail;
+  }
 
-export function getCourseById(id: string): Course | undefined {
-  return courses.find((course) => course.id === id);
+  console.log(`Course ${id} not found in DB, scraping...`);
+  try {
+    const courseDetail = await fetchCourseDetail({
+      courseId: id,
+      dept,
+      degree,
+      year,
+      semester,
+    });
+
+    if (courseDetail) {
+      await collection.insertOne({
+        ...courseDetail,
+        year,
+        semester,
+        lastUpdated: new Date()
+      });
+    }
+    return courseDetail;
+  } catch (err) {
+    console.error(`Failed to fetch course details for ${id}`, err);
+    return null;
+  }
 }

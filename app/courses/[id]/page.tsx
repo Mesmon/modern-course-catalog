@@ -1,4 +1,4 @@
-import { fetchCourseDetail } from '@/lib/scraper';
+import { getCourseDetailFromDB } from '@/lib/courses';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { FileText, ArrowLeft, Clock, Award, BookOpen, GraduationCap, Link as Lin
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { getDictionary, Locale } from '@/lib/dictionaries';
+import { notFound } from 'next/navigation';
 
 export default async function CoursePage({ 
   params, 
@@ -22,13 +23,17 @@ export default async function CoursePage({
   const { id } = await params;
   const sParams = await searchParams;
   
-  const course = await fetchCourseDetail({
-    courseId: id,
-    dept: sParams.dept || '202',
-    degree: sParams.deg || '1',
-    year: sParams.year || '2026',
-    semester: sParams.sem || '2',
-  });
+  const course = await getCourseDetailFromDB(
+    id,
+    sParams.dept || '202',
+    sParams.deg || '1',
+    sParams.year || '2026',
+    sParams.sem || '2'
+  );
+
+  if (!course) {
+    return notFound();
+  }
 
   const sP = course.syllabusParams;
   const syllabusLink = sP ? `/api/syllabus?dept=${sP[0]}&degree=${sP[1]}&course=${sP[2]}&year=${sP[3]}&semester=${sP[4]}&courseName=${encodeURIComponent(course.name)}` : null;
