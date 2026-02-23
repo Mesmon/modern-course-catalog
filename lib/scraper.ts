@@ -142,3 +142,32 @@ export async function fetchCourseDetail(params: {
   return courseDetail;
 }
 
+export async function fetchDepartments() {
+  const url = 'https://bgu4u.bgu.ac.il/pls/scwp/!app.ann';
+  const body = 'rc_rowid=&lang=he&st=s&step=1';
+
+  const response = await fetch(url, {
+    method: 'POST',
+    body,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    },
+  });
+
+  const buffer = await response.arrayBuffer();
+  const html = iconv.decode(Buffer.from(buffer), 'win1255');
+  const $ = cheerio.load(html);
+  
+  const departments: { id: string, name: string }[] = [];
+  $('#on_course_department_list option').each((_, el) => {
+    const value = $(el).val() as string;
+    const text = $(el).text().trim();
+    if (value && text) {
+      departments.push({ id: value, name: text });
+    }
+  });
+
+  return departments;
+}
+

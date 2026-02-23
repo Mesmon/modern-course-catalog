@@ -7,19 +7,13 @@ import { CourseList } from '@/components/CourseList';
 import { cookies } from 'next/headers';
 import { getDictionary, Locale } from '@/lib/dictionaries';
 
+import { DepartmentSearch } from '@/components/DepartmentSearch';
+
 export default async function Home() {
   const cookieStore = await cookies();
   const localeCookie = cookieStore.get('NEXT_LOCALE')?.value as Locale | undefined;
   const locale = localeCookie === 'en' ? 'en' : 'he';
   const dictionary = getDictionary(locale);
-
-  async function handleSearch(formData: FormData) {
-    'use server';
-    const dept = formData.get('dept');
-    if (dept) {
-      redirect(`/departments/${dept}`);
-    }
-  }
 
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-background to-background" dir={locale === 'en' ? 'ltr' : 'rtl'}>
@@ -44,7 +38,7 @@ export default async function Home() {
           </p>
         </div>
 
-        <Card className="w-full max-w-2xl shadow-2xl shadow-primary/10 border-primary/10 backdrop-blur-sm bg-white/80 overflow-hidden">
+        <Card className="w-full max-w-2xl shadow-2xl shadow-primary/10 border-primary/10 backdrop-blur-sm bg-white/80">
           <div className="h-2 bg-primary" />
           <CardHeader className="space-y-1 p-8">
             <CardTitle className="text-3xl font-black flex items-center gap-3">
@@ -56,24 +50,10 @@ export default async function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-8 pt-0">
-            <form action={handleSearch} className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Input
-                  name="dept"
-                  type="text"
-                  placeholder={dictionary.home.searchPlaceholder}
-                  className={`h-14 text-xl ${locale === 'he' ? 'pr-12' : 'pl-12'} rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all font-bold`}
-                  required
-                />
-                <BookOpen className={`absolute ${locale === 'he' ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 h-6 w-6 text-slate-400`} />
-              </div>
-              <Button size="lg" className="h-14 px-8 text-xl font-black rounded-xl gap-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98] transition-all">
-                {dictionary.home.searchBtn}
-                <ArrowRight className={`h-6 w-6 ${locale === 'he' ? 'rotate-180' : ''}`} />
-              </Button>
-            </form>
+            <DepartmentSearch dictionary={dictionary} locale={locale} />
           </CardContent>
         </Card>
+
 
         <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
             {[
