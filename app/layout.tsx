@@ -13,6 +13,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Course Catalog",
   description: "Modern course catalog",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default async function RootLayout({
