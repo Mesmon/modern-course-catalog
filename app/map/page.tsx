@@ -11,7 +11,7 @@ export default async function MapPage() {
   const dictionary = getDictionary(locale);
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50/30" dir={locale === 'en' ? 'ltr' : 'rtl'}>
+    <div className="flex flex-col h-dvh overflow-hidden bg-slate-50/30" dir={locale === 'en' ? 'ltr' : 'rtl'}>
       <header className="border-b bg-white z-50 shrink-0">
         <div className="container max-w-6xl h-16 flex items-center px-4 justify-between">
           <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-bold group">
