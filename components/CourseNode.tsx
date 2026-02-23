@@ -24,8 +24,8 @@ export function CourseNode({ id, data, selected, xPos, yPos }: any) {
   return (
     <div
       dir={isHebrew ? 'rtl' : 'ltr'}
-      className={`bg-white rounded-xl shadow-sm ring-1 flex flex-col p-3 min-w-[200px] transition-all relative z-10
-        ${selected ? 'ring-primary shadow-md z-50' : 'ring-slate-200'}
+      className={`bg-white dark:bg-slate-900 rounded-xl shadow-sm ring-1 flex flex-col p-3 min-w-[200px] transition-all relative z-10
+        ${selected ? 'ring-primary shadow-md z-50' : 'ring-slate-200 dark:ring-slate-800'}
         ${data.loading ? 'opacity-70 animate-pulse' : ''}
         ${isHovered ? 'shadow-lg z-50 scale-105' : ''}
       `}
@@ -35,7 +35,7 @@ export function CourseNode({ id, data, selected, xPos, yPos }: any) {
       <Handle
         type="target"
         position={Position.Top}
-        className="w-3 h-3 bg-slate-300 ring-2 ring-white"
+        className="w-3 h-3 bg-slate-300 dark:bg-slate-700 ring-2 ring-white dark:ring-slate-900"
       />
       
       <div className="flex items-center gap-2 mb-2 pr-6">
@@ -43,10 +43,10 @@ export function CourseNode({ id, data, selected, xPos, yPos }: any) {
           <BookOpen className="h-4 w-4" />
         </div>
         <div className="flex flex-col overflow-hidden">
-          <span className="text-[10px] uppercase font-bold text-slate-400">
+          <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">
             {data.dept}.{data.degree}.{data.courseId}
           </span>
-          <span className="font-bold text-sm text-slate-800 truncate" title={data.name}>
+          <span className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate" title={data.name}>
             {data.name}
           </span>
         </div>
@@ -54,23 +54,23 @@ export function CourseNode({ id, data, selected, xPos, yPos }: any) {
 
       <button 
         onClick={(e) => { e.stopPropagation(); onRemoveNode?.(id); }}
-        className={`absolute top-2 ${isHebrew ? 'left-2' : 'right-2'} p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100 ${isHovered ? 'opacity-100' : ''}`}
+        className={`absolute top-2 ${isHebrew ? 'left-2' : 'right-2'} p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors opacity-0 group-hover:opacity-100 ${isHovered ? 'opacity-100' : ''}`}
         title={dictionary?.map?.removeFromMap || 'Remove'}
       >
         <Trash2 className="h-4 w-4" />
       </button>
 
       {data.stats && (
-        <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-500 font-medium">
-          <span className="bg-slate-50 px-1.5 py-0.5 rounded">{data.stats.points} {dictionary?.course?.points}</span>
-          <span className="bg-slate-50 px-1.5 py-0.5 rounded">{data.type}</span>
+        <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+          <span className="bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded">{data.stats.points} {dictionary?.course?.points}</span>
+          <span className="bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded">{data.type}</span>
         </div>
       )}
 
       {/* Hover Card */}
       {isHovered && !data.loading && (
         <div className={`absolute top-[calc(100%-8px)] pt-2 w-64 z-50 nowheel nopan ${isHebrew ? 'right-0' : 'left-0'}`}>
-          <div className="bg-slate-900 text-white p-4 rounded-xl shadow-2xl animate-in fade-in slide-in-from-top-2 flex flex-col gap-2">
+          <div className="bg-slate-900 dark:bg-slate-950 text-white dark:text-slate-200 p-4 rounded-xl shadow-2xl animate-in fade-in slide-in-from-top-2 flex flex-col gap-2">
           <div className="flex items-center gap-2 mb-1">
             <AlertCircle className="h-4 w-4 text-primary" />
             <span className="font-bold text-sm">{dictionary?.department?.courseDetails}</span>
@@ -132,7 +132,7 @@ export function CourseNode({ id, data, selected, xPos, yPos }: any) {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="w-3 h-3 bg-primary ring-2 ring-white"
+        className="w-3 h-3 bg-primary ring-2 ring-white dark:ring-slate-900"
       />
     </div>
   );

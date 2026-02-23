@@ -36,42 +36,42 @@ export function OnboardingDialog() {
           <div className="mx-auto bg-primary/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mb-2">
             <Sparkles className="w-8 h-8 text-primary" />
           </div>
-          <DialogTitle className="text-2xl font-black text-center text-slate-900">
+          <DialogTitle className="text-2xl font-black text-center text-slate-900 dark:text-slate-100">
             {dictionary.onboarding.title}
           </DialogTitle>
-          <DialogDescription className="text-center text-base text-slate-600">
+          <DialogDescription className="text-center text-base text-slate-600 dark:text-slate-400">
             {dictionary.onboarding.description}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="flex gap-4 items-start">
-            <div className="bg-blue-100 p-2 rounded-xl mt-1 shrink-0">
-              <Search className="w-5 h-5 text-blue-600" />
+            <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-xl mt-1 shrink-0">
+              <Search className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h4 className="font-bold text-slate-900">{dictionary.onboarding.features.search.title}</h4>
-              <p className="text-sm text-slate-500">{dictionary.onboarding.features.search.desc}</p>
+              <h4 className="font-bold text-slate-900 dark:text-slate-100">{dictionary.onboarding.features.search.title}</h4>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{dictionary.onboarding.features.search.desc}</p>
             </div>
           </div>
 
           <div className="flex gap-4 items-start">
-            <div className="bg-emerald-100 p-2 rounded-xl mt-1 shrink-0">
-              <Map className="w-5 h-5 text-emerald-600" />
+            <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-xl mt-1 shrink-0">
+              <Map className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <h4 className="font-bold text-slate-900">{dictionary.onboarding.features.map.title}</h4>
-              <p className="text-sm text-slate-500">{dictionary.onboarding.features.map.desc}</p>
+              <h4 className="font-bold text-slate-900 dark:text-slate-100">{dictionary.onboarding.features.map.title}</h4>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{dictionary.onboarding.features.map.desc}</p>
             </div>
           </div>
 
           <div className="flex gap-4 items-start">
-            <div className="bg-purple-100 p-2 rounded-xl mt-1 shrink-0">
-              <Database className="w-5 h-5 text-purple-600" />
+            <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-xl mt-1 shrink-0">
+              <Database className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <h4 className="font-bold text-slate-900">{dictionary.onboarding.features.offline.title}</h4>
-              <p className="text-sm text-slate-500">{dictionary.onboarding.features.offline.desc}</p>
+              <h4 className="font-bold text-slate-900 dark:text-slate-100">{dictionary.onboarding.features.offline.title}</h4>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{dictionary.onboarding.features.offline.desc}</p>
             </div>
           </div>
         </div>

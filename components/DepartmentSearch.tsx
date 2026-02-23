@@ -114,7 +114,7 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
             onKeyDown={handleKeyDown}
             placeholder={dictionary.home.searchPlaceholder}
             className={cn(
-               "h-14 text-xl rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all font-bold",
+               "h-14 text-xl rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-950 transition-all font-bold",
                locale === 'he' ? 'pr-12 text-right' : 'pl-12 text-left'
             )}
             required
@@ -145,7 +145,7 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
       </form>
 
       {isOpen && filteredDepartments.length > 0 && (
-        <div className="absolute z-[100] w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute z-[100] w-full mt-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
           <ul className="max-h-[300px] overflow-auto py-2">
             {filteredDepartments.map((dept, index) => (
               <li key={dept.id}>
@@ -163,8 +163,8 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
                     locale === 'he' ? 'flex-row text-right' : 'flex-row-reverse text-left'
                   )}
                 >
-                  <span className="text-slate-400 text-sm font-medium group-hover:text-primary transition-colors">#{dept.id}</span>
-                  <span className="font-bold text-slate-700 group-hover:text-slate-900 transition-colors">{dept.name}</span>
+                  <span className="text-slate-400 dark:text-slate-500 text-sm font-medium group-hover:text-primary transition-colors">#{dept.id}</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">{dept.name}</span>
                 </button>
               </li>
             ))}

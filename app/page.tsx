@@ -18,7 +18,7 @@ export default async function Home() {
   const dictionary = getDictionary(locale);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-background to-background">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 dark:from-primary/10 via-background to-background">
       <TourGuideClient page="home" />
       {/* Decorative background elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
@@ -32,7 +32,7 @@ export default async function Home() {
             <Sparkles className="h-4 w-4" />
             <span>{dictionary.home.tagline}</span>
           </div>
-          <h1 className="text-6xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none">
+          <h1 className="text-6xl md:text-7xl font-black text-slate-900 dark:text-slate-100 tracking-tighter leading-none">
             {dictionary.home.title} <br />
             <span className="text-primary">{dictionary.home.titleSuffix}</span>
           </h1>
@@ -41,7 +41,7 @@ export default async function Home() {
           </p>
         </div>
 
-        <Card className="w-full max-w-2xl shadow-2xl shadow-primary/10 border-primary/10 backdrop-blur-sm bg-white/80" id="tour-search">
+        <Card className="w-full max-w-2xl shadow-2xl shadow-primary/10 dark:shadow-primary/5 border-primary/10 dark:border-primary/20 backdrop-blur-sm bg-white/80 dark:bg-slate-950/80" id="tour-search">
           <div className="h-2 bg-primary" />
           <CardHeader className="space-y-1 p-8">
             <CardTitle className="text-3xl font-black flex items-center gap-3">
@@ -64,8 +64,8 @@ export default async function Home() {
                 { title: dictionary.home.features.data.title, desc: dictionary.home.features.data.desc, icon: Database },
                 { title: dictionary.home.features.design.title, desc: dictionary.home.features.design.desc, icon: GraduationCap },
             ].map((feature, i) => (
-                <div key={i} className="flex flex-col items-center text-center p-6 rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-shadow">
-                    <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center mb-4">
+                <div key={i} className="flex flex-col items-center text-center p-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="h-12 w-12 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center mb-4">
                         <feature.icon className="h-6 w-6 text-primary" />
                     </div>
                     <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
@@ -79,7 +79,7 @@ export default async function Home() {
             <div className="bg-primary/10 p-3 rounded-2xl">
               <Library className="h-8 w-8 text-primary" />
             </div>
-            <h2 className="text-4xl font-black text-slate-900 tracking-tight">{dictionary.home.fullCatalog}</h2>
+            <h2 className="text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{dictionary.home.fullCatalog}</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <CourseList />

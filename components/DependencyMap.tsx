@@ -323,12 +323,12 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
   return (
     <div className="h-full w-full" id="tour-map-area">
       <div className="absolute top-4 z-10 flex gap-2" style={{ [locale === 'he' ? 'right' : 'left']: '16px' }}>
-        <Button id="tour-map-add" onClick={() => setOpen(true)} className="bg-white text-slate-800 hover:bg-slate-50 border shadow-sm rounded-xl font-bold gap-2">
+        <Button id="tour-map-add" onClick={() => setOpen(true)} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 border dark:border-slate-800 shadow-sm rounded-xl font-bold gap-2">
             <Plus className="h-4 w-4" />
             {dictionary.map.addCourse}
         </Button>
         {nodes.length > 0 && (
-          <Button onClick={() => { setNodes([]); setEdges([]); }} variant="outline" className="bg-white/80 backdrop-blur text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200 border-red-100 shadow-sm rounded-xl font-bold gap-2 transition-all">
+          <Button onClick={() => { setNodes([]); setEdges([]); }} variant="outline" className="bg-white/80 dark:bg-slate-900/80 backdrop-blur text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700 dark:hover:text-red-400 border-red-100 dark:border-red-900/50 shadow-sm rounded-xl font-bold gap-2 transition-all">
             <Trash2 className="h-4 w-4" />
             {dictionary.map.clearMap}
           </Button>
@@ -338,17 +338,17 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
             <Button 
               variant="outline" 
               onClick={() => setShowFilter(!showFilter)} 
-              className={`bg-white/80 backdrop-blur shadow-sm rounded-xl font-bold gap-2 transition-all ${showFilter || (selectedRelations.length > 0 && selectedRelations.length !== availableRelations.length) ? 'text-primary border-primary/50 bg-primary/5' : 'text-slate-700 hover:bg-slate-50'}`}
+              className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur shadow-sm rounded-xl font-bold gap-2 transition-all border-slate-200 dark:border-slate-800 ${showFilter || (selectedRelations.length > 0 && selectedRelations.length !== availableRelations.length) ? 'text-primary border-primary/50 bg-primary/5 dark:bg-primary/20' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
             >
               <Filter className="h-4 w-4" />
               {dictionary.map.filterRelations}
             </Button>
             {showFilter && (
-              <div className={`absolute top-full mt-2 w-48 bg-white border border-slate-200 rounded-xl p-3 shadow-lg ${locale === 'he' ? 'right-0' : 'left-0'} z-50`}>
+              <div className={`absolute top-full mt-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-lg ${locale === 'he' ? 'right-0' : 'left-0'} z-50`}>
                 <div className="flex flex-col gap-2 text-start">
-                  <span className="text-xs font-bold text-slate-500 mb-1">{dictionary.map.filterRelations}</span>
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{dictionary.map.filterRelations}</span>
                   {availableRelations.map(rel => (
-                    <label key={rel} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer p-1.5 hover:bg-slate-50 rounded-lg" dir={locale === 'he' ? 'rtl' : 'ltr'}>
+                    <label key={rel} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg" dir={locale === 'he' ? 'rtl' : 'ltr'}>
                       <input 
                         type="checkbox" 
                         checked={selectedRelations.includes(rel)}
@@ -401,7 +401,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
         <CommandList className={locale === 'he' ? 'text-right' : 'text-left'} dir={locale === 'en' ? 'ltr' : 'rtl'}>
           <CommandEmpty>
             <div className="flex flex-col items-center justify-center text-center gap-4 py-6">
-              <p className="font-bold text-slate-700">{dictionary.navbar.noResults}</p>
+              <p className="font-bold text-slate-700 dark:text-slate-300">{dictionary.navbar.noResults}</p>
               <p className="text-sm text-muted-foreground whitespace-normal leading-tight mx-auto max-w-[300px]">
                 {dictionary.map.suggestDepartment}
               </p>
@@ -431,11 +431,11 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
                   
                   fetchCourseData(cId, dept, degree, year, semester, course.name);
                 }}
-                className="flex flex-col items-start py-3 px-4 cursor-pointer hover:bg-slate-50 rounded-lg m-1"
+                className="flex flex-col items-start py-3 px-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg m-1"
               >
                 <div className="flex flex-col gap-1 w-full text-start">
-                  <span className="font-bold text-slate-900 text-base">{course.name}</span>
-                  <span className="text-sm text-slate-500 font-mono tracking-tight w-fit">{course.id}</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100 text-base">{course.name}</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400 font-mono tracking-tight w-fit">{course.id}</span>
                 </div>
               </CommandItem>
             ))}
@@ -476,7 +476,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
                 </div>
               )}
               {isSuggestOpen && filteredDepartments.length > 0 && (
-                <div className="absolute top-full z-[100] w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute top-full z-[100] w-full mt-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                   <ul className="max-h-[200px] overflow-auto py-2">
                     {filteredDepartments.map((dept, index) => (
                       <li key={dept.id}>
@@ -494,8 +494,8 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
                             locale === 'he' ? 'flex-row text-right' : 'flex-row-reverse text-left'
                           )}
                         >
-                          <span className="text-slate-400 text-sm font-medium group-hover:text-primary transition-colors">#{dept.id}</span>
-                          <span className="font-bold text-slate-700 group-hover:text-slate-900 transition-colors">{dept.name}</span>
+                          <span className="text-slate-400 dark:text-slate-500 text-sm font-medium group-hover:text-primary transition-colors">#{dept.id}</span>
+                          <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">{dept.name}</span>
                         </button>
                       </li>
                     ))}
