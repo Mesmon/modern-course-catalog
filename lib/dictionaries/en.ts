@@ -107,7 +107,8 @@ export const en = {
     loadingDetails: 'Loading details...',
     removeFromMap: 'Remove',
     relatedCourses: 'Related Courses',
-    addToMap: 'Add to Map'
+    addToMap: 'Add to Map',
+    suggestDepartment: 'Course not found? Try entering a department number (e.g., 202) in the main search to pull its courses.'
   },
   onboarding: {
     title: 'Welcome to the Modern BGU Course Catalog! 👋',
