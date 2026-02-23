@@ -111,15 +111,7 @@ export const he: Dictionary = {
     relatedCourses: 'קורסים קשורים',
     filterRelations: 'סינון קשרים',
     addToMap: 'הוסף למפה',
-    suggestDepartment: 'הקורס לא נמצא? נסה להזין מספר מחלקה (לדוגמה 202) בחיפוש הראשי כדי למשוך את הקורסים שלה.',
-    searchDeptBtn: 'משוך מחלקה',
-    fetchingDept: 'מושך נתונים...',
-    deptNotFound: 'לא נמצאו קורסים במחלקה זו.',
-    deptFound: 'קורסי המחלקה נמשכו בהצלחה!',
-    fetchDeptTitle: 'משיכת קורסי מחלקה',
-    fetchDeptDesc: 'הזן את מספר המחלקה כדי למשוך את הקורסים שלה.',
-    fetchDeptPlaceholder: 'לדוגמה: 202',
-    cancel: 'ביטול'
+    suggestDepartment: 'הקורס לא נמצא? נסה להזין מספר מחלקה (לדוגמה 202) בחיפוש הראשי כדי למשוך את הקורסים שלה.'
   },
   onboarding: {
     title: 'ברוכים הבאים לקטלוג הקורסים של בן גוריון! 👋',

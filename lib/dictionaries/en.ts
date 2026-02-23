@@ -109,15 +109,7 @@ export const en = {
     relatedCourses: 'Related Courses',
     filterRelations: 'Filter Relations',
     addToMap: 'Add to Map',
-    suggestDepartment: 'Course not found? Try entering a department number (e.g., 202) in the main search to pull its courses.',
-    searchDeptBtn: 'Fetch Department',
-    fetchingDept: 'Fetching...',
-    deptNotFound: 'No courses found in this department.',
-    deptFound: 'Department courses fetched successfully!',
-    fetchDeptTitle: 'Fetch Department Courses',
-    fetchDeptDesc: 'Enter the department number to retrieve its courses.',
-    fetchDeptPlaceholder: 'e.g., 202',
-    cancel: 'Cancel'
+    suggestDepartment: 'Course not found? Try entering a department number (e.g., 202) in the main search to pull its courses.'
   },
   onboarding: {
     title: 'Welcome to the Modern BGU Course Catalog! 👋',

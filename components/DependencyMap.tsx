@@ -1,24 +1,12 @@
 "use client"
 
-import React, { useState, useCallback, useEffect, createContext, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import React, { useState, useCallback, useEffect, createContext } from 'react';
 import { ReactFlow, MiniMap, Controls, Background, useNodesState, useEdgesState, addEdge, Connection, Edge, Node, MarkerType } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { CourseNode } from './CourseNode';
 import { useAllCourses } from '@/hooks/useCourses';
-import { Plus, Trash2, Filter, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Filter } from 'lucide-react';
 import { Button } from './ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import {
   CommandDialog,
   CommandEmpty,
@@ -32,11 +20,6 @@ const nodeTypes = {
   course: CourseNode,
 };
 
-interface Department {
-  id: string;
-  name: string;
-}
-
 export const CourseMapContext = createContext<any>(null);
 
 export function DependencyMap({ dictionary, locale }: { dictionary: any, locale: string }) {
@@ -45,20 +28,6 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
   const [open, setOpen] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [selectedRelations, setSelectedRelations] = useState<string[]>(['קורס קדם']);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isFetchingDept, setIsFetchingDept] = useState(false);
-  const [showFetchDeptDialog, setShowFetchDeptDialog] = useState(false);
-  const [fetchDeptInput, setFetchDeptInput] = useState('');
-  
-  // Autocomplete state
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([]);
-  const [isSuggestOpen, setIsSuggestOpen] = useState(false);
-  const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const suggestContainerRef = useRef<HTMLDivElement>(null);
-
-  const queryClient = useQueryClient();
 
   const { data: courses = [] } = useAllCourses();
 
@@ -92,70 +61,6 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     if (savedEdges) setEdges(JSON.parse(savedEdges));
     if (savedRelations) setSelectedRelations(JSON.parse(savedRelations));
   }, []);
-
-  // Fetch departments for autocomplete
-  useEffect(() => {
-    async function fetchDepartments() {
-      try {
-        const res = await fetch('/api/departments');
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setDepartments(data);
-        } else {
-          setDepartments([]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch departments:', error);
-      } finally {
-        setIsLoadingDepartments(false);
-      }
-    }
-    fetchDepartments();
-  }, []);
-
-  // Filter departments based on input
-  useEffect(() => {
-    const filtered = departments.filter((dept) =>
-      fetchDeptInput === '' || 
-      dept.id.includes(fetchDeptInput) || 
-      dept.name.toLowerCase().includes(fetchDeptInput.toLowerCase())
-    )
-    setFilteredDepartments(filtered);
-  }, [fetchDeptInput, departments]);
-
-  // Handle clicks outside the dropdown
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (suggestContainerRef.current && !suggestContainerRef.current.contains(event.target as globalThis.Node)) {
-        setIsSuggestOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev < filteredDepartments.length - 1 ? prev + 1 : prev));
-      setIsSuggestOpen(true);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-    } else if (e.key === 'Enter') {
-      if (selectedIndex >= 0 && filteredDepartments[selectedIndex]) {
-        e.preventDefault();
-        setFetchDeptInput(filteredDepartments[selectedIndex].id);
-        setIsSuggestOpen(false);
-        // Wait a tick for state to update, then trigger fetch
-        setTimeout(() => document.getElementById('dialog-fetch-btn')?.click(), 0);
-      } else if (fetchDeptInput) {
-        handleFetchDepartment();
-      }
-    } else if (e.key === 'Escape') {
-      setIsSuggestOpen(false);
-    }
-  };
 
   // Save to local storage on change
   useEffect(() => {
@@ -293,33 +198,6 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     }
   };
 
-  const handleFetchDepartment = async () => {
-    if (!fetchDeptInput) return;
-    setIsFetchingDept(true);
-    try {
-      const res = await fetch(`/api/departments/${fetchDeptInput}`);
-      if (res.ok) {
-        const deptCourses = await res.json();
-        if (deptCourses && deptCourses.length > 0) {
-          toast.success(dictionary.map.deptFound);
-          // Invalidate the 'courses' query so useAllCourses refetches
-          queryClient.invalidateQueries({ queryKey: ['courses'] });
-          setShowFetchDeptDialog(false);
-          setFetchDeptInput('');
-        } else {
-          toast.error(dictionary.map.deptNotFound);
-        }
-      } else {
-        toast.error(dictionary.map.deptNotFound);
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error(dictionary.map.deptNotFound);
-    } finally {
-      setIsFetchingDept(false);
-    }
-  };
-
   return (
     <div className="h-full w-full" id="tour-map-area">
       <div className="absolute top-4 z-10 flex gap-2" style={{ [locale === 'he' ? 'right' : 'left']: '16px' }}>
@@ -391,28 +269,15 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
 
       <CommandDialog open={open} onOpenChange={setOpen}>
         <div id="tour-map-search">
-          <CommandInput 
-            placeholder={dictionary.map.searchPlaceholder} 
-            className={locale === 'he' ? 'text-right' : 'text-left'} 
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-          />
+          <CommandInput placeholder={dictionary.map.searchPlaceholder} className={locale === 'he' ? 'text-right' : 'text-left'} />
         </div>
         <CommandList className={locale === 'he' ? 'text-right' : 'text-left'} dir={locale === 'en' ? 'ltr' : 'rtl'}>
           <CommandEmpty>
-            <div className="flex flex-col items-center justify-center text-center gap-4 py-6">
-              <p className="font-bold text-slate-700">{dictionary.navbar.noResults}</p>
+            <div className="flex flex-col items-center justify-center text-center gap-2">
+              <p>{dictionary.navbar.noResults}</p>
               <p className="text-sm text-muted-foreground whitespace-normal leading-tight mx-auto max-w-[300px]">
                 {dictionary.map.suggestDepartment}
               </p>
-              {searchQuery && (
-                 <Button 
-                   onClick={() => setShowFetchDeptDialog(true)} 
-                   className="mt-2"
-                 >
-                   {dictionary.map.searchDeptBtn}
-                 </Button>
-              )}
             </div>
           </CommandEmpty>
           <CommandGroup heading={dictionary.home.fullCatalog}>
@@ -442,89 +307,6 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
           </CommandGroup>
         </CommandList>
       </CommandDialog>
-
-      <Dialog open={showFetchDeptDialog} onOpenChange={setShowFetchDeptDialog}>
-        <DialogContent className={`sm:max-w-md ${locale === 'he' ? 'text-right' : 'text-left'}`} dir={locale === 'en' ? 'ltr' : 'rtl'}>
-          <DialogHeader className={locale === 'he' ? 'text-right' : 'text-left'}>
-            <DialogTitle>{dictionary.map.fetchDeptTitle}</DialogTitle>
-            <DialogDescription>
-              {dictionary.map.fetchDeptDesc}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center space-x-2 py-4" ref={suggestContainerRef}>
-            <div className="grid flex-1 gap-2 relative">
-              <Input
-                value={fetchDeptInput}
-                onChange={(e) => {
-                  setFetchDeptInput(e.target.value);
-                  setIsSuggestOpen(true);
-                  setSelectedIndex(-1);
-                }}
-                onFocus={() => setIsSuggestOpen(true)}
-                placeholder={dictionary.map.fetchDeptPlaceholder}
-                disabled={isFetchingDept}
-                className={cn(locale === 'he' ? 'text-right' : 'text-left')}
-                onKeyDown={handleKeyDown}
-                autoComplete="off"
-              />
-              {isLoadingDepartments && (
-                <div className={cn(
-                    "absolute top-1/2 -translate-y-1/2 h-4 w-4",
-                    locale === 'he' ? 'left-3' : 'right-3'
-                )}>
-                  <Loader2 className="h-full w-full animate-spin text-primary/50" />
-                </div>
-              )}
-              {isSuggestOpen && filteredDepartments.length > 0 && (
-                <div className="absolute top-full z-[100] w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                  <ul className="max-h-[200px] overflow-auto py-2">
-                    {filteredDepartments.map((dept, index) => (
-                      <li key={dept.id}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFetchDeptInput(dept.id);
-                            setIsSuggestOpen(false);
-                            // Auto-fetch if wanted, or just populate input. Opting to populate for consistency.
-                          }}
-                          onMouseEnter={() => setSelectedIndex(index)}
-                          className={cn(
-                            "w-full px-4 py-3 flex items-center justify-between hover:bg-primary/5 transition-colors group",
-                            selectedIndex === index && "bg-primary/5",
-                            locale === 'he' ? 'flex-row text-right' : 'flex-row-reverse text-left'
-                          )}
-                        >
-                          <span className="text-slate-400 text-sm font-medium group-hover:text-primary transition-colors">#{dept.id}</span>
-                          <span className="font-bold text-slate-700 group-hover:text-slate-900 transition-colors">{dept.name}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-          <DialogFooter className={`sm:justify-end gap-2 mt-4 ${locale === 'he' ? 'flex-row-reverse sm:space-x-reverse' : ''}`}>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowFetchDeptDialog(false)}
-              disabled={isFetchingDept}
-            >
-              {dictionary.map.cancel}
-            </Button>
-            <Button
-              id="dialog-fetch-btn"
-              type="button"
-              onClick={handleFetchDepartment}
-              disabled={isFetchingDept || !fetchDeptInput}
-            >
-              {isFetchingDept && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {dictionary.map.searchDeptBtn}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
