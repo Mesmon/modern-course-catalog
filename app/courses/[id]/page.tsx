@@ -31,7 +31,7 @@ export default async function CoursePage({
   });
 
   const sP = course.syllabusParams;
-  const syllabusLink = sP ? `https://bgu4u.bgu.ac.il/pls/scwp/!app.sc_syl_file_to_browser?rn_c_dept=${sP[0]}&rn_c_degree_level=${sP[1]}&rn_course=${sP[2]}&rn_year=${sP[3]}&rn_semester=${sP[4]}` : null;
+  const syllabusLink = sP ? `/api/syllabus?dept=${sP[0]}&degree=${sP[1]}&course=${sP[2]}&year=${sP[3]}&semester=${sP[4]}&courseName=${encodeURIComponent(course.name)}` : null;
 
   const groupedRelated = course.relatedCourses.reduce((acc, curr) => {
     const key = `${curr.params.dept}-${curr.params.course}-${curr.name}-${curr.relation}`;
