@@ -97,6 +97,17 @@ export const en = {
     noResults: 'No courses found',
     logoText1: 'BGU',
     logoText2: 'Catalog'
+  },
+  map: {
+    title: 'Dependency Map',
+    addCourse: 'Add Course',
+    clearMap: 'Clear Map',
+    searchPlaceholder: 'Search to add course...',
+    noConnections: 'No related courses found',
+    loadingDetails: 'Loading details...',
+    removeFromMap: 'Remove',
+    relatedCourses: 'Related Courses',
+    addToMap: 'Add to Map'
   }
 };
 

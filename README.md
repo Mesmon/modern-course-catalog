@@ -1,50 +1,11 @@
-# BGU Course Catalog Scraper
+# BGU Course Catalog 
 
-A Node.js tool to scrape course data (ID, Name, Points) from the BGU4U Oracle PL/SQL catalog.
+create map of courses - the courses that are related to each other will be connected
+with beautiful edges like flow chart.
 
-## Prerequisites
+the map will be interactive and will show the course details on hover.
 
-- [Node.js](https://nodejs.org/) (v16 or higher)
-- npm
+the map will be dynamic and the user can add and remove courses from it.
 
-## Setup
+the map will be saved in the browser local storage.
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-## Running the Scraper
-
-To execute the scraping script:
-```bash
-node scrape.js
-```
-
-The script will:
-1. Initialize a session with the BGU server.
-2. Fetch the course catalog for department 202 (Computer Science).
-3. Decode the `win1255` encoded response.
-4. Save the extracted data to `courses.json`.
-
-## Stopping the Scraper
-
-- **Manual Stop:** If the script is running in your terminal, press `Ctrl + C` to terminate it.
-- **Background Process:** If you ran it in the background, find the PID and kill it:
-  ```bash
-  ps aux | grep node
-  kill <PID>
-  ```
-
-## Output
-
-The results are saved in `courses.json` in the following format:
-```json
-[
-  {
-    "id": "202.1.1234",
-    "name": "Course Name",
-    "points": "3.5"
-  }
-]
-```

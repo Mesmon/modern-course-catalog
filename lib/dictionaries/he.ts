@@ -99,5 +99,16 @@ export const he: Dictionary = {
     noResults: 'לא נמצאו קורסים',
     logoText1: 'קטלוג',
     logoText2: 'קורסים'
+  },
+  map: {
+    title: 'מפת תלויות',
+    addCourse: 'הוסף קורס',
+    clearMap: 'נקה מפה',
+    searchPlaceholder: 'חפש להוספת קורס...',
+    noConnections: 'לא נמצאו קורסים קשורים',
+    loadingDetails: 'טוען פרטים...',
+    removeFromMap: 'הסר',
+    relatedCourses: 'קורסים קשורים',
+    addToMap: 'הוסף למפה'
   }
 };
