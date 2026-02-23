@@ -18,7 +18,7 @@ export default async function Home() {
   const dictionary = getDictionary(locale);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-background to-background">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-background to-background" dir={locale === 'en' ? 'ltr' : 'rtl'}>
       <TourGuideClient page="home" />
       {/* Decorative background elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
