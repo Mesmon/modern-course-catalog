@@ -17,9 +17,15 @@ import { useDictionary } from "@/components/providers/DictionaryProvider"
 
 export function GlobalSearch() {
   const [open, setOpen] = React.useState(false)
-  const { data: courses = [] } = useAllCourses()
+  const { data: courses = [], refetch } = useAllCourses()
   const router = useRouter()
   const { dictionary, locale } = useDictionary()
+
+  React.useEffect(() => {
+    if (open) {
+      refetch()
+    }
+  }, [open, refetch])
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
