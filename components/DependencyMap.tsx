@@ -183,9 +183,9 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
   };
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full" id="tour-map-area">
       <div className="absolute top-4 z-10 flex gap-2" style={{ [locale === 'he' ? 'right' : 'left']: '16px' }}>
-        <Button onClick={() => setOpen(true)} className="bg-white text-slate-800 hover:bg-slate-50 border shadow-sm rounded-xl font-bold gap-2">
+        <Button id="tour-map-add" onClick={() => setOpen(true)} className="bg-white text-slate-800 hover:bg-slate-50 border shadow-sm rounded-xl font-bold gap-2">
             <Plus className="h-4 w-4" />
             {dictionary.map.addCourse}
         </Button>
@@ -216,7 +216,9 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
       </CourseMapContext.Provider>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder={dictionary.map.searchPlaceholder} className={locale === 'he' ? 'text-right' : 'text-left'} />
+        <div id="tour-map-search">
+          <CommandInput placeholder={dictionary.map.searchPlaceholder} className={locale === 'he' ? 'text-right' : 'text-left'} />
+        </div>
         <CommandList className={locale === 'he' ? 'text-right' : 'text-left'} dir={locale === 'en' ? 'ltr' : 'rtl'}>
           <CommandEmpty>{dictionary.navbar.noResults}</CommandEmpty>
           <CommandGroup heading={dictionary.home.fullCatalog}>
