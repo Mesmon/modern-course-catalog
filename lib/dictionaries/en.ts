@@ -108,47 +108,6 @@ export const en = {
     removeFromMap: 'Remove',
     relatedCourses: 'Related Courses',
     addToMap: 'Add to Map'
-  },
-  onboarding: {
-    title: 'Welcome to the Modern BGU Course Catalog! 👋',
-    description: 'We built this to make finding courses faster and easier. Here is what you can do:',
-    features: {
-      search: {
-        title: 'Lightning Fast Search',
-        desc: 'Find any course instantly without waiting for legacy systems to load.'
-      },
-      map: {
-        title: 'Interactive Dependency Map',
-        desc: 'Visualize course prerequisites and related courses in a beautiful node map.'
-      },
-      offline: {
-        title: 'Smart Caching',
-        desc: 'Data is saved locally so it loads instantly on your next visit.'
-      }
-    },
-    getStarted: 'Got it, let\'s explore!'
-  },
-  tour: {
-    next: 'Next',
-    prev: 'Previous',
-    done: 'Done',
-    progressText: '{{current}} of {{total}}',
-    home: {
-      searchTitle: 'Find Courses Quickly',
-      searchDesc: 'Type a department name or number here to instantly see all available courses.',
-      mapTitle: 'Interactive Map',
-      mapDesc: 'Click here to visualize course prerequisites and how courses connect to each other.',
-      catalogTitle: 'Full Catalog',
-      catalogDesc: 'Browse through the complete list of available courses and filter them as needed.'
-    },
-    map: {
-      searchTitle: 'Add to Map',
-      searchDesc: 'Search for a course ID or name to add it to your dependency map.',
-      addTitle: 'Confirm Addition',
-      addDesc: 'Click this button to place the selected course onto the canvas.',
-      canvasTitle: 'Map Canvas',
-      canvasDesc: 'Drag courses around, zoom in/out, and click on nodes to see detailed course information and connections.'
-    }
   }
 };
 

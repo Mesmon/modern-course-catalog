@@ -32,11 +32,7 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
       try {
         const res = await fetch('/api/departments');
         const data = await res.json();
-        if (Array.isArray(data)) {
-          setDepartments(data);
-        } else {
-          setDepartments([]);
-        }
+        setDepartments(data);
       } catch (error) {
         console.error('Failed to fetch departments:', error);
       } finally {

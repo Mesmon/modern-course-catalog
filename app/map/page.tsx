@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { getDictionary, Locale } from '@/lib/dictionaries';
 import { DependencyMap } from '@/components/DependencyMap';
-import { TourGuideClient } from '@/components/TourGuideClient';
 
 export default async function MapPage() {
   const cookieStore = await cookies();
@@ -13,7 +12,6 @@ export default async function MapPage() {
 
   return (
     <div className="flex flex-col h-dvh overflow-hidden bg-slate-50/30" dir={locale === 'en' ? 'ltr' : 'rtl'}>
-      <TourGuideClient page="map" />
       <header className="border-b bg-white z-50 shrink-0">
         <div className="container max-w-6xl h-16 flex items-center px-4 justify-between">
           <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-bold group">
