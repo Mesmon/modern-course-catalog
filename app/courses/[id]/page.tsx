@@ -30,6 +30,23 @@ export default async function CoursePage({
     semester: sParams.sem || '2',
   });
 
+  const sP = course.syllabusParams;
+  const syllabusLink = sP ? `https://bgu4u.bgu.ac.il/pls/scwp/!app.sc_syl_file_to_browser?rn_c_dept=${sP[0]}&rn_c_degree_level=${sP[1]}&rn_course=${sP[2]}&rn_year=${sP[3]}&rn_semester=${sP[4]}` : null;
+
+  const groupedRelated = course.relatedCourses.reduce((acc, curr) => {
+    const key = `${curr.params.dept}-${curr.params.course}-${curr.name}-${curr.relation}`;
+    if (!acc[key]) {
+      acc[key] = { ...curr, degrees: [curr.params.degree] };
+    } else {
+      if (!acc[key].degrees.includes(curr.params.degree)) {
+        acc[key].degrees.push(curr.params.degree);
+      }
+    }
+    return acc;
+  }, {} as Record<string, typeof course.relatedCourses[0] & { degrees: string[] }>);
+
+  const uniqueRelated = Object.values(groupedRelated);
+
   return (
     <div className="min-h-screen bg-slate-50/30" dir={locale === 'en' ? 'ltr' : 'rtl'}>
       {/* Dynamic Header */}
@@ -42,10 +59,17 @@ export default async function CoursePage({
             <span>{dictionary.department.back}</span>
           </Link>
           <div className="flex items-center gap-4">
-             {course.syllabusParams && (
-                <Button variant="outline" className="hidden sm:flex rounded-xl font-bold border-primary/20 hover:bg-primary/5 text-primary">
+             {syllabusLink ? (
+                <Button asChild variant="outline" className="hidden sm:flex rounded-xl font-bold border-primary/20 hover:bg-primary/5 text-primary">
+                  <a href={syllabusLink} target="_blank" rel="noopener noreferrer" download>
                    <Download className={`h-4 w-4 ${locale === 'he' ? 'ml-2' : 'mr-2'}`} />
                    {locale === 'en' ? 'Syllabus' : 'סילבוס'}
+                  </a>
+                </Button>
+             ) : (
+                <Button disabled variant="outline" className="hidden sm:flex rounded-xl font-bold border-slate-200 text-slate-400">
+                  <Download className={`h-4 w-4 ${locale === 'he' ? 'ml-2' : 'mr-2'}`} />
+                  {locale === 'en' ? 'No Syllabus' : 'אין סילבוס'}
                 </Button>
              )}
              <div className="h-8 w-[1px] bg-slate-200 hidden sm:block mx-2" />
@@ -129,14 +153,47 @@ export default async function CoursePage({
                         <span className="text-slate-400 font-bold">{locale === 'en' ? 'Course ID' : 'מזהה קורס'}</span>
                         <span className="font-mono text-primary">{id}</span>
                     </div>
-                    {course.syllabusParams && (
-                         <Button className="w-full h-14 bg-primary hover:bg-primary/90 rounded-2xl text-lg font-black gap-3 shadow-lg shadow-primary/30">
+                    {syllabusLink ? (
+                         <Button asChild className="w-full h-14 bg-primary hover:bg-primary/90 rounded-2xl text-lg font-black gap-3 shadow-lg shadow-primary/30">
+                           <a href={syllabusLink} target="_blank" rel="noopener noreferrer" download>
                             <Download className="h-5 w-5" />
                             {locale === 'en' ? 'View Full Syllabus' : 'צפה בסילבוס המלא'}
+                           </a>
+                         </Button>
+                    ) : (
+                         <Button disabled className="w-full h-14 bg-slate-200 text-slate-400 rounded-2xl text-lg font-black gap-3 cursor-not-allowed">
+                            <Download className="h-5 w-5" />
+                            {locale === 'en' ? 'Syllabus Not Available' : 'סילבוס לא זמין'}
                          </Button>
                     )}
                 </CardContent>
             </Card>
+
+            {/* Lecturers Section */}
+            {course.lecturers && course.lecturers.length > 0 && (
+              <Card className="border-none shadow-sm ring-1 ring-slate-100 bg-white rounded-2xl overflow-hidden">
+                <CardHeader className="bg-slate-50 border-b border-slate-100 py-4">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-800">
+                    <Award className="h-5 w-5 text-primary" />
+                    {locale === 'en' ? 'Teaching Staff' : 'סגל הוראה'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 space-y-3">
+                  {course.lecturers.map((lecturer, idx) => (
+                    <div key={idx} className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                        {lecturer.split(':')[1]?.trim()?.charAt(0) || lecturer.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800 text-sm">{lecturer.split(':')[1]?.trim() || lecturer}</p>
+                        <p className="text-xs text-slate-500">{lecturer.split(':')[0]?.trim() || ''}</p>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
 
             {/* Related Courses Section */}
             {course.relatedCourses && course.relatedCourses.length > 0 && (
@@ -146,10 +203,10 @@ export default async function CoursePage({
                     {locale === 'en' ? 'Related Courses' : 'קורסים קשורים'}
                 </h3>
                 <div className="space-y-3">
-                  {course.relatedCourses.map((rel, idx) => (
+                  {uniqueRelated.map((rel, idx) => (
                     <Link 
                       key={idx} 
-                      href={`/courses/${rel.params.course}?dept=${rel.params.dept}&deg=${rel.params.degree}&year=${rel.params.year}&sem=${rel.params.semester}`}
+                      href={`/courses/${rel.params.course}?dept=${rel.params.dept}&deg=${rel.degrees[0]}&year=${rel.params.year}&sem=${rel.params.semester}`}
                       className="block group"
                     >
                       <Card className="border-none shadow-sm hover:shadow-md ring-1 ring-slate-100 hover:ring-primary/20 transition-all bg-white rounded-2xl overflow-hidden">
@@ -158,11 +215,16 @@ export default async function CoursePage({
                               <BookOpen className="h-6 w-6 text-slate-400 group-hover:text-primary transition-colors" />
                            </div>
                            <div className="flex-1 overflow-hidden">
-                             <div className="flex items-center gap-2 mb-0.5">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase">{rel.id}</span>
+                             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">{rel.params.dept}.{rel.degrees.length > 1 ? 'X' : rel.degrees[0]}.{rel.params.course}</span>
                                 <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-auto leading-tight font-bold bg-slate-100">
                                     {rel.relation}
                                 </Badge>
+                                {rel.degrees.length > 0 && (
+                                  <span className="text-[10px] font-bold text-slate-400">
+                                    ({locale === 'en' ? 'Degree' : 'תואר'} {rel.degrees.sort().join(', ')})
+                                  </span>
+                                )}
                              </div>
                              <p className="font-bold text-slate-800 truncate group-hover:text-primary transition-colors">
                                 {rel.name}

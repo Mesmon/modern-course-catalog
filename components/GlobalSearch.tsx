@@ -58,7 +58,14 @@ export function GlobalSearch() {
                 value={`${course.id} ${course.name}`}
                 onSelect={() => {
                   setOpen(false)
-                  router.push(`/departments/${course.id.split('.')[0]}`)
+                  const parts = course.id.split('.')
+                  const dept = (course as any).params?.dept || parts[0] || '202'
+                  const degree = (course as any).params?.degree || parts[1] || '1'
+                  const cId = (course as any).params?.course || parts[2] || course.id
+                  const year = (course as any).params?.year || '2026'
+                  const semester = (course as any).params?.semester || '2'
+                  
+                  router.push(`/courses/${cId}?dept=${dept}&deg=${degree}&year=${year}&sem=${semester}`)
                 }}
                 className="flex flex-col items-start py-3 px-4 cursor-pointer hover:bg-slate-50 rounded-lg m-1"
               >

@@ -1,13 +1,8 @@
 import * as cheerio from 'cheerio';
 import iconv from 'iconv-lite';
 import { CourseDetail, RelatedCourse } from '@/types/course';
-import { saveToStore, getFromStore } from './store';
 
 export async function fetchCourseList(dept: string, degree: string = '1', year: string = '2026', semester: string = '2') {
-  const cacheKey = `list_${dept}_${degree}_${year}_${semester}`;
-  const cached = await getFromStore(cacheKey, 'list');
-  if (cached) return cached;
-
   const url = 'https://bgu4u.bgu.ac.il/pls/scwp/!app.ann';
   const body = `rc_rowid=&lang=he&st=s&step=2&oc_course_name=&on_course_ins=0&on_course_ins_list=0&on_course_department=${dept}&on_course_department_list=${dept}&on_course_degree_level=${degree}&on_course_degree_level_list=${degree}&on_course=&on_semester=&on_year=0&on_hours=&on_credit_points=&oc_lecturer_first_name=&oc_lecturer_last_name=&on_common=&on_lang=&oc_end_time=&oc_start_time=&on_campus=`;
 
@@ -37,7 +32,6 @@ export async function fetchCourseList(dept: string, degree: string = '1', year: 
     }
   });
 
-  await saveToStore(cacheKey, courses, 'list');
   return courses;
 }
 
@@ -48,10 +42,6 @@ export async function fetchCourseDetail(params: {
   year: string;
   semester: string;
 }): Promise<CourseDetail> {
-  const cacheKey = `course_${params.courseId}_${params.year}_${params.semester}`;
-  const cached = await getFromStore(cacheKey, 'course');
-  if (cached) return cached;
-
   const url = 'https://bgu4u.bgu.ac.il/pls/scwp/!app.ann';
   
   const body = new URLSearchParams({
@@ -93,7 +83,7 @@ export async function fetchCourseDetail(params: {
   };
 
   const courseDetail: CourseDetail = {
-    id: getVal('מספר קורס'),
+    id: getVal('מספר קורס') || params.courseId,
     name: getVal('שם הקורס'),
     points: getVal('נקודות זכות').split('\n')[0].trim(),
     hours: getVal('שעות'),
@@ -101,7 +91,20 @@ export async function fetchCourseDetail(params: {
     semesterName: $('.CourseName').text().trim(),
     syllabusParams: extractParams($(`.props li:has(.key:contains("קובץ סילבוס")) a`).attr('href')),
     relatedCourses: [],
+    lecturers: [],
   };
+
+  // Extract lecturers
+  $(`.CourseStaff tbody tr`).each((_, row) => {
+    const cols = $(row).find('td');
+    if (cols.length >= 2) {
+      const role = $(cols[0]).text().trim();
+      const name = $(cols[1]).text().trim();
+      if (name && !courseDetail.lecturers.includes(`${role} ${name}`.trim())) {
+        courseDetail.lecturers.push(`${role}: ${name}`.trim());
+      }
+    }
+  });
 
   $(`.props li:has(.key:contains("קורסים קשורים")) .val`).contents().each((_, node) => {
     if (node.type === 'tag' && node.name === 'a') {
@@ -133,7 +136,6 @@ export async function fetchCourseDetail(params: {
     }
   });
 
-  await saveToStore(cacheKey, courseDetail, 'course');
   return courseDetail;
 }
 

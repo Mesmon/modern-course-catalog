@@ -20,4 +20,5 @@ export interface CourseDetail {
   syllabusParams: string[] | null;
   relatedCourses: RelatedCourse[];
   semesterName: string;
+  lecturers: string[];
 }
