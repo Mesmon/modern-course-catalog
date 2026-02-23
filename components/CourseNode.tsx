@@ -1,6 +1,6 @@
 import { Handle, Position } from '@xyflow/react';
-import { BookOpen, AlertCircle, Trash2 } from 'lucide-react';
-import { useState, useContext, useMemo } from 'react';
+import { BookOpen, AlertCircle, Trash2, Plus } from 'lucide-react';
+import { useState, useContext } from 'react';
 import { CourseMapContext } from './DependencyMap';
 
 export function CourseNode({ id, data, selected, xPos, yPos }: any) {
@@ -9,17 +9,7 @@ export function CourseNode({ id, data, selected, xPos, yPos }: any) {
   const [isHovered, setIsHovered] = useState(false);
   
   if (!context) return null;
-  const { onRemoveNode, fetchCourseData, dictionary, selectedRelations } = context;
-
-  const uniqueRelatedCourses = useMemo(() => {
-    return data.relatedCourses?.filter((v: any, i: number, a: any[]) => a.findIndex(t => t.id === v.id) === i) || [];
-  }, [data.relatedCourses]);
-
-  const filteredCourses = useMemo(() => {
-    // If no context relations are found (e.g map just loaded), default to showing all or safe fallback
-    const activeRels = selectedRelations || [];
-    return uniqueRelatedCourses.filter((rc: any) => activeRels.includes(rc.relation));
-  }, [uniqueRelatedCourses, selectedRelations]);
+  const { onRemoveNode, fetchCourseData, dictionary } = context;
   
   return (
     <div
@@ -99,13 +89,13 @@ export function CourseNode({ id, data, selected, xPos, yPos }: any) {
 
           <div className="mt-2 pt-2 border-t border-white/10 flex flex-col gap-1.5">
             <span className="font-bold text-xs text-slate-300">{dictionary?.map?.relatedCourses}</span>
-            {(!filteredCourses || filteredCourses.length === 0) ? (
+            {(!data.relatedCourses || data.relatedCourses.length === 0) ? (
                <span className="text-[10px] text-slate-400 italic">{dictionary?.map?.noConnections}</span>
             ) : (
               <div className="flex flex-col gap-1 max-h-32 overflow-y-auto pr-1">
-                {filteredCourses.map((rc: any, idx: number) => (
+                {data.relatedCourses.map((rc: any, idx: number) => (
                   <div 
-                    key={`${rc.id}-${idx}`} 
+                    key={idx} 
                     onClick={(e) => { 
                       e.stopPropagation(); 
                       fetchCourseData?.(
