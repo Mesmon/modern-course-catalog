@@ -48,7 +48,18 @@ export const he: Dictionary = {
       spring: 'סמסטר ב׳',
       summer: 'סמסטר קיץ',
       search: 'חיפוש קורסים...'
-    }
+    },
+    semesterPrefix: 'סמסטר',
+    yearPrefix: 'שנת',
+    coursesFound: 'קורסים נמצאו',
+    filterResults: 'סינון תוצאות',
+    degree: 'תואר',
+    bachelor: 'ראשון',
+    master: 'שני',
+    courseDetails: 'פרטי קורס',
+    noCoursesTitle: 'לא נמצאו קורסים',
+    noCoursesDesc: 'לא מצאנו קורסים עבור מחלקה זו בסמסטר הנוכחי. נסה לבדוק סמסטר אחר או מספר מחלקה שונה.',
+    backToSearch: 'חזרה לחיפוש'
   },
   course: {
     points: 'נק"ז',
@@ -65,11 +76,27 @@ export const he: Dictionary = {
     passFail: 'עובר/נכשל',
     description: 'תיאור הקורס',
     prerequisites: 'דרישות קדם',
-    register: 'הרשמה במערכת'
+    register: 'הרשמה במערכת',
+    availableIn: 'זמין ב',
+    computerScience: 'מדעי המחשב',
+    degreeLevel: 'רמת תואר',
+    bachelor: 'ראשון',
+    noAbstract: 'לא נמצא תקציר לקורס זה.',
+    quickInfo: 'מידע מהיר',
+    courseId: 'מזהה קורס',
+    viewFullSyllabus: 'צפה בסילבוס המלא',
+    syllabusNotAvailable: 'סילבוס לא זמין',
+    teachingStaff: 'סגל הוראה',
+    relatedCourses: 'קורסים קשורים',
+    degree: 'תואר',
+    syllabus: 'סילבוס',
+    noSyllabus: 'אין סילבוס'
   },
   navbar: {
     title: 'קטלוג BGU',
     searchPlaceholder: 'חיפוש קורס לפי שם או מזהה...',
     noResults: 'לא נמצאו קורסים',
+    logoText1: 'קטלוג',
+    logoText2: 'קורסים'
   }
 };

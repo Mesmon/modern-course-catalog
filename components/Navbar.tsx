@@ -20,9 +20,9 @@ export async function Navbar() {
           </div>
           <span className="font-black text-xl tracking-tight hidden sm:inline-block text-slate-900">
             {locale === 'en' ? (
-               <>BGU <span className="text-primary gap-1">Catalog</span></>
+               <>{dictionary.navbar.logoText1} <span className="text-primary gap-1">{dictionary.navbar.logoText2}</span></>
             ) : (
-               <>קטלוג<span className="text-primary gap-1"> .</span>קורסים</>
+               <>{dictionary.navbar.logoText1}<span className="text-primary gap-1"> .</span>{dictionary.navbar.logoText2}</>
             )}
           </span>
         </Link>

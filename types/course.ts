@@ -14,6 +14,9 @@ export interface RelatedCourse {
 export interface CourseDetail {
   id: string;
   name: string;
+  type?: string;
+  exam?: string;
+  gradeType?: string;
   points: string;
   hours: string;
   abstract: string;

@@ -85,6 +85,9 @@ export async function fetchCourseDetail(params: {
   const courseDetail: CourseDetail = {
     id: getVal('מספר קורס') || params.courseId,
     name: getVal('שם הקורס'),
+    type: getVal('סוג המסגרת') || getVal('סוג קורס') || '',
+    exam: getVal('אופן בחינה') || getVal('מבחן') || '',
+    gradeType: getVal('סוג ציון') || getVal('סוג הציון') || '',
     points: getVal('נקודות זכות').split('\n')[0].trim(),
     hours: getVal('שעות'),
     abstract: getVal('תקציר') || 'אין תקציר זמין לקורס זה.',

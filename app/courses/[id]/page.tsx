@@ -63,13 +63,13 @@ export default async function CoursePage({
                 <Button asChild variant="outline" className="hidden sm:flex rounded-xl font-bold border-primary/20 hover:bg-primary/5 text-primary">
                   <a href={syllabusLink} target="_blank" rel="noopener noreferrer" download>
                    <Download className={`h-4 w-4 ${locale === 'he' ? 'ml-2' : 'mr-2'}`} />
-                   {locale === 'en' ? 'Syllabus' : 'סילבוס'}
+                   {dictionary.course.syllabus}
                   </a>
                 </Button>
              ) : (
                 <Button disabled variant="outline" className="hidden sm:flex rounded-xl font-bold border-slate-200 text-slate-400">
                   <Download className={`h-4 w-4 ${locale === 'he' ? 'ml-2' : 'mr-2'}`} />
-                  {locale === 'en' ? 'No Syllabus' : 'אין סילבוס'}
+                  {dictionary.course.noSyllabus}
                 </Button>
              )}
              <div className="h-8 w-[1px] bg-slate-200 hidden sm:block mx-2" />
@@ -91,7 +91,7 @@ export default async function CoursePage({
                     {course.semesterName}
                   </Badge>
                   <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                  <span className="text-slate-500 font-bold">{locale === 'en' ? 'Computer Science' : 'מדעי המחשב'}</span>
+                  <span className="text-slate-500 font-bold">{dictionary.course.computerScience}</span>
                </div>
                <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-[1.1] tracking-tighter">
                  {course.name}
@@ -103,7 +103,7 @@ export default async function CoursePage({
               {[
                 { label: dictionary.course.points, val: course.points, icon: Award, color: 'text-blue-600', bg: 'bg-blue-50' },
                 { label: dictionary.course.hours, val: course.hours, icon: Clock, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                { label: locale === 'en' ? 'Degree Level' : 'רמת תואר', val: locale === 'en' ? 'Bachelor' : 'ראשון', icon: GraduationCap, color: 'text-purple-600', bg: 'bg-purple-50' }
+                { label: dictionary.course.degreeLevel, val: dictionary.course.bachelor, icon: GraduationCap, color: 'text-purple-600', bg: 'bg-purple-50' }
               ].map((stat, i) => (
                 <Card key={i} className="border-none shadow-sm ring-1 ring-slate-100 bg-white group hover:ring-primary/30 transition-all duration-300">
                   <CardContent className="p-6">
@@ -131,7 +131,7 @@ export default async function CoursePage({
                   <div className="relative">
                     <div className={`absolute ${locale === 'he' ? '-right-4' : '-left-4'} top-0 w-1 h-full bg-primary/10 rounded-full`} />
                     <p className="text-xl leading-[1.8] text-slate-700 font-medium text-justify">
-                      {course.abstract || (locale === 'en' ? 'No abstract available.' : 'לא נמצא תקציר לקורס זה.')}
+                      {course.abstract || dictionary.course.noAbstract}
                     </p>
                   </div>
                </CardContent>
@@ -145,26 +145,44 @@ export default async function CoursePage({
                 <CardHeader>
                     <CardTitle className="text-xl font-bold flex items-center gap-2">
                         <Info className="h-5 w-5 text-primary" />
-                        {locale === 'en' ? 'Quick Info' : 'מידע מהיר'}
+                        {dictionary.course.quickInfo}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6 pt-0">
                     <div className="flex justify-between items-center py-4 border-b border-white/10">
-                        <span className="text-slate-400 font-bold">{locale === 'en' ? 'Course ID' : 'מזהה קורס'}</span>
+                        <span className="text-slate-400 font-bold">{dictionary.course.courseId}</span>
                         <span className="font-mono text-primary">{id}</span>
                     </div>
+                    {course.type && (
+                        <div className="flex justify-between items-center py-4 border-b border-white/10">
+                            <span className="text-slate-400 font-bold">{dictionary.course.type}</span>
+                            <span className="text-white">{course.type}</span>
+                        </div>
+                    )}
+                    {course.exam && (
+                        <div className="flex justify-between items-center py-4 border-b border-white/10">
+                            <span className="text-slate-400 font-bold">{dictionary.course.exam}</span>
+                            <span className="text-white">{course.exam}</span>
+                        </div>
+                    )}
+                    {course.gradeType && (
+                        <div className="flex justify-between items-center py-4 border-b border-white/10">
+                            <span className="text-slate-400 font-bold">{dictionary.course.gradeType}</span>
+                            <span className="text-white">{course.gradeType}</span>
+                        </div>
+                    )}
                     {syllabusLink ? (
                          <Button asChild className="w-full h-14 bg-primary hover:bg-primary/90 rounded-2xl text-lg font-black gap-3 shadow-lg shadow-primary/30">
                            <a href={syllabusLink} target="_blank" rel="noopener noreferrer" download>
-                            <Download className="h-5 w-5" />
-                            {locale === 'en' ? 'View Full Syllabus' : 'צפה בסילבוס המלא'}
-                           </a>
-                         </Button>
-                    ) : (
-                         <Button disabled className="w-full h-14 bg-slate-200 text-slate-400 rounded-2xl text-lg font-black gap-3 cursor-not-allowed">
-                            <Download className="h-5 w-5" />
-                            {locale === 'en' ? 'Syllabus Not Available' : 'סילבוס לא זמין'}
-                         </Button>
+                             <Download className="h-5 w-5" />
+                             {dictionary.course.viewFullSyllabus}
+                            </a>
+                          </Button>
+                     ) : (
+                          <Button disabled className="w-full h-14 bg-slate-200 text-slate-400 rounded-2xl text-lg font-black gap-3 cursor-not-allowed">
+                             <Download className="h-5 w-5" />
+                             {dictionary.course.syllabusNotAvailable}
+                          </Button>
                     )}
                 </CardContent>
             </Card>
@@ -175,7 +193,7 @@ export default async function CoursePage({
                 <CardHeader className="bg-slate-50 border-b border-slate-100 py-4">
                   <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-800">
                     <Award className="h-5 w-5 text-primary" />
-                    {locale === 'en' ? 'Teaching Staff' : 'סגל הוראה'}
+                    {dictionary.course.teachingStaff}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">
@@ -200,7 +218,7 @@ export default async function CoursePage({
               <div className="space-y-4">
                 <h3 className="text-xl font-black flex items-center gap-2 text-slate-800 px-2">
                     <Layers className="h-5 w-5 text-primary" />
-                    {locale === 'en' ? 'Related Courses' : 'קורסים קשורים'}
+                    {dictionary.course.relatedCourses}
                 </h3>
                 <div className="space-y-3">
                   {uniqueRelated.map((rel, idx) => (
@@ -222,7 +240,7 @@ export default async function CoursePage({
                                 </Badge>
                                 {rel.degrees.length > 0 && (
                                   <span className="text-[10px] font-bold text-slate-400">
-                                    ({locale === 'en' ? 'Degree' : 'תואר'} {rel.degrees.sort().join(', ')})
+                                    ({dictionary.course.degree} {rel.degrees.sort().join(', ')})
                                   </span>
                                 )}
                              </div>

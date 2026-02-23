@@ -46,7 +46,18 @@ export const en = {
       spring: 'Spring',
       summer: 'Summer',
       search: 'Search courses...'
-    }
+    },
+    semesterPrefix: 'Semester',
+    yearPrefix: 'Year',
+    coursesFound: 'Courses Found',
+    filterResults: 'Filter Results',
+    degree: 'Degree',
+    bachelor: 'Bachelor',
+    master: 'Master',
+    courseDetails: 'Course Details',
+    noCoursesTitle: 'No Courses Found',
+    noCoursesDesc: 'We didn\'t find courses for this department in the current semester. Try checking another semester or department number.',
+    backToSearch: 'Back to Search'
   },
   course: {
     points: 'Credits',
@@ -63,12 +74,28 @@ export const en = {
     passFail: 'Pass/Fail',
     description: 'Course Description',
     prerequisites: 'Prerequisites',
-    register: 'Register in System'
+    register: 'Register in System',
+    availableIn: 'Available in',
+    computerScience: 'Computer Science',
+    degreeLevel: 'Degree Level',
+    bachelor: 'Bachelor',
+    noAbstract: 'No abstract available.',
+    quickInfo: 'Quick Info',
+    courseId: 'Course ID',
+    viewFullSyllabus: 'View Full Syllabus',
+    syllabusNotAvailable: 'Syllabus Not Available',
+    teachingStaff: 'Teaching Staff',
+    relatedCourses: 'Related Courses',
+    degree: 'Degree',
+    syllabus: 'Syllabus',
+    noSyllabus: 'No Syllabus'
   },
   navbar: {
     title: 'BGU Catalog',
     searchPlaceholder: 'Search course by name or ID...',
     noResults: 'No courses found',
+    logoText1: 'BGU',
+    logoText2: 'Catalog'
   }
 };
 

@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { fetchCourseList } from '@/lib/scraper';
-import { ArrowLeft, Search, Filter, BookOpen, ChevronLeft } from 'lucide-react';
+import { ArrowLeft, BookOpen, ChevronLeft, Filter, Search } from 'lucide-react';
+import { cookies } from 'next/headers';
+import { getDictionary, Locale } from '@/lib/dictionaries';
 
 export default async function DepartmentPage({ 
   params,
@@ -20,24 +22,29 @@ export default async function DepartmentPage({
   const semester = sParams.sem || '2';
 
   const courses = await fetchCourseList(dept, degree, year, semester);
+  
+  const cookieStore = await cookies();
+  const localeCookie = cookieStore.get('NEXT_LOCALE')?.value as Locale | undefined;
+  const locale = localeCookie === 'en' ? 'en' : 'he';
+  const dictionary = getDictionary(locale);
 
   return (
-    <div className="min-h-screen bg-slate-50/50" dir="rtl">
+    <div className="min-h-screen bg-slate-50/50" dir={locale === 'en' ? 'ltr' : 'rtl'}>
       {/* Sleek Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md">
         <div className="container max-w-6xl h-20 flex items-center justify-between px-4">
           <div className="flex items-center gap-6">
             <Link href="/" className="p-2 hover:bg-slate-100 rounded-full transition-colors group">
-              <ArrowLeft className="h-6 w-6 rotate-180 text-slate-600 group-hover:text-primary" />
+              <ArrowLeft className={`h-6 w-6 text-slate-600 group-hover:text-primary ${locale === 'he' ? 'rotate-180' : ''}`} />
             </Link>
             <div>
-              <h1 className="text-2xl font-black text-slate-900 leading-none">מחלקה {dept}</h1>
-              <p className="text-sm text-muted-foreground mt-1">סמסטר {semester} | שנת {year}</p>
+              <h1 className="text-2xl font-black text-slate-900 leading-none">{dictionary.department.title} {dept}</h1>
+              <p className="text-sm text-muted-foreground mt-1">{dictionary.department.semesterPrefix} {semester} | {dictionary.department.yearPrefix} {year}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
              <Badge variant="secondary" className="px-3 py-1 font-bold">
-                {courses.length} קורסים נמצאו
+                {courses.length} {dictionary.department.coursesFound}
              </Badge>
           </div>
         </div>
@@ -50,14 +57,14 @@ export default async function DepartmentPage({
             <div className="space-y-4">
               <h3 className="font-bold flex items-center gap-2 text-slate-700">
                 <Filter className="h-4 w-4" />
-                סינון תוצאות
+                {dictionary.department.filterResults}
               </h3>
               <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm space-y-4">
                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">תואר</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">{dictionary.department.degree}</label>
                     <div className="flex flex-wrap gap-2">
-                        <Badge className="bg-primary hover:bg-primary cursor-pointer">ראשון</Badge>
-                        <Badge variant="outline" className="hover:bg-slate-50 cursor-pointer">שני</Badge>
+                        <Badge className="bg-primary hover:bg-primary cursor-pointer">{dictionary.department.bachelor}</Badge>
+                        <Badge variant="outline" className="hover:bg-slate-50 cursor-pointer">{dictionary.department.master}</Badge>
                     </div>
                  </div>
               </div>
@@ -93,9 +100,9 @@ export default async function DepartmentPage({
                       <div className="flex items-center justify-between text-primary font-bold text-sm">
                         <div className="flex items-center gap-2">
                             <BookOpen className="h-4 w-4 opacity-50" />
-                            <span>פרטי קורס</span>
+                            <span>{dictionary.department.courseDetails}</span>
                         </div>
-                        <ChevronLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
+                        <ChevronLeft className={`h-5 w-5 transition-transform group-hover:-translate-x-1 ${locale === 'he' ? '' : 'rotate-180 group-hover:translate-x-1'}`} />
                       </div>
                     </CardContent>
                   </Card>
@@ -108,10 +115,10 @@ export default async function DepartmentPage({
                 <div className="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
                     <Search className="h-10 w-10 text-slate-300" />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-800 mb-2">לא נמצאו קורסים</h3>
-                <p className="text-muted-foreground max-w-sm">לא מצאנו קורסים עבור מחלקה זו בסמסטר הנוכחי. נסה לבדוק סמסטר אחר או מספר מחלקה שונה.</p>
+                <h3 className="text-2xl font-bold text-slate-800 mb-2">{dictionary.department.noCoursesTitle}</h3>
+                <p className="text-muted-foreground max-w-sm">{dictionary.department.noCoursesDesc}</p>
                 <Link href="/" className="mt-8">
-                    <Button variant="outline" className="rounded-xl px-8 h-12 font-bold">חזרה לחיפוש</Button>
+                    <Button variant="outline" className="rounded-xl px-8 h-12 font-bold">{dictionary.department.backToSearch}</Button>
                 </Link>
               </div>
             )}
