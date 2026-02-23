@@ -109,7 +109,6 @@ export const he: Dictionary = {
     loadingDetails: 'טוען פרטים...',
     removeFromMap: 'הסר',
     relatedCourses: 'קורסים קשורים',
-    filterRelations: 'סינון קשרים',
     addToMap: 'הוסף למפה',
     suggestDepartment: 'הקורס לא נמצא? נסה להזין מספר מחלקה (לדוגמה 202) בחיפוש הראשי כדי למשוך את הקורסים שלה.'
   },

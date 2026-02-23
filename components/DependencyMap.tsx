@@ -1,11 +1,23 @@
 "use client"
 
 import React, { useState, useCallback, useEffect, createContext } from 'react';
-import { ReactFlow, MiniMap, Controls, Background, useNodesState, useEdgesState, addEdge, Connection, Edge, Node, MarkerType } from '@xyflow/react';
+import {
+  ReactFlow,
+  MiniMap,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  Connection,
+  Edge,
+  Node,
+  MarkerType,
+} from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { CourseNode } from './CourseNode';
 import { useAllCourses } from '@/hooks/useCourses';
-import { Plus, Trash2, Filter } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   CommandDialog,
@@ -26,40 +38,14 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [open, setOpen] = useState(false);
-  const [showFilter, setShowFilter] = useState(false);
-  const [selectedRelations, setSelectedRelations] = useState<string[]>(['קורס קדם']);
-
   const { data: courses = [] } = useAllCourses();
-
-  const availableRelations = React.useMemo(() => {
-    const relations = new Set<string>();
-    nodes.forEach(n => {
-      if (n.data && Array.isArray((n.data as any).relatedCourses)) {
-        (n.data as any).relatedCourses.forEach((rc: any) => {
-          if (rc.relation) relations.add(rc.relation);
-        });
-      }
-    });
-    return Array.from(relations);
-  }, [nodes]);
-
-  const filteredEdges = React.useMemo(() => {
-    if (!selectedRelations || selectedRelations.length === 0) return [];
-    return edges.filter(e => {
-      if (!e.label) return true;
-      return selectedRelations.includes(e.label as string);
-    });
-  }, [edges, selectedRelations]);
 
   // Load from local storage on mount
   useEffect(() => {
     const savedNodes = localStorage.getItem('dependencyMapNodes');
     const savedEdges = localStorage.getItem('dependencyMapEdges');
-    const savedRelations = localStorage.getItem('dependencyMapRelations');
-    
     if (savedNodes) setNodes(JSON.parse(savedNodes));
     if (savedEdges) setEdges(JSON.parse(savedEdges));
-    if (savedRelations) setSelectedRelations(JSON.parse(savedRelations));
   }, []);
 
   // Save to local storage on change
@@ -67,13 +53,11 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     if (nodes.length > 0 || edges.length > 0) {
       localStorage.setItem('dependencyMapNodes', JSON.stringify(nodes));
       localStorage.setItem('dependencyMapEdges', JSON.stringify(edges));
-      localStorage.setItem('dependencyMapRelations', JSON.stringify(selectedRelations));
     } else if (nodes.length === 0 && edges.length === 0) {
       localStorage.removeItem('dependencyMapNodes');
       localStorage.removeItem('dependencyMapEdges');
-      // Keep relations preference even if map is cleared
     }
-  }, [nodes, edges, selectedRelations]);
+  }, [nodes, edges]);
 
   const onRemoveNode = useCallback((nodeId: string) => {
     setNodes((nds) => nds.filter((n) => n.id !== nodeId));
@@ -211,48 +195,12 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
             {dictionary.map.clearMap}
           </Button>
         )}
-        {availableRelations.length > 0 && (
-          <div className="relative">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowFilter(!showFilter)} 
-              className={`bg-white/80 backdrop-blur shadow-sm rounded-xl font-bold gap-2 transition-all ${showFilter || (selectedRelations.length > 0 && selectedRelations.length !== availableRelations.length) ? 'text-primary border-primary/50 bg-primary/5' : 'text-slate-700 hover:bg-slate-50'}`}
-            >
-              <Filter className="h-4 w-4" />
-              {dictionary.map.filterRelations}
-            </Button>
-            {showFilter && (
-              <div className={`absolute top-full mt-2 w-48 bg-white border border-slate-200 rounded-xl p-3 shadow-lg ${locale === 'he' ? 'right-0' : 'left-0'} z-50`}>
-                <div className="flex flex-col gap-2 text-start">
-                  <span className="text-xs font-bold text-slate-500 mb-1">{dictionary.map.filterRelations}</span>
-                  {availableRelations.map(rel => (
-                    <label key={rel} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer p-1.5 hover:bg-slate-50 rounded-lg" dir={locale === 'he' ? 'rtl' : 'ltr'}>
-                      <input 
-                        type="checkbox" 
-                        checked={selectedRelations.includes(rel)}
-                        onChange={() => {
-                          setSelectedRelations(prev => 
-                            prev.includes(rel) 
-                              ? prev.filter(r => r !== rel)
-                              : [...prev, rel]
-                          );
-                        }}
-                        className="rounded border-slate-300 text-primary focus:ring-primary"
-                      />
-                      <span className="truncate" title={rel}>{rel}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
-      <CourseMapContext.Provider value={{ onRemoveNode, fetchCourseData, dictionary, selectedRelations }}>
+      <CourseMapContext.Provider value={{ onRemoveNode, fetchCourseData, dictionary }}>
         <ReactFlow
           nodes={nodes}
-          edges={filteredEdges}
+          edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
