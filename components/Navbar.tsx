@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, BookOpen, Workflow } from 'lucide-react';
 import { GlobalSearch } from './GlobalSearch';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { cookies } from 'next/headers';
 import { getDictionary, Locale } from '@/lib/dictionaries';
 import { ThemeToggle } from './ThemeToggle';
+import { Button } from '@/components/ui/button';
 
 export async function Navbar() {
   const cookieStore = await cookies();
@@ -23,10 +24,16 @@ export async function Navbar() {
             { dictionary.navbar.logoText1} <span className="text-primary gap-1">{dictionary.navbar.logoText2}</span>
           </span>
         </Link>
+          <Button asChild variant="ghost" size="sm" className="gap-2 font-bold text-foreground hover:bg-primary/10 hover:text-primary transition-colors" id="tour-map-link">
+            <Link href="/map">
+              <Workflow className="h-4 w-4" />
+              <span className="hidden sm:inline-block">{dictionary.map.title}</span>
+            </Link>
+          </Button>
         <div className="flex-1 flex justify-center max-w-2xl mx-auto px-2">
           <GlobalSearch />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <LanguageSwitcher />
           <ThemeToggle />
         </div>
