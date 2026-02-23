@@ -15,6 +15,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@tanstack/react-query": "^5.90.21",
     "axios": "^1.13.5",
     "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",
@@ -22,6 +23,7 @@
     "cmdk": "^1.1.1",
     "iconv-lite": "^0.7.2",
     "lucide-react": "^0.575.0",
+    "mongodb": "^7.1.0",
     "next": "^16.1.6",
     "qs": "^6.15.0",
     "radix-ui": "^1.4.3",

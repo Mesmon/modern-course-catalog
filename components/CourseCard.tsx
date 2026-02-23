@@ -1,6 +1,9 @@
+"use client";
+
 import { Course } from '@/lib/courses';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useDictionary } from '@/components/providers/DictionaryProvider';
 
 interface CourseCardProps {
   course: Course;
@@ -8,9 +11,10 @@ interface CourseCardProps {
 
 export function CourseCard({ course }: CourseCardProps) {
   const deptId = course.id.split('.')[0];
+  const { dictionary, locale } = useDictionary();
   
   return (
-    <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 bg-white/80 backdrop-blur-sm border-slate-200 shadow-sm" dir="rtl">
+    <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-300 bg-white/80 backdrop-blur-sm border-slate-200 shadow-sm" dir={locale === 'en' ? 'ltr' : 'rtl'}>
       <CardHeader className="pb-3 gap-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-xl font-bold leading-tight break-words pl-2 text-slate-900">{course.name}</CardTitle>
@@ -26,9 +30,10 @@ export function CourseCard({ course }: CourseCardProps) {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </div>
-          זמין ב: {course.activeIn}
+          {locale === 'en' ? 'Available in' : 'זמין ב'}: {course.activeIn}
         </div>
       </CardContent>
     </Card>
   );
 }
+

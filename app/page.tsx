@@ -3,10 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Search, GraduationCap, Database, Sparkles, BookOpen, ArrowRight, Library } from 'lucide-react';
 import { redirect } from 'next/navigation';
-import { getAllCourses } from '@/lib/courses';
-import { CourseCard } from '@/components/CourseCard';
+import { CourseList } from '@/components/CourseList';
+import { cookies } from 'next/headers';
+import { getDictionary, Locale } from '@/lib/dictionaries';
 
-export default function Home() {
+export default async function Home() {
+  const cookieStore = await cookies();
+  const localeCookie = cookieStore.get('NEXT_LOCALE')?.value as Locale | undefined;
+  const locale = localeCookie === 'en' ? 'en' : 'he';
+  const dictionary = getDictionary(locale);
+
   async function handleSearch(formData: FormData) {
     'use server';
     const dept = formData.get('dept');
@@ -16,7 +22,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-background to-background" dir="rtl">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-background to-background" dir={locale === 'en' ? 'ltr' : 'rtl'}>
       {/* Decorative background elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
         <div className="absolute top-[10%] left-[5%] w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
@@ -27,14 +33,14 @@ export default function Home() {
         <div className="text-center space-y-6 mb-16 animate-in fade-in slide-in-from-bottom-4 duration-1000">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-bold mb-4">
             <Sparkles className="h-4 w-4" />
-            <span>הדרך החדשה לחקור קורסים</span>
+            <span>{dictionary.home.tagline}</span>
           </div>
           <h1 className="text-6xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none">
-            קטלוג הקורסים <br />
-            <span className="text-primary">המודרני</span>
+            {dictionary.home.title} <br />
+            <span className="text-primary">{dictionary.home.titleSuffix}</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            חיפוש מהיר, ממשק נקי וחוויית משתמש חלקה עבור קטלוג הקורסים של אוניברסיטת בן-גוריון.
+            {dictionary.home.description}
           </p>
         </div>
 
@@ -43,10 +49,10 @@ export default function Home() {
           <CardHeader className="space-y-1 p-8">
             <CardTitle className="text-3xl font-black flex items-center gap-3">
               <Search className="h-8 w-8 text-primary" />
-              חיפוש לפי מחלקה
+              {dictionary.home.searchTitle}
             </CardTitle>
             <CardDescription className="text-lg">
-              הזן את מספר המחלקה כדי לצפות בכל הקורסים המוצעים.
+              {dictionary.home.searchDesc}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-8 pt-0">
@@ -55,15 +61,15 @@ export default function Home() {
                 <Input
                   name="dept"
                   type="text"
-                  placeholder="לדוגמה: 202"
-                  className="h-14 text-xl pr-12 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all font-bold"
+                  placeholder={dictionary.home.searchPlaceholder}
+                  className={`h-14 text-xl ${locale === 'he' ? 'pr-12' : 'pl-12'} rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all font-bold`}
                   required
                 />
-                <BookOpen className="absolute right-4 top-1/2 -translate-y-1/2 h-6 w-6 text-slate-400" />
+                <BookOpen className={`absolute ${locale === 'he' ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 h-6 w-6 text-slate-400`} />
               </div>
               <Button size="lg" className="h-14 px-8 text-xl font-black rounded-xl gap-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98] transition-all">
-                חפש עכשיו
-                <ArrowRight className="h-6 w-6 rotate-180" />
+                {dictionary.home.searchBtn}
+                <ArrowRight className={`h-6 w-6 ${locale === 'he' ? 'rotate-180' : ''}`} />
               </Button>
             </form>
           </CardContent>
@@ -71,9 +77,9 @@ export default function Home() {
 
         <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
             {[
-                { title: 'מהירות שיא', desc: 'גישה מיידית לנתוני קורסים ללא המתנה לממשקים ישנים.', icon: Sparkles },
-                { title: 'שימור נתונים', desc: 'המערכת שומרת נתונים באופן חכם לשימוש עתידי.', icon: Database },
-                { title: 'עיצוב מודרני', desc: 'ממשק נקי ומותאם לכל מכשיר, עם תמיכה מלאה בעברית.', icon: GraduationCap },
+                { title: dictionary.home.features.speed.title, desc: dictionary.home.features.speed.desc, icon: Sparkles },
+                { title: dictionary.home.features.data.title, desc: dictionary.home.features.data.desc, icon: Database },
+                { title: dictionary.home.features.design.title, desc: dictionary.home.features.design.desc, icon: GraduationCap },
             ].map((feature, i) => (
                 <div key={i} className="flex flex-col items-center text-center p-6 rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-shadow">
                     <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center mb-4">
@@ -90,15 +96,14 @@ export default function Home() {
             <div className="bg-primary/10 p-3 rounded-2xl">
               <Library className="h-8 w-8 text-primary" />
             </div>
-            <h2 className="text-4xl font-black text-slate-900 tracking-tight">קטלוג הקורסים המלא</h2>
+            <h2 className="text-4xl font-black text-slate-900 tracking-tight">{dictionary.home.fullCatalog}</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {getAllCourses().map(course => (
-              <CourseCard key={course.id} course={course} />
-            ))}
+            <CourseList />
           </div>
         </div>
       </main>
     </div>
   );
 }
+

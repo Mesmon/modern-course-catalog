@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { FileText, ArrowLeft, Clock, Award, BookOpen, GraduationCap, Link as LinkIcon, Download, Info, Layers } from 'lucide-react';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
+import { getDictionary, Locale } from '@/lib/dictionaries';
 
 export default async function CoursePage({ 
   params, 
@@ -12,6 +14,11 @@ export default async function CoursePage({
   params: Promise<{ id: string }>,
   searchParams: Promise<{ dept?: string, deg?: string, year?: string, sem?: string }>
 }) {
+  const cookieStore = await cookies();
+  const localeCookie = cookieStore.get('NEXT_LOCALE')?.value as Locale | undefined;
+  const locale = localeCookie === 'en' ? 'en' : 'he';
+  const dictionary = getDictionary(locale);
+
   const { id } = await params;
   const sParams = await searchParams;
   
@@ -24,21 +31,21 @@ export default async function CoursePage({
   });
 
   return (
-    <div className="min-h-screen bg-slate-50/30" dir="rtl">
+    <div className="min-h-screen bg-slate-50/30" dir={locale === 'en' ? 'ltr' : 'rtl'}>
       {/* Dynamic Header */}
       <header className="border-b bg-white sticky top-0 z-50">
         <div className="container max-w-6xl h-20 flex items-center px-4 justify-between">
           <Link href={`/departments/${sParams.dept || '202'}`} className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-bold group">
             <div className="p-1.5 rounded-full group-hover:bg-primary/10 transition-colors">
-              <ArrowLeft className="h-5 w-5 rotate-180" />
+              <ArrowLeft className={`h-5 w-5 ${locale === 'he' ? 'rotate-180' : ''}`} />
             </div>
-            <span>חזרה לרשימה</span>
+            <span>{dictionary.department.back}</span>
           </Link>
           <div className="flex items-center gap-4">
              {course.syllabusParams && (
                 <Button variant="outline" className="hidden sm:flex rounded-xl font-bold border-primary/20 hover:bg-primary/5 text-primary">
-                   <Download className="ml-2 h-4 w-4" />
-                   סילבוס
+                   <Download className={`h-4 w-4 ${locale === 'he' ? 'ml-2' : 'mr-2'}`} />
+                   {locale === 'en' ? 'Syllabus' : 'סילבוס'}
                 </Button>
              )}
              <div className="h-8 w-[1px] bg-slate-200 hidden sm:block mx-2" />
@@ -60,7 +67,7 @@ export default async function CoursePage({
                     {course.semesterName}
                   </Badge>
                   <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                  <span className="text-slate-500 font-bold">מדעי המחשב</span>
+                  <span className="text-slate-500 font-bold">{locale === 'en' ? 'Computer Science' : 'מדעי המחשב'}</span>
                </div>
                <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-[1.1] tracking-tighter">
                  {course.name}
@@ -70,9 +77,9 @@ export default async function CoursePage({
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-in fade-in duration-1000">
               {[
-                { label: 'נקודות זכות', val: course.points, icon: Award, color: 'text-blue-600', bg: 'bg-blue-50' },
-                { label: 'שעות שבועיות', val: course.hours, icon: Clock, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                { label: 'רמת תואר', val: 'ראשון', icon: GraduationCap, color: 'text-purple-600', bg: 'bg-purple-50' }
+                { label: dictionary.course.points, val: course.points, icon: Award, color: 'text-blue-600', bg: 'bg-blue-50' },
+                { label: dictionary.course.hours, val: course.hours, icon: Clock, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                { label: locale === 'en' ? 'Degree Level' : 'רמת תואר', val: locale === 'en' ? 'Bachelor' : 'ראשון', icon: GraduationCap, color: 'text-purple-600', bg: 'bg-purple-50' }
               ].map((stat, i) => (
                 <Card key={i} className="border-none shadow-sm ring-1 ring-slate-100 bg-white group hover:ring-primary/30 transition-all duration-300">
                   <CardContent className="p-6">
@@ -93,14 +100,14 @@ export default async function CoursePage({
                     <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white">
                         <FileText className="h-5 w-5" />
                     </div>
-                    תקציר הקורס
+                    {dictionary.course.description}
                   </CardTitle>
                </CardHeader>
                <CardContent className="p-10">
                   <div className="relative">
-                    <div className="absolute -right-4 top-0 w-1 h-full bg-primary/10 rounded-full" />
+                    <div className={`absolute ${locale === 'he' ? '-right-4' : '-left-4'} top-0 w-1 h-full bg-primary/10 rounded-full`} />
                     <p className="text-xl leading-[1.8] text-slate-700 font-medium text-justify">
-                      {course.abstract}
+                      {course.abstract || (locale === 'en' ? 'No abstract available.' : 'לא נמצא תקציר לקורס זה.')}
                     </p>
                   </div>
                </CardContent>
@@ -114,29 +121,29 @@ export default async function CoursePage({
                 <CardHeader>
                     <CardTitle className="text-xl font-bold flex items-center gap-2">
                         <Info className="h-5 w-5 text-primary" />
-                        מידע מהיר
+                        {locale === 'en' ? 'Quick Info' : 'מידע מהיר'}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6 pt-0">
                     <div className="flex justify-between items-center py-4 border-b border-white/10">
-                        <span className="text-slate-400 font-bold">מזהה קורס</span>
+                        <span className="text-slate-400 font-bold">{locale === 'en' ? 'Course ID' : 'מזהה קורס'}</span>
                         <span className="font-mono text-primary">{id}</span>
                     </div>
                     {course.syllabusParams && (
                          <Button className="w-full h-14 bg-primary hover:bg-primary/90 rounded-2xl text-lg font-black gap-3 shadow-lg shadow-primary/30">
                             <Download className="h-5 w-5" />
-                            צפה בסילבוס המלא
+                            {locale === 'en' ? 'View Full Syllabus' : 'צפה בסילבוס המלא'}
                          </Button>
                     )}
                 </CardContent>
             </Card>
 
             {/* Related Courses Section */}
-            {course.relatedCourses.length > 0 && (
+            {course.relatedCourses && course.relatedCourses.length > 0 && (
               <div className="space-y-4">
                 <h3 className="text-xl font-black flex items-center gap-2 text-slate-800 px-2">
                     <Layers className="h-5 w-5 text-primary" />
-                    קורסים קשורים
+                    {locale === 'en' ? 'Related Courses' : 'קורסים קשורים'}
                 </h3>
                 <div className="space-y-3">
                   {course.relatedCourses.map((rel, idx) => (
@@ -175,3 +182,5 @@ export default async function CoursePage({
     </div>
   );
 }
+
+
