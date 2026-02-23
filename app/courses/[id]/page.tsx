@@ -123,6 +123,53 @@ export default async function CoursePage({
               ))}
             </div>
 
+            {/* Mobile Quick Info Card */}
+            <Card className="lg:hidden border-none shadow-lg bg-slate-900 text-white rounded-[2rem]">
+                <CardHeader>
+                    <CardTitle className="text-xl font-bold flex items-center gap-2">
+                        <Info className="h-5 w-5 text-primary" />
+                        {dictionary.course.quickInfo}
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6 pt-0">
+                    <div className="pt-2 pb-5 border-b border-white/10 space-y-3">
+                        <div className="text-slate-400 font-bold">{dictionary.course.courseId}</div>
+                        <CopyCourseId id={fullId} className="w-full h-14 bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/10 rounded-2xl flex items-center justify-center gap-3 text-2xl font-black font-mono text-white transition-all shadow-inner" iconClassName="h-6 w-6" />
+                    </div>
+                    {course.type && (
+                        <div className="flex justify-between items-center py-4 border-b border-white/10">
+                            <span className="text-slate-400 font-bold">{dictionary.course.type}</span>
+                            <span className="text-white">{course.type}</span>
+                        </div>
+                    )}
+                    {course.exam && (
+                        <div className="flex justify-between items-center py-4 border-b border-white/10">
+                            <span className="text-slate-400 font-bold">{dictionary.course.exam}</span>
+                            <span className="text-white">{course.exam}</span>
+                        </div>
+                    )}
+                    {course.gradeType && (
+                        <div className="flex justify-between items-center py-4 border-b border-white/10">
+                            <span className="text-slate-400 font-bold">{dictionary.course.gradeType}</span>
+                            <span className="text-white">{course.gradeType}</span>
+                        </div>
+                    )}
+                    {syllabusLink ? (
+                         <Button asChild className="w-full h-14 bg-primary hover:bg-primary/90 rounded-2xl text-lg font-black gap-3 shadow-lg shadow-primary/30">
+                           <a href={syllabusLink} target="_blank" rel="noopener noreferrer" download>
+                             <Download className="h-5 w-5" />
+                             {dictionary.course.viewFullSyllabus}
+                            </a>
+                          </Button>
+                     ) : (
+                          <Button disabled className="w-full h-14 bg-slate-200 text-slate-400 rounded-2xl text-lg font-black gap-3 cursor-not-allowed">
+                             <Download className="h-5 w-5" />
+                             {dictionary.course.syllabusNotAvailable}
+                          </Button>
+                    )}
+                </CardContent>
+            </Card>
+
             {/* Abstract Section */}
             <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden bg-white">
                <CardHeader className="p-8 pb-4 border-b border-slate-50 flex flex-row items-center justify-between">
@@ -147,7 +194,7 @@ export default async function CoursePage({
           {/* Sidebar (Right) */}
           <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-700">
             {/* Quick Info Card */}
-            <Card className="border-none shadow-lg bg-slate-900 text-white rounded-[2rem]">
+            <Card className="hidden lg:block border-none shadow-lg bg-slate-900 text-white rounded-[2rem]">
                 <CardHeader>
                     <CardTitle className="text-xl font-bold flex items-center gap-2">
                         <Info className="h-5 w-5 text-primary" />
