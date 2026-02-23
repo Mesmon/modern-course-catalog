@@ -63,8 +63,40 @@ export default async function DepartmentPage({
                  <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{dictionary.department.degree}</label>
                     <div className="flex flex-wrap gap-2">
-                        <Badge className="bg-primary hover:bg-primary cursor-pointer">{dictionary.department.bachelor}</Badge>
-                        <Badge variant="outline" className="hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">{dictionary.department.master}</Badge>
+                        <Link href={`/departments/${dept}?deg=1&year=${year}&sem=${semester}`}>
+                          <Badge variant={degree === '1' ? 'default' : 'outline'} className={degree === '1' ? 'bg-primary hover:bg-primary cursor-pointer' : 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'}>
+                            {dictionary.department.bachelor}
+                          </Badge>
+                        </Link>
+                        <Link href={`/departments/${dept}?deg=2&year=${year}&sem=${semester}`}>
+                          <Badge variant={degree === '2' ? 'default' : 'outline'} className={degree === '2' ? 'bg-primary hover:bg-primary cursor-pointer' : 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'}>
+                            {dictionary.department.master}
+                          </Badge>
+                        </Link>
+                    </div>
+                 </div>
+                 <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{dictionary.department.yearPrefix || 'Year'}</label>
+                    <div className="flex flex-wrap gap-2">
+                        {[2026, 2025, 2024, 2023].map(y => (
+                          <Link key={y} href={`/departments/${dept}?deg=${degree}&year=${y}&sem=${semester}`}>
+                            <Badge variant={y.toString() === year ? 'default' : 'outline'} className={y.toString() === year ? 'bg-primary hover:bg-primary cursor-pointer' : 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'}>
+                              {y}
+                            </Badge>
+                          </Link>
+                        ))}
+                    </div>
+                 </div>
+                 <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{dictionary.department.semesterPrefix || 'Semester'}</label>
+                    <div className="flex flex-wrap gap-2">
+                        {[1, 2, 3].map(s => (
+                          <Link key={s} href={`/departments/${dept}?deg=${degree}&year=${year}&sem=${s}`}>
+                            <Badge variant={s.toString() === semester ? 'default' : 'outline'} className={s.toString() === semester ? 'bg-primary hover:bg-primary cursor-pointer' : 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'}>
+                              {s}
+                            </Badge>
+                          </Link>
+                        ))}
                     </div>
                  </div>
               </div>

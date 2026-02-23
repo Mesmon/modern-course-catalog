@@ -6,7 +6,7 @@ import { FileText, ArrowLeft, Clock, Award, BookOpen, GraduationCap, Link as Lin
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { getDictionary, Locale } from '@/lib/dictionaries';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { CopyCourseId } from '@/components/CopyCourseId';
 
 export default async function CoursePage({ 
@@ -34,6 +34,19 @@ export default async function CoursePage({
 
   if (!course) {
     return notFound();
+  }
+
+  const reqYear = sParams.year || '2026';
+  const reqSem = sParams.sem || '2';
+  
+  if (course.year !== reqYear || course.semester !== reqSem) {
+    const deptP = sParams.dept || '202';
+    const degP = sParams.deg || '1';
+    /* 
+       We return standard redirect so the URL matches the data exactly.
+       This enables accurate UI badge highlighting and syllabus generation.
+    */
+    redirect(`/courses/${id}?dept=${deptP}&deg=${degP}&year=${course.year}&sem=${course.semester}`);
   }
 
   const fullId = `${sParams.dept || '202'}.${sParams.deg || '1'}.${id}`;
@@ -239,6 +252,35 @@ export default async function CoursePage({
                     )}
                 </CardContent>
             </Card>
+
+            {/* Available Semesters Section */}
+            {course.offerings && course.offerings.length > 0 && (
+              <Card className="border-none shadow-sm ring-1 ring-slate-100 dark:ring-slate-800 bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
+                <CardHeader className="bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 py-4">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-slate-200">
+                    <Clock className="h-5 w-5 text-primary" />
+                    {dictionary.course.availableIn}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="flex flex-wrap gap-2">
+                    {course.offerings.map((off: any, idx: number) => {
+                      const isActive = off.year === (sParams.year || '2026') && off.semester === (sParams.sem || '2');
+                      return (
+                        <Link 
+                          key={idx}
+                          href={`/courses/${id}?dept=${sParams.dept || '202'}&deg=${sParams.deg || '1'}&year=${off.year}&sem=${off.semester}`}
+                        >
+                          <Badge variant={isActive ? 'default' : 'outline'} className={isActive ? 'bg-primary hover:bg-primary cursor-pointer' : 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'}>
+                            {dictionary.course.semester} {off.semester} | {off.year}
+                          </Badge>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Lecturers Section */}
             {course.lecturers && course.lecturers.length > 0 && (

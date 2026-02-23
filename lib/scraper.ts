@@ -4,7 +4,7 @@ import { CourseDetail, RelatedCourse } from '@/types/course';
 
 export async function fetchCourseList(dept: string, degree: string = '1', year: string = '2026', semester: string = '2') {
   const url = 'https://bgu4u.bgu.ac.il/pls/scwp/!app.ann';
-  const body = `rc_rowid=&lang=he&st=s&step=2&oc_course_name=&on_course_ins=0&on_course_ins_list=0&on_course_department=${dept}&on_course_department_list=${dept}&on_course_degree_level=${degree}&on_course_degree_level_list=${degree}&on_course=&on_semester=&on_year=0&on_hours=&on_credit_points=&oc_lecturer_first_name=&oc_lecturer_last_name=&on_common=&on_lang=&oc_end_time=&oc_start_time=&on_campus=`;
+  const body = `rc_rowid=&lang=he&st=s&step=2&oc_course_name=&on_course_ins=0&on_course_ins_list=0&on_course_department=${dept}&on_course_department_list=${dept}&on_course_degree_level=${degree}&on_course_degree_level_list=${degree}&on_course=&on_semester=${semester}&on_year=${year}&on_hours=&on_credit_points=&oc_lecturer_first_name=&oc_lecturer_last_name=&on_common=&on_lang=&oc_end_time=&oc_start_time=&on_campus=`;
 
   const response = await fetch(url, {
     method: 'POST',

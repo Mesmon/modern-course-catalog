@@ -24,4 +24,7 @@ export interface CourseDetail {
   relatedCourses: RelatedCourse[];
   semesterName: string;
   lecturers: string[];
+  year?: string;
+  semester?: string;
+  offerings?: { year: string; semester: string; activeIn: string; name: string }[];
 }
