@@ -220,7 +220,14 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
           <CommandInput placeholder={dictionary.map.searchPlaceholder} className={locale === 'he' ? 'text-right' : 'text-left'} />
         </div>
         <CommandList className={locale === 'he' ? 'text-right' : 'text-left'} dir={locale === 'en' ? 'ltr' : 'rtl'}>
-          <CommandEmpty>{dictionary.navbar.noResults}</CommandEmpty>
+          <CommandEmpty>
+            <div className="flex flex-col items-center justify-center text-center gap-2">
+              <p>{dictionary.navbar.noResults}</p>
+              <p className="text-sm text-muted-foreground whitespace-normal leading-tight mx-auto max-w-[300px]">
+                {dictionary.map.suggestDepartment}
+              </p>
+            </div>
+          </CommandEmpty>
           <CommandGroup heading={dictionary.home.fullCatalog}>
             {courses.map((course: any) => (
               <CommandItem
