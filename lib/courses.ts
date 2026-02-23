@@ -52,12 +52,12 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
 
   const existingCourse = await collection.findOne({ id, year, semester });
   
-  if (existingCourse) {
+  if (existingCourse && Array.isArray(existingCourse.relatedCourses)) {
     const { _id, ...rest } = existingCourse;
     return rest as CourseDetail;
   }
 
-  console.log(`Course ${id} not found in DB, scraping...`);
+  console.log(`Course ${id} not found complete in DB, scraping...`);
   try {
     const courseDetail = await fetchCourseDetail({
       courseId: id,
@@ -68,12 +68,18 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
     });
 
     if (courseDetail) {
-      await collection.insertOne({
-        ...courseDetail,
-        year,
-        semester,
-        lastUpdated: new Date()
-      });
+      await collection.updateOne(
+        { id, year, semester },
+        { 
+          $set: {
+            ...courseDetail,
+            year,
+            semester,
+            lastUpdated: new Date()
+          }
+        },
+        { upsert: true }
+      );
     }
     return courseDetail;
   } catch (err) {

@@ -120,21 +120,27 @@ export async function fetchCourseDetail(params: {
       const courseId = prevText.match(/\d{3}\.\d\.\d{4}/)?.[0] || '';
       
       const nextText = (node.next as any)?.data || '';
-      const relation = nextText.split('\n')[0].trim().replace(/^&nbsp;|\s+/g, ' ');
+      // Sometimes there's another node or just empty space, we need a robust regex to clean up relation
+      const relationRaw = nextText.split('\n')[0].trim();
+      // Relation text might be directly after the </a> tag. Clean up &nbsp; and spacing:
+      const relation = relationRaw.replace(/^&nbsp;|\s+/g, ' ').replace(/&nbsp;/g, ' ').trim();
 
       if (courseId && paramsArr) {
-        courseDetail.relatedCourses.push({
-          id: courseId,
-          name,
-          relation,
-          params: {
-            dept: paramsArr[0],
-            degree: paramsArr[1],
-            course: paramsArr[2],
-            year: paramsArr[3],
-            semester: paramsArr[4],
-          }
-        });
+        // Also check if valid JS params were extracted (paramsArr is not null and has length)
+        if (paramsArr.length >= 5) {
+          courseDetail.relatedCourses.push({
+            id: courseId,
+            name,
+            relation,
+            params: {
+              dept: paramsArr[0],
+              degree: paramsArr[1],
+              course: paramsArr[2],
+              year: paramsArr[3],
+              semester: paramsArr[4],
+            }
+          });
+        }
       }
     }
   });
