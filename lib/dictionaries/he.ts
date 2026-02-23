@@ -110,5 +110,46 @@ export const he: Dictionary = {
     removeFromMap: 'הסר',
     relatedCourses: 'קורסים קשורים',
     addToMap: 'הוסף למפה'
+  },
+  onboarding: {
+    title: 'ברוכים הבאים לקטלוג הקורסים של בן גוריון! 👋',
+    description: 'בנינו את המערכת כדי להפוך את חיפוש הקורסים למהיר וקל יותר. הנה מה שאפשר לעשות:',
+    features: {
+      search: {
+        title: 'חיפוש מהיר במיוחד',
+        desc: 'מצאו כל קורס באופן מיידי ללא המתנה למערכות הישנות.'
+      },
+      map: {
+        title: 'מפת תלויות אינטראקטיבית',
+        desc: 'ויזואליזציה של דרישות קדם וקורסים קשורים במפת צמתים יפהפייה.'
+      },
+      offline: {
+        title: 'שמירה חכמה',
+        desc: 'הנתונים נשמרים מקומית כך שהם נטענים מיד בביקור הבא שלכם.'
+      }
+    },
+    getStarted: 'הבנתי, בואו נתחיל!'
+  },
+  tour: {
+    next: 'הבא',
+    prev: 'הקודם',
+    done: 'סיום',
+    progressText: '{{current}} מתוך {{total}}',
+    home: {
+      searchTitle: 'חיפוש קורסים מהיר',
+      searchDesc: 'הקלידו שם מחלקה או מספר כאן כדי לראות מיד את כל הקורסים הזמינים.',
+      mapTitle: 'מפה אינטראקטיבית',
+      mapDesc: 'לחצו כאן כדי לראות ויזואליזציה של דרישות הקדם ואיך קורסים מתקשרים זה לזה.',
+      catalogTitle: 'קטלוג מלא',
+      catalogDesc: 'עיינו ברשימה המלאה של הקורסים הזמינים וסננו אותם לפי הצורך.'
+    },
+    map: {
+      searchTitle: 'הוספה למפה',
+      searchDesc: 'חפשו מזהה קורס או שם כדי להוסיף אותו למפת התלויות שלכם.',
+      addTitle: 'אישור הוספה',
+      addDesc: 'לחצו על כפתור זה כדי להציב את הקורס הנבחר על לוח העבודה.',
+      canvasTitle: 'לוח עבודה (Canvas)',
+      canvasDesc: 'גררו קורסים, התקרבו/התרחקו, ולחצו על צמתים כדי לראות מידע מפורט וקשרים.'
+    }
   }
 };

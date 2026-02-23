@@ -8,6 +8,7 @@ import { DictionaryProvider } from "@/components/providers/DictionaryProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { Toaster } from "@/components/ui/sonner";
 import NextTopLoader from 'nextjs-toploader';
+import { OnboardingDialog } from "@/components/OnboardingDialog";
 
 
 const inter = Inter({ subsets: ["latin"] });
@@ -32,8 +33,8 @@ export default async function RootLayout({
   const dir = locale === 'he' ? 'rtl' : 'ltr';
 
   return (
-    <html lang={locale} dir={dir}>
-      <body className={`${inter.className} min-h-screen bg-slate-50 antialiased selection:bg-primary/20`}>
+    <html lang={locale} dir={dir} suppressHydrationWarning>
+      <body className={`${inter.className} min-h-screen bg-slate-50 antialiased selection:bg-primary/20`} suppressHydrationWarning>
         <DictionaryProvider dictionary={dictionary} locale={locale}>
           <QueryProvider>
             <NextTopLoader 
@@ -49,6 +50,7 @@ export default async function RootLayout({
             />
             <Navbar />
             {children}
+            <OnboardingDialog />
 
             <Toaster 
               position="top-center" 

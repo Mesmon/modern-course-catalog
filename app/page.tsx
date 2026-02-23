@@ -9,6 +9,7 @@ import { cookies } from 'next/headers';
 import { getDictionary, Locale } from '@/lib/dictionaries';
 
 import { DepartmentSearch } from '@/components/DepartmentSearch';
+import { TourGuideClient } from '@/components/TourGuideClient';
 
 export default async function Home() {
   const cookieStore = await cookies();
@@ -18,6 +19,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-background to-background" dir={locale === 'en' ? 'ltr' : 'rtl'}>
+      <TourGuideClient page="home" />
       {/* Decorative background elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
         <div className="absolute top-[10%] left-[5%] w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
@@ -37,7 +39,7 @@ export default async function Home() {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             {dictionary.home.description}
           </p>
-          <div className="pt-4">
+          <div className="pt-4" id="tour-map-link">
             <Button asChild size="lg" className="rounded-2xl font-black text-lg h-14 px-8 shadow-lg shadow-primary/20 gap-3">
               <Link href="/map">
                 <BookOpen className="h-5 w-5" />
@@ -47,7 +49,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <Card className="w-full max-w-2xl shadow-2xl shadow-primary/10 border-primary/10 backdrop-blur-sm bg-white/80">
+        <Card className="w-full max-w-2xl shadow-2xl shadow-primary/10 border-primary/10 backdrop-blur-sm bg-white/80" id="tour-search">
           <div className="h-2 bg-primary" />
           <CardHeader className="space-y-1 p-8">
             <CardTitle className="text-3xl font-black flex items-center gap-3">
@@ -80,7 +82,7 @@ export default async function Home() {
             ))}
         </div>
 
-        <div className="mt-32 w-full animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
+        <div className="mt-32 w-full animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300" id="tour-full-catalog">
           <div className="flex items-center gap-4 mb-8">
             <div className="bg-primary/10 p-3 rounded-2xl">
               <Library className="h-8 w-8 text-primary" />
