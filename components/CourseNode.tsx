@@ -3,13 +3,13 @@ import { BookOpen, AlertCircle, Trash2 } from 'lucide-react';
 import { useState, useContext, useMemo } from 'react';
 import { CourseMapContext } from './DependencyMap';
 
-export function CourseNode({ id, data, selected, xPos, yPos }: any) {
+export function CourseNode({ id, data, selected, xPos, yPos, targetPosition = Position.Left, sourcePosition = Position.Right }: any) {
   const context = useContext(CourseMapContext);
   const isHebrew = data.locale === 'he';
   const [isHovered, setIsHovered] = useState(false);
   
   if (!context) return null;
-  const { onRemoveNode, fetchCourseData, dictionary, selectedRelations } = context;
+  const { onRemoveNode, fetchCourseData, updateCourseTerm, dictionary, selectedRelations } = context;
 
   const uniqueRelatedCourses = useMemo(() => {
     return data.relatedCourses?.filter((v: any, i: number, a: any[]) => a.findIndex(t => t.id === v.id) === i) || [];
@@ -24,7 +24,7 @@ export function CourseNode({ id, data, selected, xPos, yPos }: any) {
   return (
     <div
       dir={isHebrew ? 'rtl' : 'ltr'}
-      className={`bg-white dark:bg-slate-900 rounded-xl shadow-sm ring-1 flex flex-col p-3 min-w-[200px] transition-all relative z-10
+      className={`bg-white dark:bg-slate-900 rounded-xl shadow-sm ring-1 flex flex-col p-3 w-[280px] transition-all relative z-10
         ${selected ? 'ring-primary shadow-md z-50' : 'ring-slate-200 dark:ring-slate-800'}
         ${data.loading ? 'opacity-70 animate-pulse' : ''}
         ${isHovered ? 'shadow-lg z-50 scale-105' : ''}
@@ -34,8 +34,8 @@ export function CourseNode({ id, data, selected, xPos, yPos }: any) {
     >
       <Handle
         type="target"
-        position={Position.Top}
-        className="w-3 h-3 bg-slate-300 dark:bg-slate-700 ring-2 ring-white dark:ring-slate-900"
+        position={targetPosition}
+        className={`w-3 h-3 ring-2 ring-white dark:ring-slate-900 ${targetPosition === Position.Left ? '-left-1.5' : '-top-1.5'} bg-slate-300 dark:bg-slate-700`}
       />
       
       <div className="flex items-center gap-2 mb-2 pr-6">
@@ -46,7 +46,7 @@ export function CourseNode({ id, data, selected, xPos, yPos }: any) {
           <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">
             {data.dept}.{data.degree}.{data.courseId}
           </span>
-          <span className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate" title={data.name}>
+          <span className="font-bold text-sm leading-tight text-slate-800 dark:text-slate-200 text-wrap" title={data.name}>
             {data.name}
           </span>
         </div>
@@ -63,7 +63,7 @@ export function CourseNode({ id, data, selected, xPos, yPos }: any) {
       {data.stats && (
         <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium">
           <span className="bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded">{data.stats.points} {dictionary?.course?.points}</span>
-          <span className="bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded">{data.type}</span>
+          <span className="bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded truncate max-w-[120px]" title={data.type}>{data.type}</span>
         </div>
       )}
 
@@ -89,8 +89,31 @@ export function CourseNode({ id, data, selected, xPos, yPos }: any) {
                <span>{data.stats?.points || '-'}</span>
             </div>
             <div className="flex flex-col">
-               <span className="text-slate-400">{dictionary?.course?.type}</span>
-               <span>{data.type || '-'}</span>
+               <span className="text-slate-400">{dictionary?.course?.activeIn || dictionary?.course?.type}</span>
+               {data.offerings && data.offerings.length > 0 ? (
+                 <select
+                   value={`${data.year}-${data.semester}`}
+                   onChange={(e) => {
+                     e.stopPropagation();
+                     const [y, s] = e.target.value.split('-');
+                     updateCourseTerm?.(data.courseId, data.dept, data.degree, y, s, data.name);
+                   }}
+                   className="bg-slate-800 dark:bg-slate-800 px-1 py-0.5 mt-0.5 rounded border border-slate-700 dark:border-slate-700 outline-none cursor-pointer hover:bg-slate-700 dark:hover:bg-slate-700 w-full text-xs text-slate-200"
+                   title={dictionary?.course?.activeIn || 'Select Term'}
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     // Prevents the hover card from accidentally closing or jumping
+                   }}
+                 >
+                   {data.offerings.map((off: any) => (
+                     <option key={`${off.year}-${off.semester}`} value={`${off.year}-${off.semester}`}>
+                       {off.activeIn}
+                     </option>
+                   ))}
+                 </select>
+               ) : (
+                 <span>{data.type || `${data.year} סמסטר ${data.semester}`}</span>
+               )}
             </div>
           </div>
           <div className="mt-2 text-xs bg-white/10 p-2 rounded-lg text-slate-300">
@@ -131,8 +154,8 @@ export function CourseNode({ id, data, selected, xPos, yPos }: any) {
 
       <Handle
         type="source"
-        position={Position.Bottom}
-        className="w-3 h-3 bg-primary ring-2 ring-white dark:ring-slate-900"
+        position={sourcePosition}
+        className={`w-3 h-3 ring-2 ring-white dark:ring-slate-900 ${sourcePosition === Position.Right ? '-right-1.5' : '-bottom-1.5'} bg-primary`}
       />
     </div>
   );

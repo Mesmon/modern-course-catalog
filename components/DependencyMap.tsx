@@ -4,12 +4,73 @@ import React, { useState, useCallback, useEffect, createContext, useRef } from '
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { ReactFlow, MiniMap, Controls, Background, useNodesState, useEdgesState, addEdge, Connection, Edge, Node, MarkerType } from '@xyflow/react';
+import { ReactFlow, MiniMap, Controls, Background, useNodesState, useEdgesState, addEdge, Connection, Edge, Node, MarkerType, Position } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { CourseNode } from './CourseNode';
 import { useAllCourses } from '@/hooks/useCourses';
-import { Plus, Trash2, Filter, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Filter, Loader2, Workflow } from 'lucide-react';
 import { Button } from './ui/button';
+
+const nodeWidth = 320;
+const nodeHeight = 150;
+const columnGap = 100;
+const rowGap = 50;
+
+const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
+  // 1. Group nodes by Term (Year + Semester)
+  const columns: Record<string, Node[]> = {};
+  
+  nodes.forEach(node => {
+    // Note: since React Flow data only gives us courseId directly, we must try to extract year/sem
+    // Actually, fetchCourseData includes `year` and `semester` inside the params or api response! 
+    // Wait, newNode data currently doesn't store year/semester. Let's default bucket them for now,
+    // or parse them if available. We will need to update fetchCourseData to store year/semester in data.
+    const year = node.data.year || 2026;
+    const sem = node.data.semester || 2;
+    const termKey = `${year}-${sem}`;
+    
+    if (!columns[termKey]) columns[termKey] = [];
+    columns[termKey].push(node);
+  });
+
+  // 2. Sort columns chronologically (Left to Right)
+  // Semesters: 1 (Fall), 2 (Spring), 3 (Summer).
+  const sortedTermKeys = Object.keys(columns).sort((a, b) => {
+    const [yearA, semA] = a.split('-').map(Number);
+    const [yearB, semB] = b.split('-').map(Number);
+    if (yearA !== yearB) return yearA - yearB;
+    return semA - semB;
+  });
+
+  // 3. Assign X, Y positions based on columns
+  let currentX = 0;
+  
+  const newNodes = nodes.map(n => ({...n})); // Clone
+  
+  sortedTermKeys.forEach((termKey) => {
+    const colNodes = columns[termKey];
+    
+    // Sort nodes vertically within the column (alphabetically by name for consistency)
+    colNodes.sort((a, b) => (a.data.name as string).localeCompare(b.data.name as string));
+    
+    let currentY = 0;
+    colNodes.forEach((node) => {
+      // Find the cloned node to update
+      const targetNode = newNodes.find(n => n.id === node.id);
+      if (targetNode) {
+        targetNode.targetPosition = Position.Left;
+        targetNode.sourcePosition = Position.Right;
+        targetNode.position = { x: currentX, y: currentY };
+      }
+      currentY += nodeHeight + rowGap;
+    });
+    
+    currentX += nodeWidth + columnGap;
+  });
+
+  return { nodes: newNodes, edges };
+};
+
 import {
   Dialog,
   DialogContent,
@@ -88,9 +149,32 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     const savedEdges = localStorage.getItem('dependencyMapEdges');
     const savedRelations = localStorage.getItem('dependencyMapRelations');
     
-    if (savedNodes) setNodes(JSON.parse(savedNodes));
-    if (savedEdges) setEdges(JSON.parse(savedEdges));
+    let initialNodes = [];
+    let initialEdges = [];
+    
+    if (savedNodes) initialNodes = JSON.parse(savedNodes);
+    if (savedEdges) {
+      // Re-apply bezier and colors to cached edges
+      initialEdges = JSON.parse(savedEdges).map((e: any) => {
+        const isPreReq = e.label?.includes('קדם') || e.label?.includes('prerequisite') || false;
+        const isCoreq = e.label?.includes('צמוד') || e.label?.includes('corequisite') || false;
+        const strokeColor = isPreReq ? '#ef4444' : isCoreq ? '#eab308' : '#3b82f6';
+        
+        return {
+          ...e,
+          type: 'default',
+          markerEnd: { type: MarkerType.ArrowClosed, color: strokeColor },
+          style: { stroke: strokeColor, strokeWidth: 3 },
+        };
+      });
+    }
     if (savedRelations) setSelectedRelations(JSON.parse(savedRelations));
+    
+    if (initialNodes.length > 0) {
+      const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(initialNodes, initialEdges);
+      setNodes(layoutedNodes);
+      setEdges(layoutedEdges);
+    }
   }, []);
 
   // Fetch departments for autocomplete
@@ -178,38 +262,41 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
   }, [setNodes, setEdges]);
 
   const onConnect = useCallback(
-    (params: Connection | Edge) => setEdges((eds) => addEdge({ ...params, type: 'smoothstep', animated: true, markerEnd: { type: MarkerType.ArrowClosed } }, eds)),
+    (params: Connection | Edge) => setEdges((eds) => addEdge({ ...params, type: 'default', animated: true, markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' }, style: { stroke: '#3b82f6', strokeWidth: 3 } } as any, eds)),
     [setEdges],
   );
 
-  const fetchCourseData = async (courseId: string, dept: string, degree: string, year: string, semester: string, name: string, sourcePos?: {x: number, y: number}) => {
+  const fetchCourseData = async (courseId: string, dept: string, degree: string, year: string, semester: string, name: string, sourcePos?: {x: number, y: number}, forceUpdate = false) => {
     // Add pending node
     const newNodeId = courseId;
-    if (nodes.some(n => n.id === newNodeId)) return; // Already exists
+    if (!forceUpdate && nodes.some(n => n.id === newNodeId)) return; // Already exists
 
-    const getNewPosition = () => {
-      if (sourcePos) {
-        // Place relative to source: slight random X offset, fixed Y offset (below)
-        return { 
-          x: sourcePos.x + (Math.random() * 200 - 100), 
-          y: sourcePos.y + 200 
-        };
-      }
-      return { x: Math.random() * 300 + 100, y: Math.random() * 300 + 100 };
-    };
+    if (!forceUpdate) {
+      const getNewPosition = () => {
+        if (sourcePos) {
+          // Place relative to source: slight random X offset, fixed Y offset (below)
+          return { 
+            x: sourcePos.x + (Math.random() * 200 - 100), 
+            y: sourcePos.y + 200 
+          };
+        }
+        return { x: Math.random() * 300 + 100, y: Math.random() * 300 + 100 };
+      };
 
-    const newNode = {
-      id: newNodeId,
-      type: 'course',
-      position: getNewPosition(),
-      data: {
+      const newNode = {
         id: newNodeId,
-        courseId, dept, degree, name, locale,
-        loading: true,
-      },
-    };
-    
-    setNodes((nds) => [...nds, newNode]);
+        type: 'course',
+        position: getNewPosition(),
+        data: {
+          id: newNodeId,
+          courseId, dept, degree, name, locale,
+          year: Number(year), semester: Number(semester),
+          loading: true,
+        },
+      };
+      
+      setNodes((nds) => [...nds, newNode]);
+    }
     
     try {
       const res = await fetch(`/api/courses/${courseId}?dept=${dept}&degree=${degree}&year=${year}&semester=${semester}`);
@@ -224,9 +311,12 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
               data: {
                 ...n.data,
                 loading: false,
+                year: Number(detail.year || n.data.year),
+                semester: Number(detail.semester || n.data.semester),
                 stats: { points: detail.points },
                 type: detail.type,
                 relatedCourses: detail.relatedCourses,
+                offerings: detail.offerings || [],
               }
             };
           }
@@ -261,19 +351,22 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
                   const source = isPreReq ? targetId : newNodeId;
                   const target = isPreReq ? newNodeId : targetId;
                   
+                  const isCoreq = rc.relation.includes('צמוד') || rc.relation.includes('corequisite');
+                  const strokeColor = isPreReq ? '#ef4444' : isCoreq ? '#eab308' : '#3b82f6';
+                  
                   const edgeExists = newEdges.some(e => e.source === source && e.target === target);
                   if (!edgeExists) {
                      newEdges.push({
                        id: `e${source}-${target}`,
                        source,
                        target,
-                       type: 'smoothstep',
-                       animated: true,
-                       markerEnd: { type: MarkerType.ArrowClosed },
+                       type: 'default',
+                       animated: isPreReq ? true : false,
+                       markerEnd: { type: MarkerType.ArrowClosed, color: strokeColor },
                        label: rc.relation,
-                       style: { stroke: '#94a3b8', strokeWidth: 2 },
-                       labelStyle: { fill: '#64748b', fontWeight: 700, fontSize: 10 },
-                       labelBgStyle: { fill: '#f8fafc', fillOpacity: 0.8 },
+                       style: { stroke: strokeColor, strokeWidth: 3 },
+                       labelStyle: { fill: strokeColor, fontWeight: 800, fontSize: 11 },
+                       labelBgStyle: { fill: '#ffffff', fillOpacity: 0.9, stroke: strokeColor, strokeWidth: 1, rx: 4, ry: 4 },
                      });
                   }
                 }
@@ -320,6 +413,11 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     }
   };
 
+  const updateCourseTerm = useCallback((courseId: string, dept: string, degree: string, year: string, semester: string, name: string) => {
+    setNodes((nds) => nds.map(n => n.id === courseId ? { ...n, data: { ...n.data, loading: true } } : n));
+    fetchCourseData(courseId, dept, degree, year, semester, name, undefined, true);
+  }, [setNodes]);
+
   return (
     <div className="h-full w-full" id="tour-map-area">
       <div className="absolute top-4 z-10 flex gap-2" style={{ [locale === 'he' ? 'right' : 'left']: '16px' }}>
@@ -327,6 +425,16 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
             <Plus className="h-4 w-4" />
             {dictionary.map.addCourse}
         </Button>
+        {nodes.length > 0 && (
+          <Button onClick={() => {
+            const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(nodes, edges);
+            setNodes([...layoutedNodes]);
+            setEdges([...layoutedEdges]);
+          }} variant="outline" className="bg-white/80 dark:bg-slate-900/80 backdrop-blur shadow-sm rounded-xl font-bold gap-2 transition-all border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
+            <Workflow className="h-4 w-4" />
+            {dictionary.map.chronologicalLayout || 'Chronological Layout'}
+          </Button>
+        )}
         {nodes.length > 0 && (
           <Button onClick={() => { setNodes([]); setEdges([]); }} variant="outline" className="bg-white/80 dark:bg-slate-900/80 backdrop-blur text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700 dark:hover:text-red-400 border-red-100 dark:border-red-900/50 shadow-sm rounded-xl font-bold gap-2 transition-all">
             <Trash2 className="h-4 w-4" />
@@ -371,7 +479,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
         )}
       </div>
 
-      <CourseMapContext.Provider value={{ onRemoveNode, fetchCourseData, dictionary, selectedRelations }}>
+      <CourseMapContext.Provider value={{ onRemoveNode, fetchCourseData, updateCourseTerm, dictionary, selectedRelations }}>
         <ReactFlow
           nodes={nodes}
           edges={filteredEdges}

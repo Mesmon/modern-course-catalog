@@ -65,6 +65,7 @@ export const en = {
     lecturer: 'Lecturer',
     semester: 'Semester',
     type: 'Course Type',
+    activeIn: 'Active In',
     exam: 'Exam',
     work: 'Work',
     noExam: 'No Exam',
@@ -89,7 +90,8 @@ export const en = {
     degree: 'Degree',
     syllabus: 'Syllabus',
     noSyllabus: 'No Syllabus',
-    copiedToClipboard: 'Course ID copied to clipboard'
+    copiedToClipboard: 'Course ID copied to clipboard',
+    prerequisiteFor: 'Prerequisite For / Blocks'
   },
   navbar: {
     title: 'BGU Catalog',
@@ -117,7 +119,8 @@ export const en = {
     fetchDeptTitle: 'Fetch Department Courses',
     fetchDeptDesc: 'Enter the department number to retrieve its courses.',
     fetchDeptPlaceholder: 'e.g., 202',
-    cancel: 'Cancel'
+    cancel: 'Cancel',
+    chronologicalLayout: 'Chronological Layout'
   },
   onboarding: {
     title: 'Welcome to the Modern BGU Course Catalog! 👋',

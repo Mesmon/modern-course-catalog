@@ -68,6 +68,20 @@ export default async function CoursePage({
 
   const uniqueRelated = Object.values(groupedRelated);
 
+  const groupedBlocked = (course.blockedCourses || []).reduce((acc, curr) => {
+    const key = `${curr.params.dept}-${curr.params.course}-${curr.name}-${curr.relation}`;
+    if (!acc[key]) {
+      acc[key] = { ...curr, degrees: [curr.params.degree] };
+    } else {
+      if (!acc[key].degrees.includes(curr.params.degree)) {
+        acc[key].degrees.push(curr.params.degree);
+      }
+    }
+    return acc;
+  }, {} as Record<string, typeof course.relatedCourses[0] & { degrees: string[] }>);
+
+  const uniqueBlocked = Object.values(groupedBlocked);
+
   return (
     <div className="min-h-screen bg-slate-50/30 dark:bg-slate-950/30" dir={locale === 'en' ? 'ltr' : 'rtl'}>
       {/* Dynamic Header */}
@@ -341,6 +355,49 @@ export default async function CoursePage({
                              </div>
                              <p className="font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-primary transition-colors">
                                 {rel.name}
+                             </p>
+                           </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Blocked Courses (Forward Prerequisites) Section */}
+            {uniqueBlocked && uniqueBlocked.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-xl font-black flex items-center gap-2 text-slate-800 dark:text-slate-200 px-2 mt-8">
+                    <Layers className="h-5 w-5 text-red-500" />
+                    {dictionary.course.prerequisiteFor}
+                </h3>
+                <div className="space-y-3">
+                  {uniqueBlocked.map((blk, idx) => (
+                    <Link 
+                      key={idx} 
+                      href={`/courses/${blk.params.course}?dept=${blk.params.dept}&deg=${blk.degrees[0]}&year=${blk.params.year}&sem=${blk.params.semester}`}
+                      className="block group"
+                    >
+                      <Card className="border-none shadow-sm hover:shadow-md ring-1 ring-slate-100 dark:ring-slate-800 hover:ring-red-500/20 transition-all bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
+                        <CardContent className="p-4 flex items-center gap-4">
+                           <div className="h-12 w-12 rounded-xl bg-slate-50 dark:bg-slate-950 flex items-center justify-center group-hover:bg-red-500/10 transition-colors">
+                              <BookOpen className="h-6 w-6 text-slate-400 dark:text-slate-500 group-hover:text-red-500 transition-colors" />
+                           </div>
+                           <div className="flex-1 overflow-hidden">
+                             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">{blk.params.dept}.{blk.degrees.length > 1 ? 'X' : blk.degrees[0]}.{blk.params.course}</span>
+                                <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-auto leading-tight font-bold bg-slate-100 dark:bg-slate-800">
+                                    {blk.relation}
+                                </Badge>
+                                {blk.degrees.length > 0 && (
+                                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
+                                    ({dictionary.course.degree} {blk.degrees.sort().join(', ')})
+                                  </span>
+                                )}
+                             </div>
+                             <p className="font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-red-500 transition-colors">
+                                {blk.name}
                              </p>
                            </div>
                         </CardContent>

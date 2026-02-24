@@ -67,6 +67,7 @@ export const he: Dictionary = {
     lecturer: 'מרצה',
     semester: 'סמסטר',
     type: 'סוג קורס',
+    activeIn: 'פעיל ב',
     exam: 'מבחן',
     work: 'עבודה',
     noExam: 'ללא מבחן',
@@ -91,7 +92,8 @@ export const he: Dictionary = {
     degree: 'תואר',
     syllabus: 'סילבוס',
     noSyllabus: 'אין סילבוס',
-    copiedToClipboard: 'מזהה הקורס הועתק'
+    copiedToClipboard: 'מזהה הקורס הועתק',
+    prerequisiteFor: 'דרישת קדם עבור / חוסם'
   },
   navbar: {
     title: 'קטלוג BGU',
@@ -119,7 +121,8 @@ export const he: Dictionary = {
     fetchDeptTitle: 'משיכת קורסי מחלקה',
     fetchDeptDesc: 'הזן את מספר המחלקה כדי למשוך את הקורסים שלה.',
     fetchDeptPlaceholder: 'לדוגמה: 202',
-    cancel: 'ביטול'
+    cancel: 'ביטול',
+    chronologicalLayout: 'סידור כרונולוגי'
   },
   onboarding: {
     title: 'ברוכים הבאים לקטלוג הקורסים של בן גוריון! 👋',

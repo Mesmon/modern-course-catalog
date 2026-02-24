@@ -162,10 +162,36 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
       }
     }
   }
+
+  // Look up what courses this course blocks (Forward Prerequisites)
+  const forwardBlocksCursor = await collection.find({
+    "relatedCourses.id": id
+  }, {
+    projection: { id: 1, name: 1, relatedCourses: 1, year: 1, semester: 1 }
+  });
+  
+  const forwardBlocksRaw = await forwardBlocksCursor.toArray();
+  const blockedCourses = forwardBlocksRaw.map(fb => {
+    // find the specific relation they have to us
+    const relationInfo = fb.relatedCourses.find((rc: any) => rc.id === id);
+    const parts = fb.id.split('.');
+    return {
+      id: parts[2] || fb.id,
+      name: fb.name,
+      relation: relationInfo?.relation || 'Unknown',
+      params: {
+        dept: parts[0] || dept,
+        degree: parts[1] || degree,
+        course: parts[2] || fb.id,
+        year: fb.year || year,
+        semester: fb.semester || semester,
+      }
+    };
+  });
   
   if (existingCourse && Array.isArray(existingCourse.relatedCourses)) {
     const { _id, ...rest } = existingCourse;
-    return { ...rest, offerings } as CourseDetail;
+    return { ...rest, offerings, blockedCourses } as CourseDetail;
   }
 
   console.log(`Course ${id} not found complete in DB, scraping...`);
@@ -194,6 +220,7 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
       courseDetail.offerings = offerings;
       courseDetail.year = year;
       courseDetail.semester = semester;
+      courseDetail.blockedCourses = blockedCourses;
     }
     return courseDetail;
   } catch (err) {

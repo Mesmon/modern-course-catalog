@@ -27,4 +27,5 @@ export interface CourseDetail {
   year?: string;
   semester?: string;
   offerings?: { year: string; semester: string; activeIn: string; name: string }[];
+  blockedCourses?: RelatedCourse[];
 }
