@@ -143,9 +143,21 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
   const db = client.db('course_catalog');
   const collection = db.collection('course_details');
 
-  const existingCourse = await collection.findOne({ id, year, semester });
-  
   const fullId = `${dept}.${degree}.${id}`;
+  
+  // Try full ID first
+  let existingCourse = await collection.findOne({ id: fullId, year, semester });
+  
+  // If not found or empty name (failed scrape), fallback to short ID
+  if (!existingCourse || !existingCourse.name) {
+    const fallback = await collection.findOne({ id, year, semester });
+    if (fallback && fallback.name) {
+      existingCourse = fallback;
+    } else if (!existingCourse) {
+      existingCourse = fallback; // Keep it if both are flawed but one exists, prevents hard crashes later
+    }
+  }
+  
   // Sometimes id is already the full id, sometimes it's just the course part
   const baseCourse = await db.collection('courses').findOne({ 
     $or: [{ id: fullId }, { id: id }] 
@@ -206,7 +218,7 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
 
     if (courseDetail) {
       await collection.updateOne(
-        { id, year, semester },
+        { id: courseDetail.id, year, semester },
         { 
           $set: {
             ...courseDetail,

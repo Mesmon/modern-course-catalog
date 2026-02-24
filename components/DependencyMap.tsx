@@ -327,8 +327,17 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
   }, [setNodes, setEdges]);
 
   const onConnect = useCallback(
-    (params: Connection | Edge) => setEdges((eds) => addEdge({ ...params, type: 'default', animated: true, markerEnd: { type: MarkerType.ArrowClosed, color: '#3b82f6' }, style: { stroke: '#3b82f6', strokeWidth: 3 } } as any, eds)),
-    [setEdges],
+    (params: Connection | Edge) => setEdges((eds) => addEdge({ 
+      ...params, 
+      type: 'default', 
+      animated: true, 
+      label: selectedRelations[0] || 'קורס קדם', 
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#ef4444' }, 
+      style: { stroke: '#ef4444', strokeWidth: 3 },
+      labelStyle: { fill: '#ef4444', fontWeight: 800, fontSize: 11 },
+      labelBgStyle: { fill: '#ffffff', fillOpacity: 0.9, stroke: '#ef4444', strokeWidth: 1, rx: 4, ry: 4 }
+    } as any, eds)),
+    [setEdges, selectedRelations],
   );
 
   const fetchCourseData = async (courseId: string, dept: string, degree: string, year: string, semester: string, name: string, sourcePos?: {x: number, y: number}, forceUpdate = false) => {
@@ -380,7 +389,13 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
                 semester: Number(detail.semester || n.data.semester),
                 stats: { points: detail.points },
                 type: detail.type,
-                relatedCourses: detail.relatedCourses,
+                relatedCourses: [
+                  ...(detail.relatedCourses || []),
+                  ...(detail.blockedCourses || []).map((bc: any) => ({
+                    ...bc,
+                    relation: `${dictionary?.course?.prerequisiteFor || 'Blocks'} (${bc.relation})`
+                  }))
+                ],
                 offerings: detail.offerings || [],
               }
             };
@@ -479,8 +494,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
   };
 
   const updateCourseTerm = useCallback((courseId: string, dept: string, degree: string, year: string, semester: string, name: string) => {
-    setNodes((nds) => nds.map(n => n.id === courseId ? { ...n, data: { ...n.data, loading: true } } : n));
-    fetchCourseData(courseId, dept, degree, year, semester, name, undefined, true);
+    setNodes((nds) => nds.map(n => n.id === courseId ? { ...n, data: { ...n.data, year: Number(year), semester: Number(semester) } } : n));
   }, [setNodes]);
 
   return (

@@ -16,10 +16,10 @@ export function CourseNode({ id, data, selected, xPos, yPos, targetPosition = Po
   }, [data.relatedCourses]);
 
   const filteredCourses = useMemo(() => {
-    // If no context relations are found (e.g map just loaded), default to showing all or safe fallback
-    const activeRels = selectedRelations || [];
-    return uniqueRelatedCourses.filter((rc: any) => activeRels.includes(rc.relation));
-  }, [uniqueRelatedCourses, selectedRelations]);
+    // Show all available connections in the hover card, regardless of the map edge filter,
+    // so they can be discovered and added.
+    return uniqueRelatedCourses;
+  }, [uniqueRelatedCourses]);
 
   const allTerms = useMemo(() => {
     const terms: { year: string, semester: string, label: string }[] = [];
