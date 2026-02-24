@@ -13,18 +13,14 @@ import { Button } from './ui/button';
 
 const nodeWidth = 320;
 const nodeHeight = 150;
-const columnGap = 100;
-const rowGap = 50;
+const columnGap = 200; // Increased to give edges more breathing room
+const rowGap = 150;    // Increased drastically to spread nodes vertically
 
 const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   // 1. Group nodes by Term (Year + Semester)
   const columns: Record<string, Node[]> = {};
   
   nodes.forEach(node => {
-    // Note: since React Flow data only gives us courseId directly, we must try to extract year/sem
-    // Actually, fetchCourseData includes `year` and `semester` inside the params or api response! 
-    // Wait, newNode data currently doesn't store year/semester. Let's default bucket them for now,
-    // or parse them if available. We will need to update fetchCourseData to store year/semester in data.
     const year = node.data.year || 2026;
     const sem = node.data.semester || 2;
     const termKey = `${year}-${sem}`;
@@ -34,7 +30,6 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   });
 
   // 2. Sort columns chronologically (Left to Right)
-  // Semesters: 1 (Fall), 2 (Spring), 3 (Summer).
   const sortedTermKeys = Object.keys(columns).sort((a, b) => {
     const [yearA, semA] = a.split('-').map(Number);
     const [yearB, semB] = b.split('-').map(Number);
@@ -42,30 +37,100 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
     return semA - semB;
   });
 
-  // 3. Assign X, Y positions based on columns
+  // 3. Barycenter Heuristic (Iterative intersection reduction)
+  // Initially position them alphabetically
+  const nodePositions = new Map<string, { x: number, y: number }>();
   let currentX = 0;
-  
-  const newNodes = nodes.map(n => ({...n})); // Clone
   
   sortedTermKeys.forEach((termKey) => {
     const colNodes = columns[termKey];
-    
-    // Sort nodes vertically within the column (alphabetically by name for consistency)
     colNodes.sort((a, b) => (a.data.name as string).localeCompare(b.data.name as string));
     
     let currentY = 0;
     colNodes.forEach((node) => {
-      // Find the cloned node to update
-      const targetNode = newNodes.find(n => n.id === node.id);
-      if (targetNode) {
-        targetNode.targetPosition = Position.Left;
-        targetNode.sourcePosition = Position.Right;
-        targetNode.position = { x: currentX, y: currentY };
-      }
+      nodePositions.set(node.id, { x: currentX, y: currentY });
       currentY += nodeHeight + rowGap;
     });
-    
     currentX += nodeWidth + columnGap;
+  });
+
+  // Run a few passes of the Barycenter algorithm to refine Y coordinates
+  // For each node, calculate the average Y position of all its connected neighbors
+  const iterations = 4;
+  for (let i = 0; i < iterations; i++) {
+    // Process columns alternating left-to-right, then right-to-left
+    const keys = i % 2 === 0 ? sortedTermKeys : [...sortedTermKeys].reverse();
+    
+    keys.forEach((termKey) => {
+       const colNodes = columns[termKey];
+       
+       const barycenters = new Map<string, number>();
+       
+       colNodes.forEach(node => {
+          // Find all connected edges
+          const connectedEdges = edges.filter(e => e.source === node.id || e.target === node.id);
+          
+          if (connectedEdges.length === 0) {
+              barycenters.set(node.id, nodePositions.get(node.id)!.y);
+              return;
+          }
+          
+          let sumY = 0;
+          let weight = 0;
+          
+          connectedEdges.forEach(e => {
+              const neighborId = e.source === node.id ? e.target : e.source;
+              const neighborPos = nodePositions.get(neighborId);
+              if (neighborPos) {
+                 sumY += neighborPos.y;
+                 weight += 1;
+              }
+          });
+          
+          barycenters.set(node.id, sumY / weight);
+       });
+       
+       // Sort this column based on the computed barycenter average
+       colNodes.sort((a, b) => (barycenters.get(a.id) || 0) - (barycenters.get(b.id) || 0));
+    });
+  }
+
+  // 4. To ensure vertical spread and horizontal alignment across sparse columns,
+  // we find the maximum number of nodes in any column, and distribute nodes 
+  // evenly using a fixed grid structure vertically.
+  let maxNodesInCol = 0;
+  Object.values(columns).forEach(col => {
+    if (col.length > maxNodesInCol) maxNodesInCol = col.length;
+  });
+
+  const totalHeight = maxNodesInCol * (nodeHeight + rowGap);
+
+  sortedTermKeys.forEach((termKey) => {
+    const colNodes = columns[termKey];
+    const colCount = colNodes.length;
+    
+    // Spread nodes evenly across the available total height
+    const spreadGap = colCount > 1 ? (totalHeight - (colCount * nodeHeight)) / (colCount - 1) : 0;
+    
+    let currentY = colCount === 1 ? (totalHeight / 2) - (nodeHeight / 2) : 0;
+    
+    colNodes.forEach((node) => {
+       const pos = nodePositions.get(node.id)!;
+       nodePositions.set(node.id, { x: pos.x, y: currentY });
+       currentY += nodeHeight + spreadGap;
+    });
+  });
+
+  // 4. Apply final calculated matrix to Node array
+  const newNodes = nodes.map(n => ({...n})); // Clone
+  
+  newNodes.forEach(node => {
+    const pos = nodePositions.get(node.id);
+    if (pos) {
+      node.targetPosition = Position.Left;
+      node.sourcePosition = Position.Right;
+      node.position = { x: pos.x, y: pos.y };
+    }
   });
 
   return { nodes: newNodes, edges };

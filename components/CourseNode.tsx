@@ -20,6 +20,51 @@ export function CourseNode({ id, data, selected, xPos, yPos, targetPosition = Po
     const activeRels = selectedRelations || [];
     return uniqueRelatedCourses.filter((rc: any) => activeRels.includes(rc.relation));
   }, [uniqueRelatedCourses, selectedRelations]);
+
+  const allTerms = useMemo(() => {
+    const terms: { year: string, semester: string, label: string }[] = [];
+    const currentYear = new Date().getFullYear();
+    const knownKeys = new Set<string>();
+
+    if (data.offerings && Array.isArray(data.offerings)) {
+      data.offerings.forEach((off: any) => {
+        terms.push({ year: off.year, semester: off.semester, label: `${off.year}-${off.semester}` });
+        knownKeys.add(`${off.year}-${off.semester}`);
+      });
+    }
+
+    // Always provide the current term as a fallback if it's missing
+    const currentKey = `${data.year}-${data.semester}`;
+    if (!knownKeys.has(currentKey)) {
+        terms.push({
+            year: data.year?.toString() || currentYear.toString(),
+            semester: data.semester?.toString() || '2',
+            label: `${data.year || currentYear}-${data.semester || 2}`
+        });
+        knownKeys.add(currentKey);
+    }
+
+    for (let y = currentYear + 1; y >= currentYear - 3; y--) {
+      for (let s = 3; s >= 1; s--) {
+        const key = `${y}-${s}`;
+        if (!knownKeys.has(key)) {
+          terms.push({
+            year: y.toString(),
+            semester: s.toString(),
+            label: key
+          });
+          knownKeys.add(key);
+        }
+      }
+    }
+
+    terms.sort((a, b) => {
+      if (a.year !== b.year) return Number(b.year) - Number(a.year);
+      return Number(b.semester) - Number(a.semester);
+    });
+    
+    return terms;
+  }, [data.offerings, data.year, data.semester, isHebrew]);
   
   return (
     <div
@@ -90,7 +135,6 @@ export function CourseNode({ id, data, selected, xPos, yPos, targetPosition = Po
             </div>
             <div className="flex flex-col">
                <span className="text-slate-400">{dictionary?.course?.activeIn || dictionary?.course?.type}</span>
-               {data.offerings && data.offerings.length > 0 ? (
                  <select
                    value={`${data.year}-${data.semester}`}
                    onChange={(e) => {
@@ -102,18 +146,14 @@ export function CourseNode({ id, data, selected, xPos, yPos, targetPosition = Po
                    title={dictionary?.course?.activeIn || 'Select Term'}
                    onClick={(e) => {
                      e.stopPropagation();
-                     // Prevents the hover card from accidentally closing or jumping
                    }}
                  >
-                   {data.offerings.map((off: any) => (
-                     <option key={`${off.year}-${off.semester}`} value={`${off.year}-${off.semester}`}>
-                       {off.activeIn}
+                   {allTerms.map((term: any) => (
+                     <option key={`${term.year}-${term.semester}`} value={`${term.year}-${term.semester}`}>
+                       {term.label}
                      </option>
                    ))}
                  </select>
-               ) : (
-                 <span>{data.type || `${data.year} סמסטר ${data.semester}`}</span>
-               )}
             </div>
           </div>
           <div className="mt-2 text-xs bg-white/10 p-2 rounded-lg text-slate-300">
