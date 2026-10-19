@@ -318,6 +318,101 @@ function escapeIcsText(str: string): string {
     .replace(/\r?\n/g, '\\n');
 }
 
+const VTIMEZONE_ASIA_JERUSALEM = [
+  'BEGIN:VTIMEZONE',
+  'TZID:Asia/Jerusalem',
+  'X-LIC-LOCATION:Asia/Jerusalem',
+  'BEGIN:DAYLIGHT',
+  'TZOFFSETFROM:+0200',
+  'TZOFFSETTO:+0300',
+  'TZNAME:IDT',
+  'DTSTART:19700327T020000',
+  'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1FR',
+  'END:DAYLIGHT',
+  'BEGIN:STANDARD',
+  'TZOFFSETFROM:+0300',
+  'TZOFFSETTO:+0200',
+  'TZNAME:IST',
+  'DTSTART:19701025T020000',
+  'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU',
+  'END:STANDARD',
+  'END:VTIMEZONE',
+];
+
+function buildVEventLines(params: {
+  course: ScheduledCourse;
+  group: CourseGroup;
+  meeting: { day: string; startTime: string; endTime: string; location: string; mode?: string };
+  uidSuffix: string;
+  termStart: Date;
+  untilStr: string;
+  nowStamp: string;
+}): string[] {
+  const { course, group, meeting, uidSuffix, termStart, untilStr, nowStamp } = params;
+  const firstDate = getFirstMeetingDate(termStart, meeting.day);
+  const startDt = formatLocalDateTime(firstDate, meeting.startTime);
+  const endDt = formatLocalDateTime(firstDate, meeting.endTime);
+  const byDay = DAY_TO_RRULE_BYDAY[meeting.day] || 'SU';
+
+  const summary = `${course.name} (${group.type} - קבוצה ${group.id})`;
+  const location = meeting.location
+    ? `${meeting.location}, אוניברסיטת בן-גוריון`
+    : 'אוניברסיטת בן-גוריון';
+  const descParts = [
+    `קורס: ${course.name} (${course.id})`,
+    `סוג: ${group.type} | קבוצה: ${group.id}`,
+  ];
+  if (group.lecturer) descParts.push(`מרצה: ${group.lecturer}`);
+  if (meeting.location) descParts.push(`מיקום: ${meeting.location}`);
+  if (meeting.mode) descParts.push(`אופן לימוד: ${meeting.mode}`);
+
+  return [
+    'BEGIN:VEVENT',
+    `UID:${course.id}-${group.id}-${uidSuffix}-${course.year}-${course.semester}@bgu-catalog`,
+    `DTSTAMP:${nowStamp}`,
+    `DTSTART;TZID=Asia/Jerusalem:${startDt}`,
+    `DTEND;TZID=Asia/Jerusalem:${endDt}`,
+    `RRULE:FREQ=WEEKLY;BYDAY=${byDay};UNTIL=${untilStr}`,
+    `SUMMARY:${escapeIcsText(summary)}`,
+    `LOCATION:${escapeIcsText(location)}`,
+    `DESCRIPTION:${escapeIcsText(descParts.join('\n'))}`,
+    'END:VEVENT',
+  ];
+}
+
+export function generateMeetingIcs(params: {
+  course: ScheduledCourse;
+  group: CourseGroup;
+  meeting: { day: string; startTime: string; endTime: string; location: string; mode?: string };
+}): string {
+  const { course, group, meeting } = params;
+  const { start, end } = getTermDateRange(course.year, course.semester);
+  const untilStr = formatUntilDateUtc(end);
+  const nowStamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Modern BGU Course Catalog//Weekly Schedule//HE',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-TIMEZONE:Asia/Jerusalem',
+    ...VTIMEZONE_ASIA_JERUSALEM,
+    ...buildVEventLines({
+      course,
+      group,
+      meeting,
+      uidSuffix: `${meeting.day}-${meeting.startTime.replace(':', '')}`,
+      termStart: start,
+      untilStr,
+      nowStamp,
+    }),
+    'END:VCALENDAR',
+  ];
+
+  return lines.join('\r\n');
+}
+
 export function generateScheduleIcs(courses: ScheduledCourse[], year: string, semester: string): string {
   const { start, end } = getTermDateRange(year, semester);
   const untilStr = formatUntilDateUtc(end);
@@ -330,37 +425,22 @@ export function generateScheduleIcs(courses: ScheduledCourse[], year: string, se
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'X-WR-TIMEZONE:Asia/Jerusalem',
+    ...VTIMEZONE_ASIA_JERUSALEM,
   ];
 
   courses.forEach(course => {
     (course.selectedGroups || []).forEach(group => {
       (group.meetings || []).forEach((meeting, mIdx) => {
-        const firstDate = getFirstMeetingDate(start, meeting.day);
-        const startDt = formatLocalDateTime(firstDate, meeting.startTime);
-        const endDt = formatLocalDateTime(firstDate, meeting.endTime);
-        const byDay = DAY_TO_RRULE_BYDAY[meeting.day] || 'SU';
-
-        const summary = `${course.name} (${group.type} - קבוצה ${group.id})`;
-        const location = meeting.location || 'אוניברסיטת בן-גוריון';
-        const descParts = [
-          `קורס: ${course.name} (${course.id})`,
-          `סוג: ${group.type} | קבוצה: ${group.id}`,
-        ];
-        if (group.lecturer) descParts.push(`מרצה: ${group.lecturer}`);
-        if (meeting.location) descParts.push(`מיקום: ${meeting.location}`);
-        if (meeting.mode) descParts.push(`אופן לימוד: ${meeting.mode}`);
-
         lines.push(
-          'BEGIN:VEVENT',
-          `UID:${course.id}-${group.id}-${mIdx}-${year}-${semester}@bgu-catalog`,
-          `DTSTAMP:${nowStamp}`,
-          `DTSTART;TZID=Asia/Jerusalem:${startDt}`,
-          `DTEND;TZID=Asia/Jerusalem:${endDt}`,
-          `RRULE:FREQ=WEEKLY;BYDAY=${byDay};UNTIL=${untilStr}`,
-          `SUMMARY:${escapeIcsText(summary)}`,
-          `LOCATION:${escapeIcsText(location)}`,
-          `DESCRIPTION:${escapeIcsText(descParts.join('\n'))}`,
-          'END:VEVENT'
+          ...buildVEventLines({
+            course,
+            group,
+            meeting,
+            uidSuffix: String(mIdx),
+            termStart: start,
+            untilStr,
+            nowStamp,
+          })
         );
       });
     });
@@ -369,3 +449,4 @@ export function generateScheduleIcs(courses: ScheduledCourse[], year: string, se
   lines.push('END:VCALENDAR');
   return lines.join('\r\n');
 }
+

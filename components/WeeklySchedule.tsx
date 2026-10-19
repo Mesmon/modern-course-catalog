@@ -18,6 +18,7 @@ import {
   isCourseOfferedInTerm,
   timeToMinutes,
   buildGoogleCalendarUrl,
+  generateMeetingIcs,
   generateScheduleIcs,
   SCHEDULE_EVENT,
 } from '@/lib/schedule';
@@ -418,6 +419,27 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     toast.success(dictionary.schedule.icsDownloadedToast);
   };
 
+  const handleDownloadMeetingIcs = (
+    course: ScheduledCourse,
+    group: CourseGroup,
+    meeting: CourseMeeting
+  ) => {
+    const icsContent = generateMeetingIcs({ course, group, meeting });
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute(
+      'download',
+      `bgu-${course.courseId}-g${group.id}-${course.year}-sem${course.semester}.ics`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success(dictionary.schedule.icsDownloadedToast);
+  };
+
   const handleFetchDepartment = async () => {
     if (!fetchDeptInput) return;
     setIsFetchingDept(true);
@@ -564,6 +586,14 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                 >
                   <CalendarPlus className="h-4 w-4" />
                   {dictionary.schedule.addToGoogleCalendar}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadIcs}
+                  className="rounded-xl font-bold gap-2 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <Download className="h-4 w-4" />
+                  {dictionary.schedule.addToAppleCalendar}
                 </Button>
                 <Button
                   variant="outline"
@@ -1089,16 +1119,28 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                         </div>
                       </div>
 
-                      <Button
-                        asChild
-                        size="sm"
-                        className="rounded-lg font-bold gap-1.5 shrink-0"
-                      >
-                        <a href={gcalUrl} target="_blank" rel="noopener noreferrer">
-                          <CalendarPlus className="h-3.5 w-3.5" />
-                          {dictionary.schedule.openInGoogleCalendar}
-                        </a>
-                      </Button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          asChild
+                          size="sm"
+                          className="rounded-lg font-bold gap-1.5"
+                        >
+                          <a href={gcalUrl} target="_blank" rel="noopener noreferrer">
+                            <CalendarPlus className="h-3.5 w-3.5" />
+                            {dictionary.schedule.openInGoogleCalendar}
+                          </a>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownloadMeetingIcs(course, group, meeting)}
+                          className="rounded-lg font-bold gap-1.5 bg-white/80 dark:bg-slate-950/80 hover:bg-white dark:hover:bg-slate-900"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          {dictionary.schedule.openInAppleCalendar}
+                        </Button>
+                      </div>
                     </div>
                   );
                 })
