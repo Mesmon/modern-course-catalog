@@ -7,11 +7,15 @@ import { toast } from 'sonner';
 import { useAllCourses } from '@/hooks/useCourses';
 import {
   ScheduledCourse,
+  ScheduleTerm,
   COURSE_COLOR_PALETTE,
   loadScheduledCourses,
-  saveScheduledCourses,
+  loadActiveTerm,
+  saveActiveTerm,
   upsertScheduledCourse,
   removeScheduledCourse,
+  clearScheduledCoursesForTerm,
+  isCourseOfferedInTerm,
   timeToMinutes,
   SCHEDULE_EVENT,
 } from '@/lib/schedule';
@@ -42,17 +46,19 @@ import {
   Calendar,
   Clock,
   MapPin,
-  User,
   AlertTriangle,
   Settings2,
   Loader2,
   Award,
   BookOpen,
   ExternalLink,
+  Filter,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const DAYS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו'] as const;
+const YEARS = ['2027', '2026', '2025', '2024'] as const;
+const SEMESTERS = ['1', '2', '3'] as const;
 const START_HOUR = 8;
 const END_HOUR = 21;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
@@ -143,7 +149,8 @@ interface Department {
 
 export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale: string }) {
   const isRtl = locale === 'he';
-  const [scheduledCourses, setScheduledCourses] = useState<ScheduledCourse[]>([]);
+  const [allScheduledCourses, setAllScheduledCourses] = useState<ScheduledCourse[]>([]);
+  const [activeTerm, setActiveTerm] = useState<ScheduleTerm>({ year: '2027', semester: '1' });
   const [isMounted, setIsMounted] = useState(false);
 
   // Search dialog state
@@ -183,7 +190,8 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
   useEffect(() => {
     setIsMounted(true);
     const sync = () => {
-      setScheduledCourses(loadScheduledCourses());
+      setAllScheduledCourses(loadScheduledCourses());
+      setActiveTerm(loadActiveTerm());
     };
     sync();
     window.addEventListener(SCHEDULE_EVENT, sync);
@@ -193,6 +201,26 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
       window.removeEventListener('storage', sync);
     };
   }, []);
+
+  const handleSelectTerm = (year: string, semester: string) => {
+    const next = { year, semester };
+    setActiveTerm(next);
+    saveActiveTerm(next);
+  };
+
+  // Courses scheduled specifically for the active year & semester
+  const scheduledCourses = useMemo(() => {
+    return allScheduledCourses.filter(
+      c => String(c.year) === String(activeTerm.year) && String(c.semester) === String(activeTerm.semester)
+    );
+  }, [allScheduledCourses, activeTerm]);
+
+  // Only allow adding courses from the catalog that are offered in the selected year & semester
+  const relevantCatalogCourses = useMemo(() => {
+    return (courses || []).filter((course: any) =>
+      isCourseOfferedInTerm(course, activeTerm.year, activeTerm.semester)
+    );
+  }, [courses, activeTerm]);
 
   useEffect(() => {
     if (searchOpen) {
@@ -227,18 +255,22 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
   }, [fetchDeptInput, departments]);
 
   const handleSelectCourseFromSearch = async (course: any) => {
+    // Double-check the course is offered in the selected semester
+    if (!isCourseOfferedInTerm(course, activeTerm.year, activeTerm.semester)) {
+      toast.error(dictionary.schedule.notOfferedInTermToast);
+      return;
+    }
+
     setSearchOpen(false);
     const parts = course.id.split('.');
     const dept = course.params?.dept || parts[0] || '202';
     const degree = course.params?.degree || parts[1] || '1';
     const cId = course.params?.course || parts[2] || course.id;
-    const activeParts = course.activeIn ? course.activeIn.split('-') : [];
-    const latestOffering = course.offerings?.[0];
-    const year = course.params?.year || latestOffering?.year || activeParts[0] || '2027';
-    const semester = course.params?.semester || latestOffering?.semester || activeParts[1] || '1';
+    const year = activeTerm.year;
+    const semester = activeTerm.semester;
     const fullId = `${dept}.${degree}.${cId}`;
 
-    // Check if already in schedule
+    // Check if already in schedule for this term
     const existing = scheduledCourses.find(c => c.id === fullId);
     if (existing && existing.allGroups && existing.allGroups.length > 0) {
       setPendingCourse({
@@ -266,9 +298,21 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
         return;
       }
       const detail: CourseDetail = await res.json();
+
+      // Verify that the returned course detail matches the requested term (wasn't redirected to an older offering)
+      if (
+        (detail.year && String(detail.year) !== String(year)) ||
+        (detail.semester && String(detail.semester) !== String(semester))
+      ) {
+        toast.error(dictionary.schedule.notOfferedInTermToast);
+        return;
+      }
+
       const groups = detail.groups || [];
-      const actualYear = detail.year || year;
-      const actualSem = detail.semester || semester;
+      const offeringName =
+        course.offerings?.find((o: any) => o.year === year && o.semester === semester)?.name ||
+        detail.name ||
+        course.name;
 
       if (groups.length <= 1 && !existing) {
         upsertScheduledCourse({
@@ -276,9 +320,9 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
           courseId: cId,
           dept,
           degree,
-          year: actualYear,
-          semester: actualSem,
-          name: detail.name || course.name,
+          year,
+          semester,
+          name: offeringName,
           points: detail.points || '0',
           selectedGroups: groups,
           allGroups: groups,
@@ -290,9 +334,9 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
           courseId: cId,
           dept,
           degree,
-          year: actualYear,
-          semester: actualSem,
-          name: detail.name || course.name,
+          year,
+          semester,
+          name: offeringName,
           points: detail.points || '0',
           groups,
           initialSelectedIds: existing?.selectedGroups.map(g => g.id),
@@ -346,30 +390,32 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     );
   };
 
-  const handleRemoveCourse = (id: string) => {
-    removeScheduledCourse(id);
+  const handleRemoveCourse = (id: string, year: string, semester: string) => {
+    removeScheduledCourse(id, year, semester);
     toast.info(dictionary.schedule.removedToast);
   };
 
   const handleClearSchedule = () => {
-    saveScheduledCourses([]);
+    clearScheduledCoursesForTerm(activeTerm.year, activeTerm.semester);
   };
 
   const handleFetchDepartment = async () => {
     if (!fetchDeptInput) return;
     setIsFetchingDept(true);
     try {
-      const res = await fetch(`/api/departments/${fetchDeptInput}`);
+      const res = await fetch(
+        `/api/departments/${fetchDeptInput}?year=${activeTerm.year}&semester=${activeTerm.semester}`
+      );
       if (res.ok) {
         const deptCourses = await res.json();
+        await queryClient.invalidateQueries({ queryKey: ['courses'] });
         if (deptCourses && deptCourses.length > 0) {
           toast.success(dictionary.map.deptFound);
-          queryClient.invalidateQueries({ queryKey: ['courses'] });
           setShowFetchDeptDialog(false);
           setFetchDeptInput('');
           setSearchOpen(true);
         } else {
-          toast.error(dictionary.map.deptNotFound);
+          toast.error(dictionary.schedule.noCoursesInTerm);
         }
       } else {
         toast.error(dictionary.map.deptNotFound);
@@ -442,56 +488,149 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     );
   }
 
+  const activeSemesterLabel =
+    dictionary.schedule.semesters?.[activeTerm.semester] ||
+    `${dictionary.schedule.semesterLabel} ${activeTerm.semester}`;
+
   return (
     <div className="container max-w-7xl mx-auto px-4 py-8 space-y-6" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <Calendar className="h-5 w-5" />
+      <div className="flex flex-col gap-5 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <Calendar className="h-5 w-5" />
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
+                {dictionary.schedule.title}
+              </h1>
+              <Badge variant="secondary" className="font-bold text-xs px-2.5 py-1">
+                {activeSemesterLabel} • {activeTerm.year}
+              </Badge>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
-              {dictionary.schedule.title}
-            </h1>
+            <p className="text-sm text-muted-foreground">{dictionary.schedule.subtitle}</p>
           </div>
-          <p className="text-sm text-muted-foreground">{dictionary.schedule.subtitle}</p>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-sm">
+              <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
+                <BookOpen className="h-4 w-4 text-primary" />
+                <span>{scheduledCourses.length}</span>
+                <span className="text-xs text-muted-foreground font-medium">{dictionary.schedule.totalCourses}</span>
+              </div>
+              <div className="h-4 w-[1px] bg-slate-200 dark:bg-slate-800" />
+              <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
+                <Award className="h-4 w-4 text-primary" />
+                <span>{totalCredits.toFixed(1).replace(/\.0$/, '')}</span>
+                <span className="text-xs text-muted-foreground font-medium">{dictionary.schedule.totalCredits}</span>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => setSearchOpen(true)}
+              disabled={isLoadingCourse}
+              className="rounded-xl font-bold gap-2 shadow-sm"
+            >
+              {isLoadingCourse ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              {dictionary.schedule.addCourse}
+            </Button>
+
+            {scheduledCourses.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={handleClearSchedule}
+                className="rounded-xl font-bold gap-2 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30"
+              >
+                <Trash2 className="h-4 w-4" />
+                {dictionary.schedule.clearSchedule}
+              </Button>
+            )}
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-sm">
-            <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
-              <BookOpen className="h-4 w-4 text-primary" />
-              <span>{scheduledCourses.length}</span>
-              <span className="text-xs text-muted-foreground font-medium">{dictionary.schedule.totalCourses}</span>
+        {/* Year & Semester Selector Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex flex-wrap items-center gap-6">
+            {/* Year Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                {dictionary.schedule.yearLabel}:
+              </span>
+              <div className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                {YEARS.map(yr => {
+                  const isActive = activeTerm.year === yr;
+                  return (
+                    <button
+                      key={yr}
+                      type="button"
+                      onClick={() => handleSelectTerm(yr, activeTerm.semester)}
+                      className={cn(
+                        'px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
+                        isActive
+                          ? 'bg-primary text-primary-foreground shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      )}
+                    >
+                      {yr}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="h-4 w-[1px] bg-slate-200 dark:bg-slate-800" />
-            <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
-              <Award className="h-4 w-4 text-primary" />
-              <span>{totalCredits.toFixed(1).replace(/\.0$/, '')}</span>
-              <span className="text-xs text-muted-foreground font-medium">{dictionary.schedule.totalCredits}</span>
+
+            {/* Semester Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                {dictionary.schedule.semesterLabel}:
+              </span>
+              <div className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                {SEMESTERS.map(sem => {
+                  const isActive = activeTerm.semester === sem;
+                  const countInSem = allScheduledCourses.filter(
+                    c => c.year === activeTerm.year && c.semester === sem
+                  ).length;
+                  return (
+                    <button
+                      key={sem}
+                      type="button"
+                      onClick={() => handleSelectTerm(activeTerm.year, sem)}
+                      className={cn(
+                        'px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5',
+                        isActive
+                          ? 'bg-primary text-primary-foreground shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      )}
+                    >
+                      <span>{dictionary.schedule.semesters?.[sem] || sem}</span>
+                      {countInSem > 0 && (
+                        <span
+                          className={cn(
+                            'px-1.5 py-0.2 rounded-full text-[10px] font-black',
+                            isActive
+                              ? 'bg-white/25 text-white'
+                              : 'bg-primary/15 text-primary'
+                          )}
+                        >
+                          {countInSem}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          <Button
-            onClick={() => setSearchOpen(true)}
-            disabled={isLoadingCourse}
-            className="rounded-xl font-bold gap-2 shadow-sm"
-          >
-            {isLoadingCourse ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            {dictionary.schedule.addCourse}
-          </Button>
-
-          {scheduledCourses.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={handleClearSchedule}
-              className="rounded-xl font-bold gap-2 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30"
-            >
-              <Trash2 className="h-4 w-4" />
-              {dictionary.schedule.clearSchedule}
-            </Button>
-          )}
+          <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Filter className="h-3.5 w-3.5 text-primary" />
+            <span>
+              {dictionary.schedule.onlyOfferedInTermHint}{' '}
+              <strong className="text-foreground">
+                {activeSemesterLabel} ({activeTerm.year})
+              </strong>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -524,7 +663,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                 const palette = COURSE_COLOR_PALETTE[course.colorIndex % COURSE_COLOR_PALETTE.length];
                 return (
                   <div
-                    key={course.id}
+                    key={`${course.id}-${course.year}-${course.semester}`}
                     className={cn(
                       'rounded-xl border p-3.5 transition-all space-y-2.5 relative overflow-hidden',
                       palette.bg,
@@ -563,7 +702,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleRemoveCourse(course.id)}
+                          onClick={() => handleRemoveCourse(course.id, course.year, course.semester)}
                           title={dictionary.schedule.removeFromSchedule}
                           className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-600 dark:text-red-400 transition-colors"
                         >
@@ -653,7 +792,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                       className="relative border-e last:border-e-0 border-slate-200 dark:border-slate-800"
                     >
                       {/* Horizontal Hour Lines */}
-                      {hoursList.slice(0, -1).map((hour, idx) => (
+                      {hoursList.slice(0, -1).map(hour => (
                         <div
                           key={hour}
                           className="w-full border-b border-slate-100 dark:border-slate-800/60"
@@ -748,8 +887,22 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
         </div>
       </div>
 
-      {/* Search Course Dialog */}
+      {/* Search Course Dialog (filtered strictly by activeTerm.year & activeTerm.semester) */}
       <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
+        <div className="px-4 pt-3 pb-1 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 text-xs text-muted-foreground" dir={isRtl ? 'rtl' : 'ltr'}>
+          <span className="flex items-center gap-1.5">
+            <Filter className="h-3.5 w-3.5 text-primary" />
+            <span>
+              {dictionary.schedule.onlyOfferedInTermHint}{' '}
+              <strong className="text-foreground">
+                {activeSemesterLabel} ({activeTerm.year})
+              </strong>
+            </span>
+          </span>
+          <Badge variant="outline" className="text-[10px] font-bold">
+            {relevantCatalogCourses.length} {dictionary.schedule.totalCourses}
+          </Badge>
+        </div>
         <CommandInput
           placeholder={dictionary.schedule.searchPlaceholder}
           className={isRtl ? 'text-right' : 'text-left'}
@@ -759,7 +912,9 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
         <CommandList className={isRtl ? 'text-right' : 'text-left'} dir={isRtl ? 'rtl' : 'ltr'}>
           <CommandEmpty>
             <div className="flex flex-col items-center justify-center text-center gap-3 py-6 px-4">
-              <p className="font-bold text-slate-700 dark:text-slate-300">{dictionary.navbar.noResults}</p>
+              <p className="font-bold text-slate-700 dark:text-slate-300">
+                {dictionary.schedule.noCoursesInTerm} ({activeSemesterLabel} {activeTerm.year})
+              </p>
               <p className="text-sm text-muted-foreground max-w-xs">
                 {dictionary.map.suggestDepartment}
               </p>
@@ -774,22 +929,26 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
               </Button>
             </div>
           </CommandEmpty>
-          <CommandGroup heading={dictionary.home.fullCatalog}>
-            {courses.map((course: any) => {
+          <CommandGroup heading={`${activeSemesterLabel} • ${activeTerm.year}`}>
+            {relevantCatalogCourses.map((course: any) => {
               const isScheduled = scheduledCourses.some(c => c.id === course.id);
+              const termOffering = course.offerings?.find(
+                (o: any) => String(o.year) === activeTerm.year && String(o.semester) === activeTerm.semester
+              );
+              const displayName = termOffering?.name || course.name;
               return (
                 <CommandItem
                   key={course.id}
-                  value={`${course.id} ${course.name}`}
+                  value={`${course.id} ${displayName}`}
                   onSelect={() => handleSelectCourseFromSearch(course)}
                   className="flex items-center justify-between py-3 px-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg m-1"
                 >
                   <div className="flex flex-col gap-0.5 text-start">
                     <span className="font-bold text-slate-900 dark:text-slate-100 text-base">
-                      {course.name}
+                      {displayName}
                     </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                      {course.id} {course.activeIn ? `• ${course.activeIn}` : ''}
+                      {course.id} • {activeTerm.year}-{activeTerm.semester}
                     </span>
                   </div>
                   {isScheduled && (
@@ -815,7 +974,9 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
           initialSelectedGroupIds={pendingCourse.initialSelectedIds}
           isAlreadyScheduled={pendingCourse.isAlreadyScheduled}
           onConfirm={handleConfirmGroups}
-          onRemove={() => handleRemoveCourse(pendingCourse.id)}
+          onRemove={() =>
+            handleRemoveCourse(pendingCourse.id, pendingCourse.year, pendingCourse.semester)
+          }
           dictionary={dictionary}
           locale={locale}
         />

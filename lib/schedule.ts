@@ -14,7 +14,13 @@ export interface ScheduledCourse {
   allGroups: CourseGroup[];
 }
 
+export interface ScheduleTerm {
+  year: string;
+  semester: string;
+}
+
 export const SCHEDULE_STORAGE_KEY = 'weeklyScheduleCourses_v1';
+export const SCHEDULE_TERM_KEY = 'weeklyScheduleActiveTerm_v1';
 export const SCHEDULE_EVENT = 'weekly-schedule-updated';
 
 export const COURSE_COLOR_PALETTE = [
@@ -76,6 +82,31 @@ export const COURSE_COLOR_PALETTE = [
   },
 ];
 
+export function loadActiveTerm(): ScheduleTerm {
+  if (typeof window === 'undefined') return { year: '2027', semester: '1' };
+  try {
+    const raw = localStorage.getItem(SCHEDULE_TERM_KEY);
+    if (!raw) return { year: '2027', semester: '1' };
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.year && parsed.semester) {
+      return { year: String(parsed.year), semester: String(parsed.semester) };
+    }
+    return { year: '2027', semester: '1' };
+  } catch (e) {
+    return { year: '2027', semester: '1' };
+  }
+}
+
+export function saveActiveTerm(term: ScheduleTerm) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(SCHEDULE_TERM_KEY, JSON.stringify(term));
+    window.dispatchEvent(new Event(SCHEDULE_EVENT));
+  } catch (e) {
+    console.error('Failed to save active schedule term', e);
+  }
+}
+
 export function loadScheduledCourses(): ScheduledCourse[] {
   if (typeof window === 'undefined') return [];
   try {
@@ -101,7 +132,9 @@ export function saveScheduledCourses(courses: ScheduledCourse[]) {
 
 export function upsertScheduledCourse(course: Omit<ScheduledCourse, 'colorIndex'> & { colorIndex?: number }): ScheduledCourse[] {
   const current = loadScheduledCourses();
-  const existingIdx = current.findIndex(c => c.id === course.id);
+  const existingIdx = current.findIndex(
+    c => c.id === course.id && c.year === course.year && c.semester === course.semester
+  );
   let updated: ScheduledCourse[];
 
   if (existingIdx >= 0) {
@@ -112,7 +145,10 @@ export function upsertScheduledCourse(course: Omit<ScheduledCourse, 'colorIndex'
       colorIndex: course.colorIndex ?? existingColor,
     };
   } else {
-    const usedColors = new Set(current.map(c => c.colorIndex));
+    const termCourses = current.filter(
+      c => c.year === course.year && c.semester === course.semester
+    );
+    const usedColors = new Set(termCourses.map(c => c.colorIndex));
     let nextColor = 0;
     for (let i = 0; i < COURSE_COLOR_PALETTE.length; i++) {
       if (!usedColors.has(i)) {
@@ -121,7 +157,7 @@ export function upsertScheduledCourse(course: Omit<ScheduledCourse, 'colorIndex'
       }
     }
     if (usedColors.has(nextColor)) {
-      nextColor = current.length % COURSE_COLOR_PALETTE.length;
+      nextColor = termCourses.length % COURSE_COLOR_PALETTE.length;
     }
     updated = [
       ...current,
@@ -136,11 +172,39 @@ export function upsertScheduledCourse(course: Omit<ScheduledCourse, 'colorIndex'
   return updated;
 }
 
-export function removeScheduledCourse(id: string): ScheduledCourse[] {
+export function removeScheduledCourse(id: string, year?: string, semester?: string): ScheduledCourse[] {
   const current = loadScheduledCourses();
-  const updated = current.filter(c => c.id !== id);
+  const updated = current.filter(c => {
+    if (c.id !== id) return true;
+    if (year && semester) {
+      return !(c.year === year && c.semester === semester);
+    }
+    return false;
+  });
   saveScheduledCourses(updated);
   return updated;
+}
+
+export function clearScheduledCoursesForTerm(year: string, semester: string): ScheduledCourse[] {
+  const current = loadScheduledCourses();
+  const updated = current.filter(c => !(c.year === year && c.semester === semester));
+  saveScheduledCourses(updated);
+  return updated;
+}
+
+export function isCourseOfferedInTerm(course: any, year: string, semester: string): boolean {
+  if (Array.isArray(course.offerings) && course.offerings.length > 0) {
+    return course.offerings.some(
+      (o: any) => String(o.year) === String(year) && String(o.semester) === String(semester)
+    );
+  }
+  if (course.activeIn) {
+    return course.activeIn === `${year}-${semester}`;
+  }
+  if (course.params?.year && course.params?.semester) {
+    return String(course.params.year) === String(year) && String(course.params.semester) === String(semester);
+  }
+  return false;
 }
 
 export function timeToMinutes(time: string): number {

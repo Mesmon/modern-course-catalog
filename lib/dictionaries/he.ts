@@ -209,5 +209,20 @@ export const he: Dictionary = {
     updatedToast: 'מערכת השעות עודכנה',
     removedToast: 'הקורס הוסר ממערכת השעות',
     fetchDeptBtn: 'משוך קורסי מחלקה',
+    yearLabel: 'שנה',
+    semesterLabel: 'סמסטר',
+    semesters: {
+      '1': "סמסטר א' (סתיו)",
+      '2': "סמסטר ב' (אביב)",
+      '3': 'סמסטר קיץ',
+    },
+    semestersShort: {
+      '1': "סמסטר א'",
+      '2': "סמסטר ב'",
+      '3': 'קיץ',
+    },
+    onlyOfferedInTermHint: 'מוצגים רק קורסים המוצעים ב-',
+    noCoursesInTerm: 'לא נמצאו קורסים המוצעים בסמסטר זה',
+    notOfferedInTermToast: 'קורס זה אינו מוצע בסמסטר הנבחר.',
   }
 };

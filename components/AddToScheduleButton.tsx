@@ -8,6 +8,7 @@ import {
   loadScheduledCourses,
   upsertScheduledCourse,
   removeScheduledCourse,
+  saveActiveTerm,
   SCHEDULE_EVENT,
   ScheduledCourse,
 } from '@/lib/schedule';
@@ -51,7 +52,14 @@ export function AddToScheduleButton({
   useEffect(() => {
     const sync = () => {
       const list = loadScheduledCourses();
-      setExistingEntry(list.find(c => c.id === fullId));
+      setExistingEntry(
+        list.find(
+          c =>
+            c.id === fullId &&
+            String(c.year) === String(year) &&
+            String(c.semester) === String(semester)
+        )
+      );
     };
     sync();
     window.addEventListener(SCHEDULE_EVENT, sync);
@@ -60,12 +68,11 @@ export function AddToScheduleButton({
       window.removeEventListener(SCHEDULE_EVENT, sync);
       window.removeEventListener('storage', sync);
     };
-  }, [fullId]);
+  }, [fullId, year, semester]);
 
   const handleClick = () => {
-    // If the course has at most 1 group total and isn't scheduled yet, we can still open the dialog
-    // if it has multiple groups, or add directly if there's only 0 or 1 group and not yet in schedule
     if (!existingEntry && (!groups || groups.length <= 1)) {
+      saveActiveTerm({ year, semester });
       upsertScheduledCourse({
         id: fullId,
         courseId,
@@ -86,6 +93,7 @@ export function AddToScheduleButton({
 
   const handleConfirm = (selectedGroups: CourseGroup[]) => {
     const wasScheduled = !!existingEntry;
+    saveActiveTerm({ year, semester });
     upsertScheduledCourse({
       id: fullId,
       courseId,
@@ -102,7 +110,7 @@ export function AddToScheduleButton({
   };
 
   const handleRemove = () => {
-    removeScheduledCourse(fullId);
+    removeScheduledCourse(fullId, year, semester);
     toast.info(dictionary.schedule.removedToast);
   };
 

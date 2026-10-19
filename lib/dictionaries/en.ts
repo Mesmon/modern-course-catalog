@@ -207,6 +207,21 @@ export const en = {
     updatedToast: 'Schedule updated',
     removedToast: 'Course removed from schedule',
     fetchDeptBtn: 'Fetch Department Courses',
+    yearLabel: 'Year',
+    semesterLabel: 'Semester',
+    semesters: {
+      '1': 'Semester A (Fall)',
+      '2': 'Semester B (Spring)',
+      '3': 'Summer Semester',
+    },
+    semestersShort: {
+      '1': 'Sem A',
+      '2': 'Sem B',
+      '3': 'Summer',
+    },
+    onlyOfferedInTermHint: 'Showing only courses offered in',
+    noCoursesInTerm: 'No courses found for this semester',
+    notOfferedInTermToast: 'This course is not offered in the selected semester.',
   }
 };
 
