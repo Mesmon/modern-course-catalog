@@ -80,6 +80,7 @@ export const en = {
     computerScience: 'Computer Science',
     degreeLevel: 'Degree Level',
     bachelor: 'Bachelor',
+    master: 'Master',
     noAbstract: 'No abstract available.',
     quickInfo: 'Quick Info',
     courseId: 'Course ID',

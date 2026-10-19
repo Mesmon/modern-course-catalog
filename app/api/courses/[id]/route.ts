@@ -10,8 +10,8 @@ export async function GET(
     const { searchParams } = new URL(req.url);
     const dept = searchParams.get('dept') || '202';
     const degree = searchParams.get('degree') || '1';
-    const year = searchParams.get('year') || '2026';
-    const semester = searchParams.get('semester') || '2';
+    const year = searchParams.get('year') || '2027';
+    const semester = searchParams.get('semester') || '1';
 
     const courseDetail = await getCourseDetailFromDB(id, dept, degree, year, semester);
 

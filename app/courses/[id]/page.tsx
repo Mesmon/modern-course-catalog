@@ -24,32 +24,32 @@ export default async function CoursePage({
   const { id } = await params;
   const sParams = await searchParams;
   
+  const deptParam = sParams.dept || '202';
+  const degParam = sParams.deg || '1';
+  const reqYear = sParams.year || '2027';
+  const reqSem = sParams.sem || '1';
+
   const course = await getCourseDetailFromDB(
     id,
-    sParams.dept || '202',
-    sParams.deg || '1',
-    sParams.year || '2026',
-    sParams.sem || '2'
+    deptParam,
+    degParam,
+    reqYear,
+    reqSem
   );
 
   if (!course) {
     return notFound();
   }
-
-  const reqYear = sParams.year || '2026';
-  const reqSem = sParams.sem || '2';
   
   if (course.year !== reqYear || course.semester !== reqSem) {
-    const deptP = sParams.dept || '202';
-    const degP = sParams.deg || '1';
     /* 
        We return standard redirect so the URL matches the data exactly.
        This enables accurate UI badge highlighting and syllabus generation.
     */
-    redirect(`/courses/${id}?dept=${deptP}&deg=${degP}&year=${course.year}&sem=${course.semester}`);
+    redirect(`/courses/${id}?dept=${deptParam}&deg=${degParam}&year=${course.year}&sem=${course.semester}`);
   }
 
-  const fullId = `${sParams.dept || '202'}.${sParams.deg || '1'}.${id}`;
+  const fullId = `${deptParam}.${degParam}.${id}`;
 
   const sP = course.syllabusParams;
   const syllabusLink = sP ? `/api/syllabus?dept=${sP[0]}&degree=${sP[1]}&course=${sP[2]}&year=${sP[3]}&semester=${sP[4]}&courseName=${encodeURIComponent(course.name)}` : null;
@@ -87,7 +87,7 @@ export default async function CoursePage({
       {/* Dynamic Header */}
       <header className="border-b dark:border-slate-800 bg-white dark:bg-slate-950 sticky top-0 z-50">
         <div className="container max-w-6xl h-20 flex items-center px-4 justify-between">
-          <Link href={`/departments/${sParams.dept || '202'}`} className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-bold group">
+          <Link href={`/departments/${deptParam}?deg=${degParam}&year=${reqYear}&sem=${reqSem}`} className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-bold group">
             <div className="p-1.5 rounded-full group-hover:bg-primary/10 transition-colors">
               <ArrowLeft className={`h-5 w-5 ${locale === 'he' ? 'rotate-180' : ''}`} />
             </div>
@@ -124,7 +124,7 @@ export default async function CoursePage({
                     {course.semesterName}
                   </Badge>
                   <div className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-                  <span className="text-slate-500 dark:text-slate-400 font-bold">{dictionary.course.computerScience}</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-bold">{dictionary.department.title} {deptParam}</span>
                </div>
                <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-slate-100 leading-[1.1] tracking-tighter">
                  {course.name}
@@ -136,7 +136,7 @@ export default async function CoursePage({
               {[
                 { label: dictionary.course.points, val: course.points, icon: Award, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10' },
                 { label: dictionary.course.hours, val: course.hours, icon: Clock, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-500/10' },
-                { label: dictionary.course.degreeLevel, val: dictionary.course.bachelor, icon: GraduationCap, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-500/10' }
+                { label: dictionary.course.degreeLevel, val: degParam === '2' ? dictionary.course.master : dictionary.course.bachelor, icon: GraduationCap, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-500/10' }
               ].map((stat, i) => (
                 <Card key={i} className="border-none shadow-sm ring-1 ring-slate-100 dark:ring-slate-800 bg-white dark:bg-slate-900 group hover:ring-primary/30 transition-all duration-300">
                   <CardContent className="p-6">
@@ -279,11 +279,11 @@ export default async function CoursePage({
                 <CardContent className="p-4">
                   <div className="flex flex-wrap gap-2">
                     {course.offerings.map((off: any, idx: number) => {
-                      const isActive = off.year === (sParams.year || '2026') && off.semester === (sParams.sem || '2');
+                      const isActive = off.year === reqYear && off.semester === reqSem;
                       return (
                         <Link 
                           key={idx}
-                          href={`/courses/${id}?dept=${sParams.dept || '202'}&deg=${sParams.deg || '1'}&year=${off.year}&sem=${off.semester}`}
+                          href={`/courses/${id}?dept=${deptParam}&deg=${degParam}&year=${off.year}&sem=${off.semester}`}
                         >
                           <Badge variant={isActive ? 'default' : 'outline'} className={isActive ? 'bg-primary hover:bg-primary cursor-pointer' : 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'}>
                             {dictionary.course.semester} {off.semester} | {off.year}

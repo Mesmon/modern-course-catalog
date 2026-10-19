@@ -14,14 +14,20 @@ export async function getDepartmentCoursesFromDB(dept: string, degree: string, y
   const collection = db.collection('courses');
 
   const coursesCursor = await collection.find({
-    id: { $regex: `^${dept}\\.` }
+    id: { $regex: `^${dept}\\.${degree}\\.` }
   });
   const existingCourses = await coursesCursor.toArray();
 
   if (existingCourses.length > 0) {
     const hasHistory = existingCourses.some(c => c.offerings && c.offerings.length > 0);
-    // If we have history for this department, we don't need to rescrape even if this specific term is empty
-    if (hasHistory) {
+    const maxScrapedYear = existingCourses.reduce((max, c) => {
+      const courseMax = (c.offerings || []).reduce((m: number, o: any) => Math.max(m, parseInt(o.year, 10) || 0), 0);
+      return Math.max(max, courseMax);
+    }, 0);
+    const requestedYearNum = parseInt(year, 10) || 2027;
+
+    // If we have history for this department & degree and it covers up to the requested year, return from DB
+    if (hasHistory && maxScrapedYear >= requestedYearNum) {
       const filtered = existingCourses.map(c => {
         const offering = c.offerings?.find((o: any) => o.year === year && o.semester === semester);
         if (offering) {
@@ -38,8 +44,8 @@ export async function getDepartmentCoursesFromDB(dept: string, degree: string, y
     }
   }
 
-  console.log(`Department ${dept} courses not found for ${year}-${semester} or history missing, scraping last 4 years...`);
-  const currentYear = parseInt(year, 10) || new Date().getFullYear();
+  console.log(`Department ${dept} (degree ${degree}) courses not found for ${year}-${semester} or history missing, scraping last 4 years...`);
+  const currentYear = Math.max(parseInt(year, 10) || 2027, 2027);
   const yearsToScrape = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3];
   const semestersToScrape = ['1', '2', '3']; // 1: Fall, 2: Spring, 3: Summer
   
@@ -61,7 +67,7 @@ export async function getDepartmentCoursesFromDB(dept: string, degree: string, y
         fetchCourseList(dept, degree, yr.toString(), sem)
           .then(scraped => ({ yr: yr.toString(), sem, scraped }))
           .catch(err => {
-            console.error(`Failed to scrape ${dept} for year ${yr} semester ${sem}`, err);
+            console.error(`Failed to scrape ${dept} (degree ${degree}) for year ${yr} semester ${sem}`, err);
             return { yr: yr.toString(), sem, scraped: [] };
           })
       );
@@ -177,7 +183,7 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
 
   // Look up what courses this course blocks (Forward Prerequisites)
   const forwardBlocksCursor = await collection.find({
-    "relatedCourses.id": id
+    "relatedCourses.id": { $in: [fullId, id] }
   }, {
     projection: { id: 1, name: 1, relatedCourses: 1, year: 1, semester: 1 }
   });
@@ -185,7 +191,7 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
   const forwardBlocksRaw = await forwardBlocksCursor.toArray();
   const blockedCourses = forwardBlocksRaw.map(fb => {
     // find the specific relation they have to us
-    const relationInfo = fb.relatedCourses.find((rc: any) => rc.id === id);
+    const relationInfo = fb.relatedCourses.find((rc: any) => rc.id === fullId || rc.id === id);
     const parts = fb.id.split('.');
     return {
       id: parts[2] || fb.id,

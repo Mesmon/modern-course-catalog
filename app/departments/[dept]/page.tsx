@@ -18,8 +18,8 @@ export default async function DepartmentPage({
   const sParams = await searchParams;
   
   const degree = sParams.deg || '1';
-  const year = sParams.year || '2026';
-  const semester = sParams.sem || '2';
+  const year = sParams.year || '2027';
+  const semester = sParams.sem || '1';
 
   const courses = await getDepartmentCoursesFromDB(dept, degree, year, semester);
   
@@ -27,6 +27,50 @@ export default async function DepartmentPage({
   const localeCookie = cookieStore.get('NEXT_LOCALE')?.value as Locale | undefined;
   const locale = localeCookie === 'en' ? 'en' : 'he';
   const dictionary = getDictionary(locale);
+
+  const filterCard = (
+    <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+       <div className="space-y-2">
+          <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{dictionary.department.degree}</label>
+          <div className="flex flex-wrap gap-2">
+              <Link href={`/departments/${dept}?deg=1&year=${year}&sem=${semester}`}>
+                <Badge variant={degree === '1' ? 'default' : 'outline'} className={degree === '1' ? 'bg-primary hover:bg-primary cursor-pointer' : 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'}>
+                  {dictionary.department.bachelor}
+                </Badge>
+              </Link>
+              <Link href={`/departments/${dept}?deg=2&year=${year}&sem=${semester}`}>
+                <Badge variant={degree === '2' ? 'default' : 'outline'} className={degree === '2' ? 'bg-primary hover:bg-primary cursor-pointer' : 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'}>
+                  {dictionary.department.master}
+                </Badge>
+              </Link>
+          </div>
+       </div>
+       <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{dictionary.department.yearPrefix || 'Year'}</label>
+          <div className="flex flex-wrap gap-2">
+              {[2027, 2026, 2025, 2024].map(y => (
+                <Link key={y} href={`/departments/${dept}?deg=${degree}&year=${y}&sem=${semester}`}>
+                  <Badge variant={y.toString() === year ? 'default' : 'outline'} className={y.toString() === year ? 'bg-primary hover:bg-primary cursor-pointer' : 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'}>
+                    {y}
+                  </Badge>
+                </Link>
+              ))}
+          </div>
+       </div>
+       <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{dictionary.department.semesterPrefix || 'Semester'}</label>
+          <div className="flex flex-wrap gap-2">
+              {[1, 2, 3].map(s => (
+                <Link key={s} href={`/departments/${dept}?deg=${degree}&year=${year}&sem=${s}`}>
+                  <Badge variant={s.toString() === semester ? 'default' : 'outline'} className={s.toString() === semester ? 'bg-primary hover:bg-primary cursor-pointer' : 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'}>
+                    {s}
+                  </Badge>
+                </Link>
+              ))}
+          </div>
+       </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50" dir={locale === 'en' ? 'ltr' : 'rtl'}>
@@ -39,7 +83,9 @@ export default async function DepartmentPage({
             </Link>
             <div>
               <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 leading-none">{dictionary.department.title} {dept}</h1>
-              <p className="text-sm text-muted-foreground mt-1">{dictionary.department.semesterPrefix} {semester} | {dictionary.department.yearPrefix} {year}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {dictionary.department.degree}: {degree === '2' ? dictionary.department.master : dictionary.department.bachelor} | {dictionary.department.semesterPrefix} {semester} | {dictionary.department.yearPrefix} {year}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -52,54 +98,14 @@ export default async function DepartmentPage({
 
       <main className="container max-w-6xl px-4 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar / Filters (Placeholder) */}
-          <aside className="hidden lg:block space-y-6">
+          {/* Sidebar / Filters */}
+          <aside className="space-y-6">
             <div className="space-y-4">
               <h3 className="font-bold flex items-center gap-2 text-slate-700 dark:text-slate-300">
                 <Filter className="h-4 w-4" />
                 {dictionary.department.filterResults}
               </h3>
-              <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-                 <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{dictionary.department.degree}</label>
-                    <div className="flex flex-wrap gap-2">
-                        <Link href={`/departments/${dept}?deg=1&year=${year}&sem=${semester}`}>
-                          <Badge variant={degree === '1' ? 'default' : 'outline'} className={degree === '1' ? 'bg-primary hover:bg-primary cursor-pointer' : 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'}>
-                            {dictionary.department.bachelor}
-                          </Badge>
-                        </Link>
-                        <Link href={`/departments/${dept}?deg=2&year=${year}&sem=${semester}`}>
-                          <Badge variant={degree === '2' ? 'default' : 'outline'} className={degree === '2' ? 'bg-primary hover:bg-primary cursor-pointer' : 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'}>
-                            {dictionary.department.master}
-                          </Badge>
-                        </Link>
-                    </div>
-                 </div>
-                 <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{dictionary.department.yearPrefix || 'Year'}</label>
-                    <div className="flex flex-wrap gap-2">
-                        {[2026, 2025, 2024, 2023].map(y => (
-                          <Link key={y} href={`/departments/${dept}?deg=${degree}&year=${y}&sem=${semester}`}>
-                            <Badge variant={y.toString() === year ? 'default' : 'outline'} className={y.toString() === year ? 'bg-primary hover:bg-primary cursor-pointer' : 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'}>
-                              {y}
-                            </Badge>
-                          </Link>
-                        ))}
-                    </div>
-                 </div>
-                 <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{dictionary.department.semesterPrefix || 'Semester'}</label>
-                    <div className="flex flex-wrap gap-2">
-                        {[1, 2, 3].map(s => (
-                          <Link key={s} href={`/departments/${dept}?deg=${degree}&year=${year}&sem=${s}`}>
-                            <Badge variant={s.toString() === semester ? 'default' : 'outline'} className={s.toString() === semester ? 'bg-primary hover:bg-primary cursor-pointer' : 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer'}>
-                              {s}
-                            </Badge>
-                          </Link>
-                        ))}
-                    </div>
-                 </div>
-              </div>
+              {filterCard}
             </div>
           </aside>
 

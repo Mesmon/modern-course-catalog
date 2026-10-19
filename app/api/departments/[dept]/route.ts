@@ -8,11 +8,20 @@ export async function GET(
   try {
     const { dept } = await params;
     const { searchParams } = new URL(req.url);
-    const degree = searchParams.get('degree') || '1';
-    const year = searchParams.get('year') || '2026';
-    const semester = searchParams.get('semester') || '2';
+    const degreeParam = searchParams.get('degree');
+    const year = searchParams.get('year') || '2027';
+    const semester = searchParams.get('semester') || '1';
 
-    const courses = await getDepartmentCoursesFromDB(dept, degree, year, semester);
+    if (!degreeParam || degreeParam === 'all') {
+      const [deg1Courses, deg2Courses] = await Promise.all([
+        getDepartmentCoursesFromDB(dept, '1', year, semester),
+        getDepartmentCoursesFromDB(dept, '2', year, semester),
+      ]);
+      const combined = [...deg1Courses, ...deg2Courses];
+      return NextResponse.json(combined);
+    }
+
+    const courses = await getDepartmentCoursesFromDB(dept, degreeParam, year, semester);
     
     return NextResponse.json(courses);
   } catch (error) {

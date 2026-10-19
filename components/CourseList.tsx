@@ -46,8 +46,10 @@ export function CourseList() {
         const dept = (course as any).params?.dept || parts[0] || '202';
         const degree = (course as any).params?.degree || parts[1] || '1';
         const cId = (course as any).params?.course || parts[2] || course.id;
-        const year = (course as any).params?.year || '2026';
-        const semester = (course as any).params?.semester || '2';
+        const activeParts = course.activeIn ? course.activeIn.split('-') : [];
+        const latestOffering = (course as any).offerings?.[0];
+        const year = (course as any).params?.year || latestOffering?.year || activeParts[0] || '2027';
+        const semester = (course as any).params?.semester || latestOffering?.semester || activeParts[1] || '1';
 
         return (
           <Link 

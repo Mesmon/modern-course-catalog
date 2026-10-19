@@ -82,6 +82,7 @@ export const he: Dictionary = {
     computerScience: 'מדעי המחשב',
     degreeLevel: 'רמת תואר',
     bachelor: 'ראשון',
+    master: 'שני',
     noAbstract: 'לא נמצא תקציר לקורס זה.',
     quickInfo: 'מידע מהיר',
     courseId: 'מזהה קורס',

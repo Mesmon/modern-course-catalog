@@ -23,7 +23,7 @@ export function CourseNode({ id, data, selected, xPos, yPos, targetPosition = Po
 
   const allTerms = useMemo(() => {
     const terms: { year: string, semester: string, label: string }[] = [];
-    const currentYear = new Date().getFullYear();
+    const currentYear = Math.max(new Date().getFullYear(), 2026);
     const knownKeys = new Set<string>();
 
     if (data.offerings && Array.isArray(data.offerings)) {
@@ -37,9 +37,9 @@ export function CourseNode({ id, data, selected, xPos, yPos, targetPosition = Po
     const currentKey = `${data.year}-${data.semester}`;
     if (!knownKeys.has(currentKey)) {
         terms.push({
-            year: data.year?.toString() || currentYear.toString(),
-            semester: data.semester?.toString() || '2',
-            label: `${data.year || currentYear}-${data.semester || 2}`
+            year: data.year?.toString() || '2027',
+            semester: data.semester?.toString() || '1',
+            label: `${data.year || 2027}-${data.semester || 1}`
         });
         knownKeys.add(currentKey);
     }
