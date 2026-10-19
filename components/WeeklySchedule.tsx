@@ -17,6 +17,8 @@ import {
   clearScheduledCoursesForTerm,
   isCourseOfferedInTerm,
   timeToMinutes,
+  buildGoogleCalendarUrl,
+  generateScheduleIcs,
   SCHEDULE_EVENT,
 } from '@/lib/schedule';
 import { CourseDetail, CourseGroup, CourseMeeting } from '@/types/course';
@@ -44,6 +46,8 @@ import {
   Plus,
   Trash2,
   Calendar,
+  CalendarPlus,
+  Download,
   Clock,
   MapPin,
   AlertTriangle,
@@ -182,6 +186,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
   const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([]);
   const [isSuggestOpen, setIsSuggestOpen] = useState(false);
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
+  const [gcalDialogOpen, setGcalDialogOpen] = useState(false);
   const suggestContainerRef = useRef<HTMLDivElement>(null);
 
   const queryClient = useQueryClient();
@@ -399,6 +404,20 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     clearScheduledCoursesForTerm(activeTerm.year, activeTerm.semester);
   };
 
+  const handleDownloadIcs = () => {
+    const icsContent = generateScheduleIcs(scheduledCourses, activeTerm.year, activeTerm.semester);
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `bgu-schedule-${activeTerm.year}-sem${activeTerm.semester}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success(dictionary.schedule.icsDownloadedToast);
+  };
+
   const handleFetchDepartment = async () => {
     if (!fetchDeptInput) return;
     setIsFetchingDept(true);
@@ -537,14 +556,24 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
             </Button>
 
             {scheduledCourses.length > 0 && (
-              <Button
-                variant="outline"
-                onClick={handleClearSchedule}
-                className="rounded-xl font-bold gap-2 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30"
-              >
-                <Trash2 className="h-4 w-4" />
-                {dictionary.schedule.clearSchedule}
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setGcalDialogOpen(true)}
+                  className="rounded-xl font-bold gap-2 border-primary/30 text-primary hover:bg-primary/5"
+                >
+                  <CalendarPlus className="h-4 w-4" />
+                  {dictionary.schedule.addToGoogleCalendar}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleClearSchedule}
+                  className="rounded-xl font-bold gap-2 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {dictionary.schedule.clearSchedule}
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -813,6 +842,12 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                         const palette =
                           COURSE_COLOR_PALETTE[ev.course.colorIndex % COURSE_COLOR_PALETTE.length];
 
+                        const gcalUrl = buildGoogleCalendarUrl({
+                          course: ev.course,
+                          group: ev.group,
+                          meeting: ev.meeting,
+                        });
+
                         return (
                           <div
                             key={ev.uid}
@@ -824,7 +859,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                               [isRtl ? 'right' : 'left']: `calc(${offsetPct}% + 2px)`,
                             }}
                             className={cn(
-                              'absolute z-10 rounded-xl border p-2 overflow-hidden cursor-pointer transition-all hover:z-30 hover:shadow-lg flex flex-col justify-between backdrop-blur-xs',
+                              'group/block absolute z-10 rounded-xl border p-2 overflow-hidden cursor-pointer transition-all hover:z-30 hover:shadow-lg flex flex-col justify-between backdrop-blur-xs',
                               palette.bg,
                               palette.border,
                               palette.text,
@@ -842,15 +877,27 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                                 >
                                   {ev.group.type} #{ev.group.id}
                                 </span>
-                                {ev.hasOverlap && (
-                                  <span
-                                    className="inline-flex items-center gap-0.5 text-[10px] font-black bg-amber-500 text-white px-1 rounded shrink-0"
-                                    title={dictionary.schedule.overlapWarning}
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {ev.hasOverlap && (
+                                    <span
+                                      className="inline-flex items-center gap-0.5 text-[10px] font-black bg-amber-500 text-white px-1 rounded shrink-0"
+                                      title={dictionary.schedule.overlapWarning}
+                                    >
+                                      <AlertTriangle className="h-2.5 w-2.5" />
+                                      <span className="hidden xl:inline">{dictionary.schedule.overlapWarning}</span>
+                                    </span>
+                                  )}
+                                  <a
+                                    href={gcalUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={e => e.stopPropagation()}
+                                    title={dictionary.schedule.openInGoogleCalendar}
+                                    className="opacity-0 group-hover/block:opacity-100 p-0.5 rounded bg-white/80 dark:bg-slate-950/80 hover:bg-white dark:hover:bg-slate-900 transition-opacity shadow-xs"
                                   >
-                                    <AlertTriangle className="h-2.5 w-2.5" />
-                                    <span className="hidden xl:inline">{dictionary.schedule.overlapWarning}</span>
-                                  </span>
-                                )}
+                                    <CalendarPlus className="h-3 w-3" />
+                                  </a>
+                                </div>
                               </div>
 
                               <p className="font-black text-xs leading-tight line-clamp-2 pt-0.5">
@@ -981,6 +1028,105 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
           locale={locale}
         />
       )}
+
+      {/* Google Calendar Export Dialog */}
+      <Dialog open={gcalDialogOpen} onOpenChange={setGcalDialogOpen}>
+        <DialogContent
+          className={cn('sm:max-w-xl max-h-[85vh] flex flex-col', isRtl ? 'text-right' : 'text-left')}
+          dir={isRtl ? 'rtl' : 'ltr'}
+        >
+          <DialogHeader className={isRtl ? 'text-right' : 'text-left'}>
+            <DialogTitle className="flex items-center gap-2 text-xl font-black">
+              <CalendarPlus className="h-5 w-5 text-primary" />
+              {dictionary.schedule.googleCalendarTitle}
+            </DialogTitle>
+            <DialogDescription>
+              {dictionary.schedule.googleCalendarDesc}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto space-y-2.5 py-2 pe-1">
+            {scheduledCourses.map(course => {
+              const palette = COURSE_COLOR_PALETTE[course.colorIndex % COURSE_COLOR_PALETTE.length];
+              return (course.selectedGroups || []).map(group =>
+                (group.meetings || []).map((meeting, mIdx) => {
+                  const gcalUrl = buildGoogleCalendarUrl({ course, group, meeting });
+                  const dayLabel =
+                    dictionary.schedule.days?.[meeting.day] ||
+                    `${dictionary.course.dayPrefix}${meeting.day}`;
+                  return (
+                    <div
+                      key={`${course.id}-${group.id}-${mIdx}`}
+                      className={cn(
+                        'flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border transition-all',
+                        palette.bg,
+                        palette.border
+                      )}
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={cn('font-black text-sm', palette.text)}>
+                            {course.name}
+                          </span>
+                          <span className={cn('text-[11px] font-bold px-2 py-0.5 rounded-md', palette.badge)}>
+                            {group.type} #{group.id}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
+                          <span className="inline-flex items-center gap-1 font-bold">
+                            <Clock className="h-3.5 w-3.5 text-primary" />
+                            {dayLabel} •{' '}
+                            <span dir="ltr" className="font-mono">
+                              {meeting.startTime} - {meeting.endTime}
+                            </span>
+                          </span>
+                          {meeting.location && (
+                            <span className="inline-flex items-center gap-1 font-medium">
+                              <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span>{meeting.location}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <Button
+                        asChild
+                        size="sm"
+                        className="rounded-lg font-bold gap-1.5 shrink-0"
+                      >
+                        <a href={gcalUrl} target="_blank" rel="noopener noreferrer">
+                          <CalendarPlus className="h-3.5 w-3.5" />
+                          {dictionary.schedule.openInGoogleCalendar}
+                        </a>
+                      </Button>
+                    </div>
+                  );
+                })
+              );
+            })}
+          </div>
+
+          <DialogFooter className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleDownloadIcs}
+              className="rounded-xl font-bold gap-2 flex-1"
+            >
+              <Download className="h-4 w-4" />
+              {dictionary.schedule.downloadIcsAll}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setGcalDialogOpen(false)}
+              className="rounded-xl font-bold"
+            >
+              {dictionary.schedule.cancel}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Fetch Department Dialog */}
       <Dialog open={showFetchDeptDialog} onOpenChange={setShowFetchDeptDialog}>

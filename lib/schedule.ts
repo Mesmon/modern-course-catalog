@@ -211,3 +211,161 @@ export function timeToMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number);
   return (h || 0) * 60 + (m || 0);
 }
+
+const DAY_TO_INDEX: Record<string, number> = {
+  'א': 0,
+  'ב': 1,
+  'ג': 2,
+  'ד': 3,
+  'ה': 4,
+  'ו': 5,
+};
+
+const DAY_TO_RRULE_BYDAY: Record<string, string> = {
+  'א': 'SU',
+  'ב': 'MO',
+  'ג': 'TU',
+  'ד': 'WE',
+  'ה': 'TH',
+  'ו': 'FR',
+};
+
+export function getTermDateRange(year: string, semester: string): { start: Date; end: Date } {
+  const y = parseInt(year, 10) || 2027;
+  // Exact BGU 2026-2027 (תשפ"ז) academic calendar dates, with general fallback for other years
+  if (y === 2027) {
+    if (semester === '1') {
+      return { start: new Date(2026, 9, 25), end: new Date(2027, 0, 22) }; // Oct 25, 2026 - Jan 22, 2027
+    }
+    if (semester === '2') {
+      return { start: new Date(2027, 2, 7), end: new Date(2027, 5, 18) }; // Mar 7, 2027 - Jun 18, 2027
+    }
+    if (semester === '3') {
+      return { start: new Date(2027, 6, 18), end: new Date(2027, 8, 10) }; // Jul 18, 2027 - Sep 10, 2027
+    }
+  }
+  if (semester === '1') {
+    return { start: new Date(y - 1, 9, 20), end: new Date(y, 0, 25) };
+  }
+  if (semester === '2') {
+    return { start: new Date(y, 2, 1), end: new Date(y, 5, 20) };
+  }
+  return { start: new Date(y, 6, 15), end: new Date(y, 8, 15) };
+}
+
+function getFirstMeetingDate(termStart: Date, dayHebrew: string): Date {
+  const targetDow = DAY_TO_INDEX[dayHebrew] ?? 0;
+  const d = new Date(termStart.getFullYear(), termStart.getMonth(), termStart.getDate());
+  const diff = (targetDow - d.getDay() + 7) % 7;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+function formatLocalDateTime(date: Date, timeStr: string): string {
+  const [h, m] = timeStr.split(':').map(Number);
+  return `${date.getFullYear()}${pad2(date.getMonth() + 1)}${pad2(date.getDate())}T${pad2(h || 0)}${pad2(m || 0)}00`;
+}
+
+function formatUntilDateUtc(endDate: Date): string {
+  return `${endDate.getFullYear()}${pad2(endDate.getMonth() + 1)}${pad2(endDate.getDate())}T235959Z`;
+}
+
+export function buildGoogleCalendarUrl(params: {
+  course: ScheduledCourse;
+  group: CourseGroup;
+  meeting: { day: string; startTime: string; endTime: string; location: string; mode?: string };
+}): string {
+  const { course, group, meeting } = params;
+  const { start, end } = getTermDateRange(course.year, course.semester);
+  const firstDate = getFirstMeetingDate(start, meeting.day);
+  const startDt = formatLocalDateTime(firstDate, meeting.startTime);
+  const endDt = formatLocalDateTime(firstDate, meeting.endTime);
+  const byDay = DAY_TO_RRULE_BYDAY[meeting.day] || 'SU';
+  const untilStr = formatUntilDateUtc(end);
+
+  const title = `${course.name} (${group.type} - קבוצה ${group.id})`;
+  const location = meeting.location ? `${meeting.location}, אוניברסיטת בן-גוריון` : 'אוניברסיטת בן-גוריון';
+  const detailsParts = [
+    `קורס: ${course.name} (${course.id})`,
+    `סוג: ${group.type} | קבוצה: ${group.id}`,
+  ];
+  if (group.lecturer) detailsParts.push(`מרצה: ${group.lecturer}`);
+  if (meeting.location) detailsParts.push(`מיקום: ${meeting.location}`);
+  if (meeting.mode) detailsParts.push(`אופן לימוד: ${meeting.mode}`);
+
+  const urlParams = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${startDt}/${endDt}`,
+    ctz: 'Asia/Jerusalem',
+    location,
+    details: detailsParts.join('\n'),
+    recur: `RRULE:FREQ=WEEKLY;BYDAY=${byDay};UNTIL=${untilStr}`,
+  });
+
+  return `https://calendar.google.com/calendar/render?${urlParams.toString()}`;
+}
+
+function escapeIcsText(str: string): string {
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
+}
+
+export function generateScheduleIcs(courses: ScheduledCourse[], year: string, semester: string): string {
+  const { start, end } = getTermDateRange(year, semester);
+  const untilStr = formatUntilDateUtc(end);
+  const nowStamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Modern BGU Course Catalog//Weekly Schedule//HE',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-TIMEZONE:Asia/Jerusalem',
+  ];
+
+  courses.forEach(course => {
+    (course.selectedGroups || []).forEach(group => {
+      (group.meetings || []).forEach((meeting, mIdx) => {
+        const firstDate = getFirstMeetingDate(start, meeting.day);
+        const startDt = formatLocalDateTime(firstDate, meeting.startTime);
+        const endDt = formatLocalDateTime(firstDate, meeting.endTime);
+        const byDay = DAY_TO_RRULE_BYDAY[meeting.day] || 'SU';
+
+        const summary = `${course.name} (${group.type} - קבוצה ${group.id})`;
+        const location = meeting.location || 'אוניברסיטת בן-גוריון';
+        const descParts = [
+          `קורס: ${course.name} (${course.id})`,
+          `סוג: ${group.type} | קבוצה: ${group.id}`,
+        ];
+        if (group.lecturer) descParts.push(`מרצה: ${group.lecturer}`);
+        if (meeting.location) descParts.push(`מיקום: ${meeting.location}`);
+        if (meeting.mode) descParts.push(`אופן לימוד: ${meeting.mode}`);
+
+        lines.push(
+          'BEGIN:VEVENT',
+          `UID:${course.id}-${group.id}-${mIdx}-${year}-${semester}@bgu-catalog`,
+          `DTSTAMP:${nowStamp}`,
+          `DTSTART;TZID=Asia/Jerusalem:${startDt}`,
+          `DTEND;TZID=Asia/Jerusalem:${endDt}`,
+          `RRULE:FREQ=WEEKLY;BYDAY=${byDay};UNTIL=${untilStr}`,
+          `SUMMARY:${escapeIcsText(summary)}`,
+          `LOCATION:${escapeIcsText(location)}`,
+          `DESCRIPTION:${escapeIcsText(descParts.join('\n'))}`,
+          'END:VEVENT'
+        );
+      });
+    });
+  });
+
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}

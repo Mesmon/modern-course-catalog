@@ -224,5 +224,11 @@ export const he: Dictionary = {
     onlyOfferedInTermHint: 'מוצגים רק קורסים המוצעים ב-',
     noCoursesInTerm: 'לא נמצאו קורסים המוצעים בסמסטר זה',
     notOfferedInTermToast: 'קורס זה אינו מוצע בסמסטר הנבחר.',
+    addToGoogleCalendar: 'הוסף ל-Google Calendar',
+    googleCalendarTitle: 'ייצוא מערכת ל-Google Calendar',
+    googleCalendarDesc: 'הוסיפו כל שיעור כאירוע שבועי חוזר ב-Google Calendar כולל בניין וכיתה, או הורידו קובץ .ics לייבוא כל המערכת בבת אחת.',
+    openInGoogleCalendar: 'הוסף ליומן Google',
+    downloadIcsAll: 'הורד קובץ יומן מלא (.ics)',
+    icsDownloadedToast: 'קובץ היומן (.ics) ירד! ניתן לייבא אותו ב-Google Calendar תחת הגדרות ← ייבוא.',
   }
 };

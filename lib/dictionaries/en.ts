@@ -222,6 +222,12 @@ export const en = {
     onlyOfferedInTermHint: 'Showing only courses offered in',
     noCoursesInTerm: 'No courses found for this semester',
     notOfferedInTermToast: 'This course is not offered in the selected semester.',
+    addToGoogleCalendar: 'Add to Google Calendar',
+    googleCalendarTitle: 'Export to Google Calendar',
+    googleCalendarDesc: 'Add your classes as recurring weekly events with building & room locations, or download an .ics file to import your entire schedule into Google Calendar at once.',
+    openInGoogleCalendar: 'Add to Google Calendar',
+    downloadIcsAll: 'Download Full Schedule (.ics)',
+    icsDownloadedToast: 'Schedule .ics file downloaded! Import it in Google Calendar → Settings → Import.',
   }
 };
 
