@@ -1,0 +1,889 @@
+'use client';
+
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { useAllCourses } from '@/hooks/useCourses';
+import {
+  ScheduledCourse,
+  COURSE_COLOR_PALETTE,
+  loadScheduledCourses,
+  saveScheduledCourses,
+  upsertScheduledCourse,
+  removeScheduledCourse,
+  timeToMinutes,
+  SCHEDULE_EVENT,
+} from '@/lib/schedule';
+import { CourseDetail, CourseGroup, CourseMeeting } from '@/types/course';
+import { GroupSelectorDialog } from './GroupSelectorDialog';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Input } from './ui/input';
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Plus,
+  Trash2,
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  AlertTriangle,
+  Settings2,
+  Loader2,
+  Award,
+  BookOpen,
+  ExternalLink,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const DAYS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו'] as const;
+const START_HOUR = 8;
+const END_HOUR = 21;
+const TOTAL_HOURS = END_HOUR - START_HOUR;
+const HOUR_HEIGHT = 68; // px per hour
+
+interface CalendarEvent {
+  uid: string;
+  course: ScheduledCourse;
+  group: CourseGroup;
+  meeting: CourseMeeting;
+  day: string;
+  startMin: number;
+  endMin: number;
+  column: number;
+  totalColumns: number;
+  hasOverlap: boolean;
+}
+
+function layoutDayEvents(rawEvents: Omit<CalendarEvent, 'column' | 'totalColumns' | 'hasOverlap'>[]): CalendarEvent[] {
+  if (rawEvents.length === 0) return [];
+
+  const sorted = [...rawEvents].sort((a, b) => {
+    if (a.startMin !== b.startMin) return a.startMin - b.startMin;
+    return b.endMin - a.endMin;
+  });
+
+  // Group into connected overlapping clusters
+  const clusters: (typeof sorted)[] = [];
+  let currentCluster: typeof sorted = [];
+  let clusterEnd = -1;
+
+  sorted.forEach(ev => {
+    if (currentCluster.length === 0 || ev.startMin < clusterEnd) {
+      currentCluster.push(ev);
+      clusterEnd = Math.max(clusterEnd, ev.endMin);
+    } else {
+      clusters.push(currentCluster);
+      currentCluster = [ev];
+      clusterEnd = ev.endMin;
+    }
+  });
+  if (currentCluster.length > 0) {
+    clusters.push(currentCluster);
+  }
+
+  const result: CalendarEvent[] = [];
+
+  clusters.forEach(cluster => {
+    const columnsEnd: number[] = [];
+    const placed: { ev: (typeof sorted)[0]; col: number }[] = [];
+
+    cluster.forEach(ev => {
+      let assignedCol = -1;
+      for (let c = 0; c < columnsEnd.length; c++) {
+        if (columnsEnd[c] <= ev.startMin) {
+          assignedCol = c;
+          columnsEnd[c] = ev.endMin;
+          break;
+        }
+      }
+      if (assignedCol === -1) {
+        assignedCol = columnsEnd.length;
+        columnsEnd.push(ev.endMin);
+      }
+      placed.push({ ev, col: assignedCol });
+    });
+
+    const totalCols = columnsEnd.length;
+    const hasOverlap = cluster.length > 1;
+
+    placed.forEach(({ ev, col }) => {
+      result.push({
+        ...ev,
+        column: col,
+        totalColumns: totalCols,
+        hasOverlap,
+      });
+    });
+  });
+
+  return result;
+}
+
+interface Department {
+  id: string;
+  name: string;
+}
+
+export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale: string }) {
+  const isRtl = locale === 'he';
+  const [scheduledCourses, setScheduledCourses] = useState<ScheduledCourse[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Search dialog state
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoadingCourse, setIsLoadingCourse] = useState(false);
+
+  // Group selector dialog state
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+  const [pendingCourse, setPendingCourse] = useState<{
+    id: string;
+    courseId: string;
+    dept: string;
+    degree: string;
+    year: string;
+    semester: string;
+    name: string;
+    points: string;
+    groups: CourseGroup[];
+    initialSelectedIds?: string[];
+    isAlreadyScheduled?: boolean;
+  } | null>(null);
+
+  // Fetch department fallback dialog state
+  const [showFetchDeptDialog, setShowFetchDeptDialog] = useState(false);
+  const [fetchDeptInput, setFetchDeptInput] = useState('');
+  const [isFetchingDept, setIsFetchingDept] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([]);
+  const [isSuggestOpen, setIsSuggestOpen] = useState(false);
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
+  const suggestContainerRef = useRef<HTMLDivElement>(null);
+
+  const queryClient = useQueryClient();
+  const { data: courses = [], refetch: refetchCourses } = useAllCourses();
+
+  useEffect(() => {
+    setIsMounted(true);
+    const sync = () => {
+      setScheduledCourses(loadScheduledCourses());
+    };
+    sync();
+    window.addEventListener(SCHEDULE_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(SCHEDULE_EVENT, sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (searchOpen) {
+      refetchCourses();
+    }
+  }, [searchOpen, refetchCourses]);
+
+  useEffect(() => {
+    async function loadDepts() {
+      try {
+        const res = await fetch('/api/departments');
+        const data = await res.json();
+        if (Array.isArray(data)) setDepartments(data);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoadingDepartments(false);
+      }
+    }
+    loadDepts();
+  }, []);
+
+  useEffect(() => {
+    setFilteredDepartments(
+      departments.filter(
+        d =>
+          fetchDeptInput === '' ||
+          d.id.includes(fetchDeptInput) ||
+          d.name.toLowerCase().includes(fetchDeptInput.toLowerCase())
+      )
+    );
+  }, [fetchDeptInput, departments]);
+
+  const handleSelectCourseFromSearch = async (course: any) => {
+    setSearchOpen(false);
+    const parts = course.id.split('.');
+    const dept = course.params?.dept || parts[0] || '202';
+    const degree = course.params?.degree || parts[1] || '1';
+    const cId = course.params?.course || parts[2] || course.id;
+    const activeParts = course.activeIn ? course.activeIn.split('-') : [];
+    const latestOffering = course.offerings?.[0];
+    const year = course.params?.year || latestOffering?.year || activeParts[0] || '2027';
+    const semester = course.params?.semester || latestOffering?.semester || activeParts[1] || '1';
+    const fullId = `${dept}.${degree}.${cId}`;
+
+    // Check if already in schedule
+    const existing = scheduledCourses.find(c => c.id === fullId);
+    if (existing && existing.allGroups && existing.allGroups.length > 0) {
+      setPendingCourse({
+        id: existing.id,
+        courseId: existing.courseId,
+        dept: existing.dept,
+        degree: existing.degree,
+        year: existing.year,
+        semester: existing.semester,
+        name: existing.name,
+        points: existing.points,
+        groups: existing.allGroups,
+        initialSelectedIds: existing.selectedGroups.map(g => g.id),
+        isAlreadyScheduled: true,
+      });
+      setGroupDialogOpen(true);
+      return;
+    }
+
+    setIsLoadingCourse(true);
+    try {
+      const res = await fetch(`/api/courses/${cId}?dept=${dept}&degree=${degree}&year=${year}&semester=${semester}`);
+      if (!res.ok) {
+        toast.error(dictionary.common.error);
+        return;
+      }
+      const detail: CourseDetail = await res.json();
+      const groups = detail.groups || [];
+      const actualYear = detail.year || year;
+      const actualSem = detail.semester || semester;
+
+      if (groups.length <= 1 && !existing) {
+        upsertScheduledCourse({
+          id: fullId,
+          courseId: cId,
+          dept,
+          degree,
+          year: actualYear,
+          semester: actualSem,
+          name: detail.name || course.name,
+          points: detail.points || '0',
+          selectedGroups: groups,
+          allGroups: groups,
+        });
+        toast.success(dictionary.schedule.addedToast);
+      } else {
+        setPendingCourse({
+          id: fullId,
+          courseId: cId,
+          dept,
+          degree,
+          year: actualYear,
+          semester: actualSem,
+          name: detail.name || course.name,
+          points: detail.points || '0',
+          groups,
+          initialSelectedIds: existing?.selectedGroups.map(g => g.id),
+          isAlreadyScheduled: !!existing,
+        });
+        setGroupDialogOpen(true);
+      }
+    } catch (e) {
+      console.error('Failed to fetch course for schedule:', e);
+      toast.error(dictionary.common.error);
+    } finally {
+      setIsLoadingCourse(false);
+    }
+  };
+
+  const handleOpenCourseGroups = (course: ScheduledCourse) => {
+    setPendingCourse({
+      id: course.id,
+      courseId: course.courseId,
+      dept: course.dept,
+      degree: course.degree,
+      year: course.year,
+      semester: course.semester,
+      name: course.name,
+      points: course.points,
+      groups: course.allGroups || [],
+      initialSelectedIds: course.selectedGroups.map(g => g.id),
+      isAlreadyScheduled: true,
+    });
+    setGroupDialogOpen(true);
+  };
+
+  const handleConfirmGroups = (selectedGroups: CourseGroup[]) => {
+    if (!pendingCourse) return;
+    upsertScheduledCourse({
+      id: pendingCourse.id,
+      courseId: pendingCourse.courseId,
+      dept: pendingCourse.dept,
+      degree: pendingCourse.degree,
+      year: pendingCourse.year,
+      semester: pendingCourse.semester,
+      name: pendingCourse.name,
+      points: pendingCourse.points,
+      selectedGroups,
+      allGroups: pendingCourse.groups,
+    });
+    toast.success(
+      pendingCourse.isAlreadyScheduled
+        ? dictionary.schedule.updatedToast
+        : dictionary.schedule.addedToast
+    );
+  };
+
+  const handleRemoveCourse = (id: string) => {
+    removeScheduledCourse(id);
+    toast.info(dictionary.schedule.removedToast);
+  };
+
+  const handleClearSchedule = () => {
+    saveScheduledCourses([]);
+  };
+
+  const handleFetchDepartment = async () => {
+    if (!fetchDeptInput) return;
+    setIsFetchingDept(true);
+    try {
+      const res = await fetch(`/api/departments/${fetchDeptInput}`);
+      if (res.ok) {
+        const deptCourses = await res.json();
+        if (deptCourses && deptCourses.length > 0) {
+          toast.success(dictionary.map.deptFound);
+          queryClient.invalidateQueries({ queryKey: ['courses'] });
+          setShowFetchDeptDialog(false);
+          setFetchDeptInput('');
+          setSearchOpen(true);
+        } else {
+          toast.error(dictionary.map.deptNotFound);
+        }
+      } else {
+        toast.error(dictionary.map.deptNotFound);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(dictionary.map.deptNotFound);
+    } finally {
+      setIsFetchingDept(false);
+    }
+  };
+
+  // Compute events per day
+  const eventsByDay = useMemo(() => {
+    const map: Record<string, CalendarEvent[]> = {};
+    DAYS.forEach(d => {
+      map[d] = [];
+    });
+
+    const rawByDay: Record<string, Omit<CalendarEvent, 'column' | 'totalColumns' | 'hasOverlap'>[]> = {};
+    DAYS.forEach(d => {
+      rawByDay[d] = [];
+    });
+
+    scheduledCourses.forEach(course => {
+      (course.selectedGroups || []).forEach(group => {
+        (group.meetings || []).forEach((meeting, mIdx) => {
+          const day = meeting.day;
+          if (!rawByDay[day]) return;
+          const startMin = timeToMinutes(meeting.startTime);
+          const endMin = timeToMinutes(meeting.endTime);
+          if (endMin <= startMin) return;
+          rawByDay[day].push({
+            uid: `${course.id}-${group.id}-${mIdx}`,
+            course,
+            group,
+            meeting,
+            day,
+            startMin,
+            endMin,
+          });
+        });
+      });
+    });
+
+    DAYS.forEach(d => {
+      map[d] = layoutDayEvents(rawByDay[d]);
+    });
+
+    return map;
+  }, [scheduledCourses]);
+
+  const totalCredits = useMemo(() => {
+    return scheduledCourses.reduce((sum, c) => sum + (parseFloat(c.points) || 0), 0);
+  }, [scheduledCourses]);
+
+  const hoursList = useMemo(() => {
+    const arr: number[] = [];
+    for (let h = START_HOUR; h <= END_HOUR; h++) {
+      arr.push(h);
+    }
+    return arr;
+  }, []);
+
+  if (!isMounted) {
+    return (
+      <div className="flex justify-center items-center min-h-[70vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container max-w-7xl mx-auto px-4 py-8 space-y-6" dir={isRtl ? 'rtl' : 'ltr'}>
+      {/* Header Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <Calendar className="h-5 w-5" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
+              {dictionary.schedule.title}
+            </h1>
+          </div>
+          <p className="text-sm text-muted-foreground">{dictionary.schedule.subtitle}</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-sm">
+            <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
+              <BookOpen className="h-4 w-4 text-primary" />
+              <span>{scheduledCourses.length}</span>
+              <span className="text-xs text-muted-foreground font-medium">{dictionary.schedule.totalCourses}</span>
+            </div>
+            <div className="h-4 w-[1px] bg-slate-200 dark:bg-slate-800" />
+            <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
+              <Award className="h-4 w-4 text-primary" />
+              <span>{totalCredits.toFixed(1).replace(/\.0$/, '')}</span>
+              <span className="text-xs text-muted-foreground font-medium">{dictionary.schedule.totalCredits}</span>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => setSearchOpen(true)}
+            disabled={isLoadingCourse}
+            className="rounded-xl font-bold gap-2 shadow-sm"
+          >
+            {isLoadingCourse ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            {dictionary.schedule.addCourse}
+          </Button>
+
+          {scheduledCourses.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={handleClearSchedule}
+              className="rounded-xl font-bold gap-2 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30"
+            >
+              <Trash2 className="h-4 w-4" />
+              {dictionary.schedule.clearSchedule}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Main Layout: Sidebar of Courses + Weekly Timetable Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        {/* Scheduled Courses List */}
+        <div className="lg:col-span-1 space-y-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="font-black text-lg text-slate-900 dark:text-slate-100">
+              {dictionary.schedule.myCourses}
+            </h2>
+            <Badge variant="secondary" className="font-bold">
+              {scheduledCourses.length}
+            </Badge>
+          </div>
+
+          {scheduledCourses.length === 0 ? (
+            <div className="py-10 px-4 text-center space-y-2 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
+              <Calendar className="h-8 w-8 text-slate-300 dark:text-slate-600 mx-auto" />
+              <p className="font-bold text-sm text-slate-700 dark:text-slate-300">
+                {dictionary.schedule.noCoursesScheduled}
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {dictionary.schedule.noCoursesScheduledDesc}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {scheduledCourses.map(course => {
+                const palette = COURSE_COLOR_PALETTE[course.colorIndex % COURSE_COLOR_PALETTE.length];
+                return (
+                  <div
+                    key={course.id}
+                    className={cn(
+                      'rounded-xl border p-3.5 transition-all space-y-2.5 relative overflow-hidden',
+                      palette.bg,
+                      palette.border
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono text-[11px] font-bold opacity-75">
+                            {course.id}
+                          </span>
+                          {course.points && (
+                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4 font-bold bg-white/60 dark:bg-slate-950/60">
+                              {course.points} {dictionary.schedule.totalCredits}
+                            </Badge>
+                          )}
+                        </div>
+                        <Link
+                          href={`/courses/${course.courseId}?dept=${course.dept}&deg=${course.degree}&year=${course.year}&sem=${course.semester}`}
+                          className={cn('font-black text-sm hover:underline flex items-center gap-1 leading-snug', palette.text)}
+                        >
+                          <span className="truncate">{course.name}</span>
+                          <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
+                        </Link>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenCourseGroups(course)}
+                          title={dictionary.schedule.editInSchedule}
+                          className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                        >
+                          <Settings2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCourse(course.id)}
+                          title={dictionary.schedule.removeFromSchedule}
+                          className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-600 dark:text-red-400 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Selected Groups Chips */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {course.selectedGroups && course.selectedGroups.length > 0 ? (
+                        course.selectedGroups.map(g => (
+                          <button
+                            key={g.id}
+                            type="button"
+                            onClick={() => handleOpenCourseGroups(course)}
+                            className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-white/80 dark:bg-slate-950/80 border border-black/10 dark:border-white/10 hover:bg-white dark:hover:bg-slate-900 transition-colors"
+                          >
+                            {g.type} • {dictionary.schedule.group} {g.id}
+                          </button>
+                        ))
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenCourseGroups(course)}
+                          className="text-[11px] italic opacity-75 hover:underline"
+                        >
+                          {dictionary.schedule.selectGroupsTitle}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Weekly Calendar Grid */}
+        <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <div className="min-w-[720px]">
+              {/* Day Headers */}
+              <div className="grid grid-cols-[64px_repeat(6,1fr)] border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80">
+                <div className="p-3 flex items-center justify-center border-e border-slate-200 dark:border-slate-800">
+                  <Clock className="h-4 w-4 text-slate-400" />
+                </div>
+                {DAYS.map(day => (
+                  <div
+                    key={day}
+                    className="p-3 text-center border-e last:border-e-0 border-slate-200 dark:border-slate-800"
+                  >
+                    <div className="font-black text-sm text-slate-800 dark:text-slate-200">
+                      {dictionary.schedule.days[day]}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Time Grid Body */}
+              <div
+                className="relative grid grid-cols-[64px_repeat(6,1fr)]"
+                style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}
+              >
+                {/* Time Labels Column */}
+                <div className="relative border-e border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-950/40 select-none">
+                  {hoursList.slice(0, -1).map((hour, idx) => (
+                    <div
+                      key={hour}
+                      className="absolute w-full text-center text-xs font-mono font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800/60 flex items-start justify-center pt-1"
+                      style={{
+                        top: `${idx * HOUR_HEIGHT}px`,
+                        height: `${HOUR_HEIGHT}px`,
+                      }}
+                    >
+                      {String(hour).padStart(2, '0')}:00
+                    </div>
+                  ))}
+                </div>
+
+                {/* Day Columns */}
+                {DAYS.map(day => {
+                  const dayEvents = eventsByDay[day] || [];
+                  return (
+                    <div
+                      key={day}
+                      className="relative border-e last:border-e-0 border-slate-200 dark:border-slate-800"
+                    >
+                      {/* Horizontal Hour Lines */}
+                      {hoursList.slice(0, -1).map((hour, idx) => (
+                        <div
+                          key={hour}
+                          className="w-full border-b border-slate-100 dark:border-slate-800/60"
+                          style={{ height: `${HOUR_HEIGHT}px` }}
+                        />
+                      ))}
+
+                      {/* Scheduled Course Blocks */}
+                      {dayEvents.map(ev => {
+                        const startOffsetMin = Math.max(0, ev.startMin - START_HOUR * 60);
+                        const durationMin = Math.max(30, ev.endMin - ev.startMin);
+                        const topPx = (startOffsetMin / 60) * HOUR_HEIGHT;
+                        const heightPx = (durationMin / 60) * HOUR_HEIGHT;
+
+                        const widthPct = 100 / ev.totalColumns;
+                        const offsetPct = ev.column * widthPct;
+
+                        const palette =
+                          COURSE_COLOR_PALETTE[ev.course.colorIndex % COURSE_COLOR_PALETTE.length];
+
+                        return (
+                          <div
+                            key={ev.uid}
+                            onClick={() => handleOpenCourseGroups(ev.course)}
+                            style={{
+                              top: `${topPx + 2}px`,
+                              height: `${heightPx - 4}px`,
+                              width: `calc(${widthPct}% - 4px)`,
+                              [isRtl ? 'right' : 'left']: `calc(${offsetPct}% + 2px)`,
+                            }}
+                            className={cn(
+                              'absolute z-10 rounded-xl border p-2 overflow-hidden cursor-pointer transition-all hover:z-30 hover:shadow-lg flex flex-col justify-between backdrop-blur-xs',
+                              palette.bg,
+                              palette.border,
+                              palette.text,
+                              ev.hasOverlap && 'ring-2 ring-amber-500/80 dark:ring-amber-400/80'
+                            )}
+                            title={`${ev.course.name} (${ev.group.type} - ${dictionary.schedule.group} ${ev.group.id})\n${ev.meeting.startTime} - ${ev.meeting.endTime}\n${ev.meeting.location}`}
+                          >
+                            <div className="space-y-0.5 min-h-0 overflow-hidden">
+                              <div className="flex items-center justify-between gap-1">
+                                <span
+                                  className={cn(
+                                    'text-[10px] font-bold px-1.5 py-0.2 rounded shrink-0',
+                                    palette.badge
+                                  )}
+                                >
+                                  {ev.group.type} #{ev.group.id}
+                                </span>
+                                {ev.hasOverlap && (
+                                  <span
+                                    className="inline-flex items-center gap-0.5 text-[10px] font-black bg-amber-500 text-white px-1 rounded shrink-0"
+                                    title={dictionary.schedule.overlapWarning}
+                                  >
+                                    <AlertTriangle className="h-2.5 w-2.5" />
+                                    <span className="hidden xl:inline">{dictionary.schedule.overlapWarning}</span>
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="font-black text-xs leading-tight line-clamp-2 pt-0.5">
+                                {ev.course.name}
+                              </p>
+
+                              {ev.group.lecturer && heightPx >= 75 && (
+                                <p className="text-[10px] opacity-80 truncate">
+                                  {ev.group.lecturer}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="space-y-0.5 pt-1 border-t border-black/5 dark:border-white/10 text-[10px] font-medium opacity-90 shrink-0">
+                              <div dir="ltr" className="font-mono font-bold truncate">
+                                {ev.meeting.startTime} - {ev.meeting.endTime}
+                              </div>
+                              {ev.meeting.location && heightPx >= 60 && (
+                                <div className="truncate opacity-80 flex items-center gap-0.5">
+                                  <MapPin className="h-2.5 w-2.5 shrink-0" />
+                                  <span className="truncate">{ev.meeting.location}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search Course Dialog */}
+      <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
+        <CommandInput
+          placeholder={dictionary.schedule.searchPlaceholder}
+          className={isRtl ? 'text-right' : 'text-left'}
+          value={searchQuery}
+          onValueChange={setSearchQuery}
+        />
+        <CommandList className={isRtl ? 'text-right' : 'text-left'} dir={isRtl ? 'rtl' : 'ltr'}>
+          <CommandEmpty>
+            <div className="flex flex-col items-center justify-center text-center gap-3 py-6 px-4">
+              <p className="font-bold text-slate-700 dark:text-slate-300">{dictionary.navbar.noResults}</p>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                {dictionary.map.suggestDepartment}
+              </p>
+              <Button
+                onClick={() => {
+                  setSearchOpen(false);
+                  setShowFetchDeptDialog(true);
+                }}
+                className="mt-1"
+              >
+                {dictionary.schedule.fetchDeptBtn}
+              </Button>
+            </div>
+          </CommandEmpty>
+          <CommandGroup heading={dictionary.home.fullCatalog}>
+            {courses.map((course: any) => {
+              const isScheduled = scheduledCourses.some(c => c.id === course.id);
+              return (
+                <CommandItem
+                  key={course.id}
+                  value={`${course.id} ${course.name}`}
+                  onSelect={() => handleSelectCourseFromSearch(course)}
+                  className="flex items-center justify-between py-3 px-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg m-1"
+                >
+                  <div className="flex flex-col gap-0.5 text-start">
+                    <span className="font-bold text-slate-900 dark:text-slate-100 text-base">
+                      {course.name}
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                      {course.id} {course.activeIn ? `• ${course.activeIn}` : ''}
+                    </span>
+                  </div>
+                  {isScheduled && (
+                    <Badge variant="secondary" className="text-xs font-bold shrink-0">
+                      {dictionary.schedule.inSchedule}
+                    </Badge>
+                  )}
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
+
+      {/* Group Selector Modal */}
+      {pendingCourse && (
+        <GroupSelectorDialog
+          open={groupDialogOpen}
+          onOpenChange={setGroupDialogOpen}
+          courseName={pendingCourse.name}
+          courseId={pendingCourse.id}
+          groups={pendingCourse.groups}
+          initialSelectedGroupIds={pendingCourse.initialSelectedIds}
+          isAlreadyScheduled={pendingCourse.isAlreadyScheduled}
+          onConfirm={handleConfirmGroups}
+          onRemove={() => handleRemoveCourse(pendingCourse.id)}
+          dictionary={dictionary}
+          locale={locale}
+        />
+      )}
+
+      {/* Fetch Department Dialog */}
+      <Dialog open={showFetchDeptDialog} onOpenChange={setShowFetchDeptDialog}>
+        <DialogContent className={cn('sm:max-w-md', isRtl ? 'text-right' : 'text-left')} dir={isRtl ? 'rtl' : 'ltr'}>
+          <DialogHeader className={isRtl ? 'text-right' : 'text-left'}>
+            <DialogTitle>{dictionary.map.fetchDeptTitle}</DialogTitle>
+            <DialogDescription>{dictionary.map.fetchDeptDesc}</DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2 py-4" ref={suggestContainerRef}>
+            <div className="grid flex-1 gap-2 relative">
+              <Input
+                value={fetchDeptInput}
+                onChange={e => {
+                  setFetchDeptInput(e.target.value);
+                  setIsSuggestOpen(true);
+                }}
+                onFocus={() => setIsSuggestOpen(true)}
+                placeholder={dictionary.map.fetchDeptPlaceholder}
+                disabled={isFetchingDept}
+                className={cn(isRtl ? 'text-right' : 'text-left')}
+                autoComplete="off"
+              />
+              {isLoadingDepartments && (
+                <div className={cn('absolute top-1/2 -translate-y-1/2 h-4 w-4', isRtl ? 'left-3' : 'right-3')}>
+                  <Loader2 className="h-full w-full animate-spin text-primary/50" />
+                </div>
+              )}
+              {isSuggestOpen && filteredDepartments.length > 0 && (
+                <div className="absolute top-full z-[100] w-full mt-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden">
+                  <ul className="max-h-[200px] overflow-auto py-2">
+                    {filteredDepartments.map(dept => (
+                      <li key={dept.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFetchDeptInput(dept.id);
+                            setIsSuggestOpen(false);
+                          }}
+                          className={cn(
+                            'w-full px-4 py-2.5 flex items-center justify-between hover:bg-primary/5 transition-colors',
+                            isRtl ? 'flex-row text-right' : 'flex-row-reverse text-left'
+                          )}
+                        >
+                          <span className="text-slate-400 text-xs font-mono">#{dept.id}</span>
+                          <span className="font-bold text-sm text-slate-700 dark:text-slate-300">{dept.name}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter className={cn('sm:justify-end gap-2', isRtl && 'flex-row-reverse')}>
+            <Button variant="outline" onClick={() => setShowFetchDeptDialog(false)} disabled={isFetchingDept}>
+              {dictionary.map.cancel}
+            </Button>
+            <Button onClick={handleFetchDepartment} disabled={isFetchingDept || !fetchDeptInput}>
+              {isFetchingDept && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {dictionary.map.searchDeptBtn}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import iconv from 'iconv-lite';
-import { CourseDetail, RelatedCourse } from '@/types/course';
+import { CourseDetail, CourseGroup, CourseMeeting, RelatedCourse } from '@/types/course';
 
 export async function fetchCourseList(dept: string, degree: string = '1', year: string = '2027', semester: string = '1') {
   const url = 'https://bgu4u.bgu.ac.il/pls/scwp/!app.ann';
@@ -95,19 +95,85 @@ export async function fetchCourseDetail(params: {
     syllabusParams: extractParams($(`.props li:has(.key:contains("קובץ סילבוס")) a`).attr('href')),
     relatedCourses: [],
     lecturers: [],
+    groups: [],
   };
 
-  // Extract lecturers
+  // Extract lecturers from CourseStaff if present
   $(`.CourseStaff tbody tr`).each((_, row) => {
     const cols = $(row).find('td');
     if (cols.length >= 2) {
       const role = $(cols[0]).text().trim();
       const name = $(cols[1]).text().trim();
-      if (name && !courseDetail.lecturers.includes(`${role} ${name}`.trim())) {
+      if (name && !courseDetail.lecturers.includes(`${role}: ${name}`.trim())) {
         courseDetail.lecturers.push(`${role}: ${name}`.trim());
       }
     }
   });
+
+  // Extract study groups and schedule meetings
+  const parseMeetingText = (rawText: string): CourseMeeting | null => {
+    const text = rawText.replace(/\s+/g, ' ').trim();
+    if (!text) return null;
+    const timeMatch = text.match(/יום\s+([א-ו])\s*(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
+    if (!timeMatch) return null;
+    const day = timeMatch[1];
+    const startTime = timeMatch[2];
+    const endTime = timeMatch[3];
+    const locMatch = text.match(/מקום לימוד:\s*(.*?)(?:אופן לימוד:|$)/);
+    const modeMatch = text.match(/אופן לימוד:\s*(.*)$/);
+    return {
+      day,
+      startTime,
+      endTime,
+      location: locMatch ? locMatch[1].trim() : '',
+      mode: modeMatch ? modeMatch[1].trim() : '',
+    };
+  };
+
+  const groupsTable = $('table.dataTable').first();
+  let currentGroup: CourseGroup | null = null;
+  const parsedGroups: CourseGroup[] = [];
+
+  groupsTable.find('tr').each((_, tr) => {
+    const tds = $(tr).find('td');
+    if (tds.length >= 4) {
+      const groupId = $(tds[0]).text().trim();
+      const groupType = $(tds[1]).text().trim();
+      const lecturer = $(tds[2]).text().trim();
+      const scheduleText = $(tds[3]).text().trim();
+
+      if (groupId && groupType) {
+        currentGroup = {
+          id: groupId,
+          type: groupType,
+          lecturer,
+          meetings: [],
+        };
+        const meeting = parseMeetingText(scheduleText);
+        if (meeting) {
+          currentGroup.meetings.push(meeting);
+        }
+        parsedGroups.push(currentGroup);
+
+        if (lecturer) {
+          const staffEntry = `${groupType}: ${lecturer}`.trim();
+          if (!courseDetail.lecturers.includes(staffEntry)) {
+            courseDetail.lecturers.push(staffEntry);
+          }
+        }
+      }
+    } else if (tds.length === 1 && currentGroup) {
+      const cellText = $(tds[0]).text().trim();
+      if (cellText.includes('זמני לימוד')) {
+        const meeting = parseMeetingText(cellText);
+        if (meeting) {
+          currentGroup.meetings.push(meeting);
+        }
+      }
+    }
+  });
+
+  courseDetail.groups = parsedGroups;
 
   $(`.props li:has(.key:contains("קורסים קשורים")) .val`).contents().each((_, node) => {
     if (node.type === 'tag' && node.name === 'a') {

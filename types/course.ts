@@ -11,6 +11,21 @@ export interface RelatedCourse {
   };
 }
 
+export interface CourseMeeting {
+  day: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  mode?: string;
+}
+
+export interface CourseGroup {
+  id: string;
+  type: string;
+  lecturer: string;
+  meetings: CourseMeeting[];
+}
+
 export interface CourseDetail {
   id: string;
   name: string;
@@ -28,4 +43,5 @@ export interface CourseDetail {
   semester?: string;
   offerings?: { year: string; semester: string; activeIn: string; name: string }[];
   blockedCourses?: RelatedCourse[];
+  groups?: CourseGroup[];
 }

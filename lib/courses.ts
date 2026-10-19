@@ -207,7 +207,7 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
     };
   });
   
-  if (existingCourse && Array.isArray(existingCourse.relatedCourses)) {
+  if (existingCourse && Array.isArray(existingCourse.relatedCourses) && Array.isArray(existingCourse.groups)) {
     const { _id, ...rest } = existingCourse;
     return { ...rest, offerings, blockedCourses } as CourseDetail;
   }

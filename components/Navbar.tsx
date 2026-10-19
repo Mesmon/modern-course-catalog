@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { GraduationCap, BookOpen, Workflow } from 'lucide-react';
+import { GraduationCap, BookOpen, Workflow, Calendar } from 'lucide-react';
 import { GlobalSearch } from './GlobalSearch';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { cookies } from 'next/headers';
@@ -15,8 +15,8 @@ export async function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-background/80 backdrop-blur-md shadow-sm" dir={locale === 'en' ? 'ltr' : 'rtl'}>
-      <div className="container flex h-16 items-center max-w-7xl mx-auto px-4 gap-4">
-        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+      <div className="container flex h-16 items-center max-w-7xl mx-auto px-4 gap-3">
+        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0">
           <div className="bg-primary/10 p-2 rounded-xl">
             <GraduationCap className="h-6 w-6 text-primary" />
           </div>
@@ -24,12 +24,20 @@ export async function Navbar() {
             { dictionary.navbar.logoText1} <span className="text-primary gap-1">{dictionary.navbar.logoText2}</span>
           </span>
         </Link>
+        <div className="flex items-center gap-1 shrink-0">
           <Button asChild variant="ghost" size="sm" className="gap-2 font-bold text-foreground hover:bg-primary/10 hover:text-primary transition-colors" id="tour-map-link">
             <Link href="/map">
               <Workflow className="h-4 w-4" />
-              <span className="hidden sm:inline-block">{dictionary.map.title}</span>
+              <span className="hidden md:inline-block">{dictionary.map.title}</span>
             </Link>
           </Button>
+          <Button asChild variant="ghost" size="sm" className="gap-2 font-bold text-foreground hover:bg-primary/10 hover:text-primary transition-colors" id="tour-schedule-link">
+            <Link href="/schedule">
+              <Calendar className="h-4 w-4" />
+              <span className="hidden md:inline-block">{dictionary.schedule.title}</span>
+            </Link>
+          </Button>
+        </div>
         <div className="flex-1 flex justify-center max-w-2xl mx-auto px-2">
           <GlobalSearch />
         </div>

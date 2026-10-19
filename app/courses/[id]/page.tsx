@@ -8,6 +8,7 @@ import { cookies } from 'next/headers';
 import { getDictionary, Locale } from '@/lib/dictionaries';
 import { notFound, redirect } from 'next/navigation';
 import { CopyCourseId } from '@/components/CopyCourseId';
+import { AddToScheduleButton } from '@/components/AddToScheduleButton';
 
 export default async function CoursePage({ 
   params, 
@@ -93,7 +94,21 @@ export default async function CoursePage({
             </div>
             <span>{dictionary.department.back}</span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+             <AddToScheduleButton
+               courseId={id}
+               dept={deptParam}
+               degree={degParam}
+               year={reqYear}
+               semester={reqSem}
+               name={course.name}
+               points={course.points}
+               groups={course.groups || []}
+               dictionary={dictionary}
+               locale={locale}
+               variant="outline"
+               className="hidden sm:flex rounded-xl border-primary/20 hover:bg-primary/5 text-primary"
+             />
              {syllabusLink ? (
                 <Button asChild variant="outline" className="hidden sm:flex rounded-xl font-bold border-primary/20 hover:bg-primary/5 text-primary">
                   <a href={syllabusLink} target="_blank" rel="noopener noreferrer" download>
@@ -181,6 +196,19 @@ export default async function CoursePage({
                             <span className="text-white">{course.gradeType}</span>
                         </div>
                     )}
+                    <AddToScheduleButton
+                      courseId={id}
+                      dept={deptParam}
+                      degree={degParam}
+                      year={reqYear}
+                      semester={reqSem}
+                      name={course.name}
+                      points={course.points}
+                      groups={course.groups || []}
+                      dictionary={dictionary}
+                      locale={locale}
+                      className="w-full h-14 rounded-2xl text-lg font-black gap-3 shadow-lg"
+                    />
                     {syllabusLink ? (
                          <Button asChild className="w-full h-14 bg-primary hover:bg-primary/90 rounded-2xl text-lg font-black gap-3 shadow-lg shadow-primary/30">
                            <a href={syllabusLink} target="_blank" rel="noopener noreferrer" download>
@@ -251,6 +279,19 @@ export default async function CoursePage({
                             <span className="text-white">{course.gradeType}</span>
                         </div>
                     )}
+                    <AddToScheduleButton
+                      courseId={id}
+                      dept={deptParam}
+                      degree={degParam}
+                      year={reqYear}
+                      semester={reqSem}
+                      name={course.name}
+                      points={course.points}
+                      groups={course.groups || []}
+                      dictionary={dictionary}
+                      locale={locale}
+                      className="w-full h-14 rounded-2xl text-lg font-black gap-3 shadow-lg"
+                    />
                     {syllabusLink ? (
                          <Button asChild className="w-full h-14 bg-primary hover:bg-primary/90 rounded-2xl text-lg font-black gap-3 shadow-lg shadow-primary/30">
                            <a href={syllabusLink} target="_blank" rel="noopener noreferrer" download>
