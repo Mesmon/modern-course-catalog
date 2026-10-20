@@ -537,73 +537,77 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     `${dictionary.schedule.semesterLabel} ${activeTerm.semester}`;
 
   return (
-    <div className="container max-w-7xl mx-auto px-4 py-8 space-y-6" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header Bar */}
-      <div className="flex flex-col gap-5 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <Calendar className="h-5 w-5" />
+              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <Calendar className="h-4.5 w-4.5" />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                 {dictionary.schedule.title}
               </h1>
-              <Badge variant="secondary" className="font-bold text-xs px-2.5 py-1">
+              <Badge variant="secondary" className="font-semibold text-xs px-2.5 py-0.5 rounded-md">
                 {activeSemesterLabel} • {activeTerm.year}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{dictionary.schedule.subtitle}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{dictionary.schedule.subtitle}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-sm">
-              <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
-                <BookOpen className="h-4 w-4 text-primary" />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2.5 h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs">
+              <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
+                <BookOpen className="h-3.5 w-3.5 text-primary" />
                 <span>{scheduledCourses.length}</span>
-                <span className="text-xs text-muted-foreground font-medium">{dictionary.schedule.totalCourses}</span>
+                <span className="text-muted-foreground font-normal">{dictionary.schedule.totalCourses}</span>
               </div>
-              <div className="h-4 w-[1px] bg-slate-200 dark:bg-slate-800" />
-              <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
-                <Award className="h-4 w-4 text-primary" />
+              <div className="h-3.5 w-px bg-slate-200 dark:bg-slate-800" />
+              <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
+                <Award className="h-3.5 w-3.5 text-primary" />
                 <span>{totalCredits.toFixed(1).replace(/\.0$/, '')}</span>
-                <span className="text-xs text-muted-foreground font-medium">{dictionary.schedule.totalCredits}</span>
+                <span className="text-muted-foreground font-normal">{dictionary.schedule.totalCredits}</span>
               </div>
             </div>
 
             <Button
+              size="sm"
               onClick={() => setSearchOpen(true)}
               disabled={isLoadingCourse}
-              className="rounded-xl font-bold gap-2 shadow-sm"
+              className="h-9 px-3.5 rounded-lg font-medium text-xs gap-1.5 shadow-xs"
             >
-              {isLoadingCourse ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              {isLoadingCourse ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               {dictionary.schedule.addCourse}
             </Button>
 
             {scheduledCourses.length > 0 && (
               <>
                 <Button
+                  size="sm"
                   variant="outline"
                   onClick={() => setGcalDialogOpen(true)}
-                  className="rounded-xl font-bold gap-2 border-primary/30 text-primary hover:bg-primary/5"
+                  className="h-9 px-3 rounded-lg font-medium text-xs gap-1.5 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
-                  <CalendarPlus className="h-4 w-4" />
+                  <CalendarPlus className="h-3.5 w-3.5 text-primary" />
                   {dictionary.schedule.addToGoogleCalendar}
                 </Button>
                 <Button
+                  size="sm"
                   variant="outline"
                   onClick={handleDownloadIcs}
-                  className="rounded-xl font-bold gap-2 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="h-9 px-3 rounded-lg font-medium text-xs gap-1.5 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
-                  <Download className="h-4 w-4" />
+                  <Download className="h-3.5 w-3.5 text-slate-500" />
                   {dictionary.schedule.addToAppleCalendar}
                 </Button>
                 <Button
+                  size="sm"
                   variant="outline"
                   onClick={handleClearSchedule}
-                  className="rounded-xl font-bold gap-2 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  className="h-9 px-3 rounded-lg font-medium text-xs gap-1.5 text-red-600 dark:text-red-400 border-red-200/80 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5" />
                   {dictionary.schedule.clearSchedule}
                 </Button>
               </>
@@ -612,14 +616,14 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
         </div>
 
         {/* Year & Semester Selector Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-          <div className="flex flex-wrap items-center gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3.5 border-t border-slate-100 dark:border-slate-800/80">
+          <div className="flex flex-wrap items-center gap-4">
             {/* Year Selector */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                 {dictionary.schedule.yearLabel}:
               </span>
-              <div className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+              <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
                 {YEARS.map(yr => {
                   const isActive = activeTerm.year === yr;
                   return (
@@ -628,9 +632,9 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                       type="button"
                       onClick={() => handleSelectTerm(yr, activeTerm.semester)}
                       className={cn(
-                        'px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
+                        'px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer',
                         isActive
-                          ? 'bg-primary text-primary-foreground shadow-xs'
+                          ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs'
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                       )}
                     >
@@ -643,10 +647,10 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
 
             {/* Semester Selector */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                 {dictionary.schedule.semesterLabel}:
               </span>
-              <div className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+              <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
                 {SEMESTERS.map(sem => {
                   const isActive = activeTerm.semester === sem;
                   const countInSem = allScheduledCourses.filter(
@@ -658,9 +662,9 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                       type="button"
                       onClick={() => handleSelectTerm(activeTerm.year, sem)}
                       className={cn(
-                        'px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5',
+                        'px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
                         isActive
-                          ? 'bg-primary text-primary-foreground shadow-xs'
+                          ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs'
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                       )}
                     >
@@ -668,9 +672,9 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                       {countInSem > 0 && (
                         <span
                           className={cn(
-                            'px-1.5 py-0.2 rounded-full text-[10px] font-black',
+                            'px-1.5 py-0.2 rounded-full text-[10px] font-bold',
                             isActive
-                              ? 'bg-white/25 text-white'
+                              ? 'bg-primary text-primary-foreground'
                               : 'bg-primary/15 text-primary'
                           )}
                         >
@@ -685,10 +689,10 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
           </div>
 
           <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <Filter className="h-3.5 w-3.5 text-primary" />
+            <Filter className="h-3.5 w-3.5 text-primary shrink-0" />
             <span>
               {dictionary.schedule.onlyOfferedInTermHint}{' '}
-              <strong className="text-foreground">
+              <strong className="font-semibold text-foreground">
                 {activeSemesterLabel} ({activeTerm.year})
               </strong>
             </span>
@@ -699,20 +703,20 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
       {/* Main Layout: Sidebar of Courses + Weekly Timetable Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         {/* Scheduled Courses List */}
-        <div className="lg:col-span-1 space-y-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="lg:col-span-1 space-y-4 bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between">
-            <h2 className="font-black text-lg text-slate-900 dark:text-slate-100">
+            <h2 className="font-bold text-base text-slate-900 dark:text-slate-100">
               {dictionary.schedule.myCourses}
             </h2>
-            <Badge variant="secondary" className="font-bold">
+            <Badge variant="secondary" className="font-semibold text-xs">
               {scheduledCourses.length}
             </Badge>
           </div>
 
           {scheduledCourses.length === 0 ? (
             <div className="py-10 px-4 text-center space-y-2 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
-              <Calendar className="h-8 w-8 text-slate-300 dark:text-slate-600 mx-auto" />
-              <p className="font-bold text-sm text-slate-700 dark:text-slate-300">
+              <Calendar className="h-7 w-7 text-slate-300 dark:text-slate-600 mx-auto" />
+              <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">
                 {dictionary.schedule.noCoursesScheduled}
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -720,14 +724,14 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {scheduledCourses.map(course => {
                 const palette = COURSE_COLOR_PALETTE[course.colorIndex % COURSE_COLOR_PALETTE.length];
                 return (
                   <div
                     key={`${course.id}-${course.year}-${course.semester}`}
                     className={cn(
-                      'rounded-xl border p-3.5 transition-all space-y-2.5 relative overflow-hidden',
+                      'rounded-xl border p-3 transition-all space-y-2 relative overflow-hidden',
                       palette.bg,
                       palette.border
                     )}
@@ -735,53 +739,53 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-0.5 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono text-[11px] font-bold opacity-75">
+                          <span className="font-mono text-[11px] font-semibold opacity-75">
                             {course.id}
                           </span>
                           {course.points && (
-                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4 font-bold bg-white/60 dark:bg-slate-950/60">
+                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4 font-semibold bg-white/60 dark:bg-slate-950/60">
                               {course.points} {dictionary.schedule.totalCredits}
                             </Badge>
                           )}
                         </div>
                         <Link
                           href={`/courses/${course.courseId}?dept=${course.dept}&deg=${course.degree}&year=${course.year}&sem=${course.semester}`}
-                          className={cn('font-black text-sm hover:underline flex items-center gap-1 leading-snug', palette.text)}
+                          className={cn('font-semibold text-sm hover:underline flex items-center gap-1 leading-snug', palette.text)}
                         >
                           <span className="truncate">{course.name}</span>
                           <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
                         </Link>
                       </div>
 
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-0.5 shrink-0">
                         <button
                           type="button"
                           onClick={() => handleOpenCourseGroups(course)}
                           title={dictionary.schedule.editInSchedule}
-                          className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
                         >
-                          <Settings2 className="h-4 w-4" />
+                          <Settings2 className="h-3.5 w-3.5" />
                         </button>
                         <button
                           type="button"
                           onClick={() => handleRemoveCourse(course.id, course.year, course.semester)}
                           title={dictionary.schedule.removeFromSchedule}
-                          className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-600 dark:text-red-400 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-red-500/15 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
 
                     {/* Selected Groups Chips */}
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1">
                       {course.selectedGroups && course.selectedGroups.length > 0 ? (
                         course.selectedGroups.map(g => (
                           <button
                             key={g.id}
                             type="button"
                             onClick={() => handleOpenCourseGroups(course)}
-                            className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-white/80 dark:bg-slate-950/80 border border-black/10 dark:border-white/10 hover:bg-white dark:hover:bg-slate-900 transition-colors"
+                            className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-white/80 dark:bg-slate-950/80 border border-black/10 dark:border-white/10 hover:bg-white dark:hover:bg-slate-900 transition-colors cursor-pointer"
                           >
                             {g.type} • {dictionary.schedule.group} {g.id}
                           </button>
@@ -790,7 +794,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                         <button
                           type="button"
                           onClick={() => handleOpenCourseGroups(course)}
-                          className="text-[11px] italic opacity-75 hover:underline"
+                          className="text-[11px] italic opacity-75 hover:underline cursor-pointer"
                         >
                           {dictionary.schedule.selectGroupsTitle}
                         </button>
@@ -804,20 +808,20 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
         </div>
 
         {/* Weekly Calendar Grid */}
-        <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <div className="min-w-[720px]">
               {/* Day Headers */}
               <div className="grid grid-cols-[64px_repeat(6,1fr)] border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80">
-                <div className="p-3 flex items-center justify-center border-e border-slate-200 dark:border-slate-800">
+                <div className="p-2.5 flex items-center justify-center border-e border-slate-200 dark:border-slate-800">
                   <Clock className="h-4 w-4 text-slate-400" />
                 </div>
                 {DAYS.map(day => (
                   <div
                     key={day}
-                    className="p-3 text-center border-e last:border-e-0 border-slate-200 dark:border-slate-800"
+                    className="p-2.5 text-center border-e last:border-e-0 border-slate-200 dark:border-slate-800"
                   >
-                    <div className="font-black text-sm text-slate-800 dark:text-slate-200">
+                    <div className="font-semibold text-xs sm:text-sm text-slate-700 dark:text-slate-200">
                       {dictionary.schedule.days[day]}
                     </div>
                   </div>
@@ -834,7 +838,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                   {hoursList.slice(0, -1).map((hour, idx) => (
                     <div
                       key={hour}
-                      className="absolute w-full text-center text-xs font-mono font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800/60 flex items-start justify-center pt-1"
+                      className="absolute w-full text-center text-[11px] font-mono font-medium text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800/60 flex items-start justify-center pt-1"
                       style={{
                         top: `${idx * HOUR_HEIGHT}px`,
                         height: `${HOUR_HEIGHT}px`,
@@ -892,7 +896,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                               [isRtl ? 'right' : 'left']: `calc(${offsetPct}% + 2px)`,
                             }}
                             className={cn(
-                              'group/block absolute z-10 rounded-xl border p-2 overflow-hidden cursor-pointer transition-all hover:z-30 hover:shadow-lg flex flex-col justify-between backdrop-blur-xs',
+                              'group/block absolute z-10 rounded-lg border p-2 overflow-hidden cursor-pointer transition-all hover:z-30 hover:shadow-md flex flex-col justify-between',
                               palette.bg,
                               palette.border,
                               palette.text,
@@ -904,7 +908,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                               <div className="flex items-center justify-between gap-1">
                                 <span
                                   className={cn(
-                                    'text-[10px] font-bold px-1.5 py-0.2 rounded shrink-0',
+                                    'text-[10px] font-semibold px-1.5 py-0.2 rounded shrink-0',
                                     palette.badge
                                   )}
                                 >
@@ -913,7 +917,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                                 <div className="flex items-center gap-1 shrink-0">
                                   {ev.hasOverlap && (
                                     <span
-                                      className="inline-flex items-center gap-0.5 text-[10px] font-black bg-amber-500 text-white px-1 rounded shrink-0"
+                                      className="inline-flex items-center gap-0.5 text-[10px] font-semibold bg-amber-500 text-white px-1 rounded shrink-0"
                                       title={dictionary.schedule.overlapWarning}
                                     >
                                       <AlertTriangle className="h-2.5 w-2.5" />
@@ -933,7 +937,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                                 </div>
                               </div>
 
-                              <p className="font-black text-xs leading-tight line-clamp-2 pt-0.5">
+                              <p className="font-bold text-xs leading-tight line-clamp-2 pt-0.5">
                                 {ev.course.name}
                               </p>
 
@@ -945,7 +949,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                             </div>
 
                             <div className="space-y-0.5 pt-1 border-t border-black/5 dark:border-white/10 text-[10px] font-medium opacity-90 shrink-0">
-                              <div dir="ltr" className="font-mono font-bold truncate">
+                              <div dir="ltr" className="font-mono font-semibold truncate">
                                 {ev.meeting.startTime} - {ev.meeting.endTime}
                               </div>
                               {ev.meeting.location && heightPx >= 60 && (
@@ -969,41 +973,44 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
 
       {/* Search Course Dialog (filtered strictly by activeTerm.year & activeTerm.semester) */}
       <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <div className="px-4 pt-3 pb-1 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 text-xs text-muted-foreground" dir={isRtl ? 'rtl' : 'ltr'}>
+        <div className="px-4 py-2.5 pe-12 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-xs text-muted-foreground" dir={isRtl ? 'rtl' : 'ltr'}>
           <span className="flex items-center gap-1.5">
-            <Filter className="h-3.5 w-3.5 text-primary" />
+            <Filter className="h-3.5 w-3.5 text-primary shrink-0" />
             <span>
               {dictionary.schedule.onlyOfferedInTermHint}{' '}
-              <strong className="text-foreground">
+              <strong className="font-semibold text-foreground">
                 {activeSemesterLabel} ({activeTerm.year})
               </strong>
             </span>
           </span>
-          <Badge variant="outline" className="text-[10px] font-bold">
+          <Badge variant="secondary" className="text-[10px] font-semibold">
             {relevantCatalogCourses.length} {dictionary.schedule.totalCourses}
           </Badge>
         </div>
-        <CommandInput
-          placeholder={dictionary.schedule.searchPlaceholder}
-          className={isRtl ? 'text-right' : 'text-left'}
-          value={searchQuery}
-          onValueChange={setSearchQuery}
-        />
+        <div dir={isRtl ? 'rtl' : 'ltr'}>
+          <CommandInput
+            placeholder={dictionary.schedule.searchPlaceholder}
+            className={isRtl ? 'text-right' : 'text-left'}
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
+        </div>
         <CommandList className={isRtl ? 'text-right' : 'text-left'} dir={isRtl ? 'rtl' : 'ltr'}>
           <CommandEmpty>
             <div className="flex flex-col items-center justify-center text-center gap-3 py-6 px-4">
-              <p className="font-bold text-slate-700 dark:text-slate-300">
+              <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">
                 {dictionary.schedule.noCoursesInTerm} ({activeSemesterLabel} {activeTerm.year})
               </p>
-              <p className="text-sm text-muted-foreground max-w-xs">
+              <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
                 {dictionary.map.suggestDepartment}
               </p>
               <Button
+                size="sm"
                 onClick={() => {
                   setSearchOpen(false);
                   setShowFetchDeptDialog(true);
                 }}
-                className="mt-1"
+                className="mt-1 rounded-lg"
               >
                 {dictionary.schedule.fetchDeptBtn}
               </Button>
@@ -1021,10 +1028,10 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                   key={course.id}
                   value={`${course.id} ${displayName}`}
                   onSelect={() => handleSelectCourseFromSearch(course)}
-                  className="flex items-center justify-between py-3 px-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg m-1"
+                  className="flex items-center justify-between gap-3 py-2.5 px-3 cursor-pointer rounded-lg my-0.5"
                 >
-                  <div className="flex flex-col gap-0.5 text-start">
-                    <span className="font-bold text-slate-900 dark:text-slate-100 text-base">
+                  <div className="flex flex-col gap-0.5 text-start min-w-0">
+                    <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
                       {displayName}
                     </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
@@ -1032,7 +1039,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                     </span>
                   </div>
                   {isScheduled && (
-                    <Badge variant="secondary" className="text-xs font-bold shrink-0">
+                    <Badge variant="secondary" className="text-[11px] font-semibold shrink-0">
                       {dictionary.schedule.inSchedule}
                     </Badge>
                   )}
@@ -1065,12 +1072,12 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
       {/* Google Calendar Export Dialog */}
       <Dialog open={gcalDialogOpen} onOpenChange={setGcalDialogOpen}>
         <DialogContent
-          className={cn('sm:max-w-xl max-h-[85vh] flex flex-col', isRtl ? 'text-right' : 'text-left')}
+          className="sm:max-w-xl max-h-[85vh] flex flex-col"
           dir={isRtl ? 'rtl' : 'ltr'}
         >
-          <DialogHeader className={isRtl ? 'text-right' : 'text-left'}>
-            <DialogTitle className="flex items-center gap-2 text-xl font-black">
-              <CalendarPlus className="h-5 w-5 text-primary" />
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+              <CalendarPlus className="h-5 w-5 text-primary shrink-0" />
               {dictionary.schedule.googleCalendarTitle}
             </DialogTitle>
             <DialogDescription>
@@ -1078,7 +1085,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto space-y-2.5 py-2 pe-1">
+          <div className="flex-1 overflow-y-auto space-y-2 py-2 pe-1">
             {scheduledCourses.map(course => {
               const palette = COURSE_COLOR_PALETTE[course.colorIndex % COURSE_COLOR_PALETTE.length];
               return (course.selectedGroups || []).map(group =>
@@ -1091,23 +1098,23 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                     <div
                       key={`${course.id}-${group.id}-${mIdx}`}
                       className={cn(
-                        'flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border transition-all',
+                        'flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border transition-all',
                         palette.bg,
                         palette.border
                       )}
                     >
                       <div className="space-y-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={cn('font-black text-sm', palette.text)}>
+                          <span className={cn('font-semibold text-sm', palette.text)}>
                             {course.name}
                           </span>
-                          <span className={cn('text-[11px] font-bold px-2 py-0.5 rounded-md', palette.badge)}>
+                          <span className={cn('text-[11px] font-semibold px-2 py-0.5 rounded-md', palette.badge)}>
                             {group.type} #{group.id}
                           </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
-                          <span className="inline-flex items-center gap-1 font-bold">
-                            <Clock className="h-3.5 w-3.5 text-primary" />
+                          <span className="inline-flex items-center gap-1 font-medium">
+                            <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
                             {dayLabel} •{' '}
                             <span dir="ltr" className="font-mono">
                               {meeting.startTime} - {meeting.endTime}
@@ -1126,7 +1133,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                         <Button
                           asChild
                           size="sm"
-                          className="rounded-lg font-bold gap-1.5"
+                          className="h-8 rounded-lg font-medium text-xs gap-1.5"
                         >
                           <a href={gcalUrl} target="_blank" rel="noopener noreferrer">
                             <CalendarPlus className="h-3.5 w-3.5" />
@@ -1138,7 +1145,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                           variant="outline"
                           size="sm"
                           onClick={() => handleDownloadMeetingIcs(course, group, meeting)}
-                          className="rounded-lg font-bold gap-1.5 bg-white/80 dark:bg-slate-950/80 hover:bg-white dark:hover:bg-slate-900"
+                          className="h-8 rounded-lg font-medium text-xs gap-1.5 bg-white/80 dark:bg-slate-950/80 hover:bg-white dark:hover:bg-slate-900"
                         >
                           <Download className="h-3.5 w-3.5" />
                           {dictionary.schedule.openInAppleCalendar}
@@ -1156,7 +1163,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
               type="button"
               variant="secondary"
               onClick={handleDownloadIcs}
-              className="rounded-xl font-bold gap-2 flex-1"
+              className="rounded-lg font-medium gap-2 flex-1"
             >
               <Download className="h-4 w-4" />
               {dictionary.schedule.downloadIcsAll}
@@ -1165,7 +1172,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
               type="button"
               variant="outline"
               onClick={() => setGcalDialogOpen(false)}
-              className="rounded-xl font-bold"
+              className="rounded-lg font-medium"
             >
               {dictionary.schedule.cancel}
             </Button>
@@ -1175,12 +1182,12 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
 
       {/* Fetch Department Dialog */}
       <Dialog open={showFetchDeptDialog} onOpenChange={setShowFetchDeptDialog}>
-        <DialogContent className={cn('sm:max-w-md', isRtl ? 'text-right' : 'text-left')} dir={isRtl ? 'rtl' : 'ltr'}>
-          <DialogHeader className={isRtl ? 'text-right' : 'text-left'}>
+        <DialogContent className="sm:max-w-md" dir={isRtl ? 'rtl' : 'ltr'}>
+          <DialogHeader>
             <DialogTitle>{dictionary.map.fetchDeptTitle}</DialogTitle>
             <DialogDescription>{dictionary.map.fetchDeptDesc}</DialogDescription>
           </DialogHeader>
-          <div className="flex items-center space-x-2 py-4" ref={suggestContainerRef}>
+          <div className="flex items-center py-2" ref={suggestContainerRef}>
             <div className="grid flex-1 gap-2 relative">
               <Input
                 value={fetchDeptInput}
@@ -1195,13 +1202,13 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                 autoComplete="off"
               />
               {isLoadingDepartments && (
-                <div className={cn('absolute top-1/2 -translate-y-1/2 h-4 w-4', isRtl ? 'left-3' : 'right-3')}>
+                <div className="absolute top-1/2 -translate-y-1/2 end-3 h-4 w-4">
                   <Loader2 className="h-full w-full animate-spin text-primary/50" />
                 </div>
               )}
               {isSuggestOpen && filteredDepartments.length > 0 && (
-                <div className="absolute top-full z-[100] w-full mt-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden">
-                  <ul className="max-h-[200px] overflow-auto py-2">
+                <div className="absolute top-full z-[100] w-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg overflow-hidden">
+                  <ul className="max-h-[200px] overflow-auto py-1">
                     {filteredDepartments.map(dept => (
                       <li key={dept.id}>
                         <button
@@ -1210,13 +1217,10 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                             setFetchDeptInput(dept.id);
                             setIsSuggestOpen(false);
                           }}
-                          className={cn(
-                            'w-full px-4 py-2.5 flex items-center justify-between hover:bg-primary/5 transition-colors',
-                            isRtl ? 'flex-row text-right' : 'flex-row-reverse text-left'
-                          )}
+                          className="w-full px-3.5 py-2 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors text-start"
                         >
-                          <span className="text-slate-400 text-xs font-mono">#{dept.id}</span>
-                          <span className="font-bold text-sm text-slate-700 dark:text-slate-300">{dept.name}</span>
+                          <span className="font-medium text-sm text-slate-800 dark:text-slate-200 truncate">{dept.name}</span>
+                          <span className="text-slate-400 text-xs font-mono shrink-0">#{dept.id}</span>
                         </button>
                       </li>
                     ))}
@@ -1225,12 +1229,12 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
               )}
             </div>
           </div>
-          <DialogFooter className={cn('sm:justify-end gap-2', isRtl && 'flex-row-reverse')}>
+          <DialogFooter className="gap-2 pt-2">
             <Button variant="outline" onClick={() => setShowFetchDeptDialog(false)} disabled={isFetchingDept}>
               {dictionary.map.cancel}
             </Button>
             <Button onClick={handleFetchDepartment} disabled={isFetchingDept || !fetchDeptInput}>
-              {isFetchingDept && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isFetchingDept && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {dictionary.map.searchDeptBtn}
             </Button>
           </DialogFooter>

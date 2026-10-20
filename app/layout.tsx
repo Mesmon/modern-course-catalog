@@ -15,8 +15,8 @@ import { AuthProvider } from "@/components/providers/AuthProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Course Catalog",
-  description: "Modern course catalog",
+  title: "BGU Course Catalog",
+  description: "Course catalog, prerequisite map, and weekly schedule planner for Ben-Gurion University",
   icons: {
     icon: "/favicon.png",
   },
@@ -35,7 +35,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen bg-background antialiased selection:bg-primary/20`} suppressHydrationWarning>
+      <body className={`${inter.className} min-h-screen bg-background antialiased selection:bg-primary/15`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -48,29 +48,16 @@ export default async function RootLayout({
                   color="#059669"
                   initialPosition={0.08}
                   crawlSpeed={200}
-                  height={3}
+                  height={2}
                   crawl={true}
                   showSpinner={false}
                   easing="ease"
                   speed={200}
-                  shadow="0 0 10px #059669,0 0 5px #059669"
                 />
                 <Navbar />
                 {children}
                 <OnboardingDialog />
-
-              <Toaster 
-                position="top-center" 
-                toastOptions={{
-                  classNames: {
-                    toast: "bg-white dark:bg-slate-950 border-2 border-emerald-500 shadow-2xl rounded-[1.5rem] p-6 !w-fit !mx-auto min-w-[300px] flex items-center justify-center gap-4",
-                    title: "!text-2xl md:!text-3xl font-black !text-emerald-500 block w-full text-center",
-                    description: "!text-emerald-500",
-                    icon: "!w-10 !h-10 !text-emerald-500",
-                  },
-                  duration: 4000
-                }}
-              />
+                <Toaster position={dir === 'rtl' ? 'bottom-left' : 'bottom-right'} dir={dir} duration={3200} />
               </AuthProvider>
             </QueryProvider>
           </DictionaryProvider>

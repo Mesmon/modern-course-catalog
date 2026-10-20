@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, BookOpen, ArrowRight, Loader2 } from 'lucide-react';
+import { Search, ArrowRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Department {
@@ -18,6 +18,7 @@ interface DepartmentSearchProps {
 }
 
 export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) {
+  const isRtl = locale === 'he';
   const [query, setQuery] = useState('');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([]);
@@ -47,11 +48,12 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
   }, []);
 
   useEffect(() => {
-    const filtered = departments.filter((dept) =>
-      query === '' || 
-      dept.id.includes(query) || 
-      dept.name.toLowerCase().includes(query.toLowerCase())
-    )
+    const filtered = departments.filter(
+      (dept) =>
+        query === '' ||
+        dept.id.includes(query) ||
+        dept.name.toLowerCase().includes(query.toLowerCase())
+    );
     setFilteredDepartments(filtered);
   }, [query, departments]);
 
@@ -66,8 +68,9 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
   }, []);
 
   const handleSearch = (deptId: string) => {
-    if (deptId) {
-      router.push(`/departments/${deptId}`);
+    const trimmed = deptId.trim();
+    if (trimmed) {
+      router.push(`/departments/${trimmed}`);
     }
   };
 
@@ -84,7 +87,7 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
         e.preventDefault();
         handleSearch(filteredDepartments[selectedIndex].id);
       } else if (query) {
-          handleSearch(query);
+        handleSearch(query);
       }
     } else if (e.key === 'Escape') {
       setIsOpen(false);
@@ -92,15 +95,18 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
   };
 
   return (
-    <div className="w-full relative" ref={containerRef}>
-      <form 
+    <div className="w-full relative" ref={containerRef} dir={isRtl ? 'rtl' : 'ltr'}>
+      <form
         onSubmit={(e) => {
-            e.preventDefault();
-            handleSearch(query);
-        }} 
-        className="flex flex-col sm:flex-row gap-4"
+          e.preventDefault();
+          handleSearch(query);
+        }}
+        className="flex flex-col sm:flex-row gap-2.5"
       >
         <div className="relative flex-1">
+          <Search
+            className="absolute top-1/2 -translate-y-1/2 start-3.5 h-4 w-4 text-slate-400 pointer-events-none"
+          />
           <Input
             name="dept"
             type="text"
@@ -113,40 +119,28 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
             onFocus={() => setIsOpen(true)}
             onKeyDown={handleKeyDown}
             placeholder={dictionary.home.searchPlaceholder}
-            className={cn(
-               "h-14 text-xl rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-950 transition-all font-bold",
-               locale === 'he' ? 'pr-12 text-right' : 'pl-12 text-left'
-            )}
+            className="h-11 ps-10 pe-9 text-sm rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-950 transition-colors"
             required
             autoComplete="off"
           />
-          <BookOpen className={cn(
-              "absolute top-1/2 -translate-y-1/2 h-6 w-6 text-slate-400",
-              locale === 'he' ? 'right-4' : 'left-4'
-          )} />
-          
           {isLoading && (
-            <div className={cn(
-                "absolute top-1/2 -translate-y-1/2 h-5 w-5",
-                locale === 'he' ? 'left-4' : 'right-4'
-            )}>
-              <Loader2 className="h-full w-full animate-spin text-primary/50" />
+            <div className="absolute top-1/2 -translate-y-1/2 end-3.5 h-4 w-4">
+              <Loader2 className="h-full w-full animate-spin text-muted-foreground" />
             </div>
           )}
         </div>
-        <Button 
+        <Button
           type="submit"
-          size="lg" 
-          className="h-14 px-8 text-xl font-black rounded-xl gap-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98] transition-all"
+          className="h-11 px-5 text-sm font-semibold rounded-xl gap-2 shrink-0 cursor-pointer"
         >
-          {dictionary.home.searchBtn}
-          <ArrowRight className={cn("h-6 w-6", locale === 'he' && "rotate-180")} />
+          <span>{dictionary.home.searchBtn}</span>
+          <ArrowRight className={cn('h-4 w-4', isRtl && 'rotate-180')} />
         </Button>
       </form>
 
       {isOpen && filteredDepartments.length > 0 && (
-        <div className="absolute z-[100] w-full mt-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-          <ul className="max-h-[300px] overflow-auto py-2">
+        <div className="absolute z-50 w-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-lg overflow-hidden">
+          <ul className="max-h-64 overflow-y-auto p-1">
             {filteredDepartments.map((dept, index) => (
               <li key={dept.id}>
                 <button
@@ -158,13 +152,18 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
                   }}
                   onMouseEnter={() => setSelectedIndex(index)}
                   className={cn(
-                    "w-full px-4 py-3 flex items-center justify-between hover:bg-primary/5 transition-colors group",
-                    selectedIndex === index && "bg-primary/5",
-                    locale === 'he' ? 'flex-row text-right' : 'flex-row-reverse text-left'
+                    'w-full px-3 py-2 flex items-center justify-between gap-3 rounded-lg text-start transition-colors cursor-pointer',
+                    selectedIndex === index
+                      ? 'bg-slate-100 dark:bg-slate-800'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
                   )}
                 >
-                  <span className="text-slate-400 dark:text-slate-500 text-sm font-medium group-hover:text-primary transition-colors">#{dept.id}</span>
-                  <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">{dept.name}</span>
+                  <span className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">
+                    {dept.name}
+                  </span>
+                  <span className="font-mono text-xs text-slate-400 dark:text-slate-500 shrink-0">
+                    #{dept.id}
+                  </span>
                 </button>
               </li>
             ))}

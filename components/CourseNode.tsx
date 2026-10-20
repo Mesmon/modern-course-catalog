@@ -1,47 +1,57 @@
 import { Handle, Position } from '@xyflow/react';
-import { BookOpen, AlertCircle, Trash2 } from 'lucide-react';
+import { BookOpen, Trash2, Plus } from 'lucide-react';
 import { useState, useContext, useMemo } from 'react';
 import { CourseMapContext } from './DependencyMap';
+import { cn } from '@/lib/utils';
 
-export function CourseNode({ id, data, selected, xPos, yPos, targetPosition = Position.Left, sourcePosition = Position.Right }: any) {
+export function CourseNode({
+  id,
+  data,
+  selected,
+  xPos,
+  yPos,
+  targetPosition = Position.Left,
+  sourcePosition = Position.Right,
+}: any) {
   const context = useContext(CourseMapContext);
   const isHebrew = data.locale === 'he';
   const [isHovered, setIsHovered] = useState(false);
-  
+
   if (!context) return null;
-  const { onRemoveNode, fetchCourseData, updateCourseTerm, dictionary, selectedRelations } = context;
+  const { onRemoveNode, fetchCourseData, updateCourseTerm, dictionary } = context;
 
   const uniqueRelatedCourses = useMemo(() => {
-    return data.relatedCourses?.filter((v: any, i: number, a: any[]) => a.findIndex(t => t.id === v.id) === i) || [];
+    return (
+      data.relatedCourses?.filter(
+        (v: any, i: number, a: any[]) => a.findIndex((t) => t.id === v.id) === i
+      ) || []
+    );
   }, [data.relatedCourses]);
 
-  const filteredCourses = useMemo(() => {
-    // Show all available connections in the hover card, regardless of the map edge filter,
-    // so they can be discovered and added.
-    return uniqueRelatedCourses;
-  }, [uniqueRelatedCourses]);
-
   const allTerms = useMemo(() => {
-    const terms: { year: string, semester: string, label: string }[] = [];
+    const terms: { year: string; semester: string; label: string }[] = [];
     const currentYear = Math.max(new Date().getFullYear(), 2026);
     const knownKeys = new Set<string>();
 
     if (data.offerings && Array.isArray(data.offerings)) {
       data.offerings.forEach((off: any) => {
-        terms.push({ year: off.year, semester: off.semester, label: `${off.year}-${off.semester}` });
+        terms.push({
+          year: off.year,
+          semester: off.semester,
+          label: `${off.year}-${off.semester}`,
+        });
         knownKeys.add(`${off.year}-${off.semester}`);
       });
     }
 
-    // Always provide the current term as a fallback if it's missing
     const currentKey = `${data.year}-${data.semester}`;
     if (!knownKeys.has(currentKey)) {
-        terms.push({
-            year: data.year?.toString() || '2027',
-            semester: data.semester?.toString() || '1',
-            label: `${data.year || 2027}-${data.semester || 1}`
-        });
-        knownKeys.add(currentKey);
+      terms.push({
+        year: data.year?.toString() || '2027',
+        semester: data.semester?.toString() || '1',
+        label: `${data.year || 2027}-${data.semester || 1}`,
+      });
+      knownKeys.add(currentKey);
     }
 
     for (let y = currentYear + 1; y >= currentYear - 3; y--) {
@@ -51,7 +61,7 @@ export function CourseNode({ id, data, selected, xPos, yPos, targetPosition = Po
           terms.push({
             year: y.toString(),
             semester: s.toString(),
-            label: key
+            label: key,
           });
           knownKeys.add(key);
         }
@@ -62,140 +72,162 @@ export function CourseNode({ id, data, selected, xPos, yPos, targetPosition = Po
       if (a.year !== b.year) return Number(b.year) - Number(a.year);
       return Number(b.semester) - Number(a.semester);
     });
-    
+
     return terms;
-  }, [data.offerings, data.year, data.semester, isHebrew]);
-  
+  }, [data.offerings, data.year, data.semester]);
+
   return (
     <div
       dir={isHebrew ? 'rtl' : 'ltr'}
-      className={`bg-white dark:bg-slate-900 rounded-xl shadow-sm ring-1 flex flex-col p-3 w-[280px] transition-all relative z-10
-        ${selected ? 'ring-primary shadow-md z-50' : 'ring-slate-200 dark:ring-slate-800'}
-        ${data.loading ? 'opacity-70 animate-pulse' : ''}
-        ${isHovered ? 'shadow-lg z-50 scale-105' : ''}
-      `}
+      className={cn(
+        'bg-white dark:bg-slate-900 rounded-xl border flex flex-col p-3.5 w-[280px] transition-shadow relative z-10',
+        selected
+          ? 'border-primary ring-2 ring-primary/20 shadow-md z-40'
+          : 'border-slate-200/90 dark:border-slate-800 shadow-xs',
+        data.loading && 'opacity-70 animate-pulse',
+        isHovered && 'shadow-md border-slate-300 dark:border-slate-700 z-50'
+      )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <Handle
         type="target"
         position={targetPosition}
-        className={`w-3 h-3 ring-2 ring-white dark:ring-slate-900 ${targetPosition === Position.Left ? '-left-1.5' : '-top-1.5'} bg-slate-300 dark:bg-slate-700`}
+        className={cn(
+          'w-2.5 h-2.5 ring-2 ring-white dark:ring-slate-900 bg-slate-400 dark:bg-slate-600',
+          targetPosition === Position.Left ? '-left-1.5' : '-top-1.5'
+        )}
       />
-      
-      <div className="flex items-center gap-2 mb-2 pr-6">
-        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-          <BookOpen className="h-4 w-4" />
+
+      <div className="flex items-start gap-2.5 mb-2 pe-7">
+        <div className="h-7 w-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0 mt-0.5">
+          <BookOpen className="h-3.5 w-3.5" />
         </div>
-        <div className="flex flex-col overflow-hidden">
-          <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">
+        <div className="flex flex-col min-w-0">
+          <span className="font-mono text-[11px] font-medium text-muted-foreground">
             {data.dept}.{data.degree}.{data.courseId}
           </span>
-          <span className="font-bold text-sm leading-tight text-slate-800 dark:text-slate-200 text-wrap" title={data.name}>
+          <span
+            className="font-semibold text-sm leading-snug text-slate-900 dark:text-slate-100 line-clamp-2"
+            title={data.name}
+          >
             {data.name}
           </span>
         </div>
       </div>
 
-      <button 
-        onClick={(e) => { e.stopPropagation(); onRemoveNode?.(id); }}
-        className={`absolute top-2 ${isHebrew ? 'left-2' : 'right-2'} p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors opacity-0 group-hover:opacity-100 ${isHovered ? 'opacity-100' : ''}`}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemoveNode?.(id);
+        }}
+        className={cn(
+          'absolute top-2.5 end-2.5 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-opacity cursor-pointer',
+          isHovered ? 'opacity-100' : 'opacity-0'
+        )}
         title={dictionary?.map?.removeFromMap || 'Remove'}
       >
-        <Trash2 className="h-4 w-4" />
+        <Trash2 className="h-3.5 w-3.5" />
       </button>
 
       {data.stats && (
-        <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-          <span className="bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded">{data.stats.points} {dictionary?.course?.points}</span>
-          <span className="bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded truncate max-w-[120px]" title={data.type}>{data.type}</span>
+        <div className="flex items-center gap-1.5 mt-1 text-[11px] text-muted-foreground font-medium">
+          <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-md">
+            {data.stats.points} {dictionary?.course?.points}
+          </span>
+          {data.type && (
+            <span
+              className="bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-md truncate max-w-[140px]"
+              title={data.type}
+            >
+              {data.type}
+            </span>
+          )}
         </div>
       )}
 
-      {/* Hover Card */}
+      {/* Hover Details Popover */}
       {isHovered && !data.loading && (
-        <div className={`absolute top-[calc(100%-8px)] pt-2 w-64 z-50 nowheel nopan ${isHebrew ? 'right-0' : 'left-0'}`}>
-          <div className="bg-slate-900 dark:bg-slate-950 text-white dark:text-slate-200 p-4 rounded-xl shadow-2xl animate-in fade-in slide-in-from-top-2 flex flex-col gap-2">
-          <div className="flex items-center gap-2 mb-1">
-            <AlertCircle className="h-4 w-4 text-primary" />
-            <span className="font-bold text-sm">{dictionary?.department?.courseDetails}</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="flex flex-col">
-               <span className="text-slate-400">{dictionary?.department?.title}</span>
-               <span>{data.dept}</span>
-            </div>
-            <div className="flex flex-col">
-               <span className="text-slate-400">{dictionary?.course?.courseId}</span>
-               <span>{data.courseId}</span>
-            </div>
-            <div className="flex flex-col">
-               <span className="text-slate-400">{dictionary?.course?.points}</span>
-               <span>{data.stats?.points || '-'}</span>
-            </div>
-            <div className="flex flex-col">
-               <span className="text-slate-400">{dictionary?.course?.activeIn || dictionary?.course?.type}</span>
-                 <select
-                   value={`${data.year}-${data.semester}`}
-                   onChange={(e) => {
-                     e.stopPropagation();
-                     const [y, s] = e.target.value.split('-');
-                     updateCourseTerm?.(data.courseId, data.dept, data.degree, y, s, data.name);
-                   }}
-                   className="bg-slate-800 dark:bg-slate-800 px-1 py-0.5 mt-0.5 rounded border border-slate-700 dark:border-slate-700 outline-none cursor-pointer hover:bg-slate-700 dark:hover:bg-slate-700 w-full text-xs text-slate-200"
-                   title={dictionary?.course?.activeIn || 'Select Term'}
-                   onClick={(e) => {
-                     e.stopPropagation();
-                   }}
-                 >
-                   {allTerms.map((term: any) => (
-                     <option key={`${term.year}-${term.semester}`} value={`${term.year}-${term.semester}`}>
-                       {term.label}
-                     </option>
-                   ))}
-                 </select>
-            </div>
-          </div>
-          <div className="mt-2 text-xs bg-white/10 p-2 rounded-lg text-slate-300">
-             {data.name}
-          </div>
-
-          <div className="mt-2 pt-2 border-t border-white/10 flex flex-col gap-1.5">
-            <span className="font-bold text-xs text-slate-300">{dictionary?.map?.relatedCourses}</span>
-            {(!filteredCourses || filteredCourses.length === 0) ? (
-               <span className="text-[10px] text-slate-400 italic">{dictionary?.map?.noConnections}</span>
-            ) : (
-              <div className="flex flex-col gap-1 max-h-32 overflow-y-auto pr-1">
-                {filteredCourses.map((rc: any, idx: number) => (
-                  <div 
-                    key={`${rc.id}-${idx}`} 
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
-                      fetchCourseData?.(
-                        rc.params.course, rc.params.dept, rc.params.degree, rc.params.year, rc.params.semester, rc.name,
-                        { x: xPos || 0, y: yPos || 0 }
-                      );
-                    }}
-                    className="flex items-center justify-between bg-white/5 p-1.5 rounded-md hover:bg-white/10 transition-colors cursor-pointer group"
-                    title={dictionary?.map?.addToMap}
-                  >
-                    <div className="flex flex-col text-[10px] truncate pr-2 pointer-events-none">
-                       <span className="font-bold text-white truncate" title={rc.name}>{rc.name}</span>
-                       <span className="text-slate-400">{rc.id} • {rc.relation}</span>
-                    </div>
-                  </div>
+        <div className="absolute top-full pt-2 w-72 z-50 nowheel nopan start-0">
+          <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-200/90 dark:border-slate-800 p-3.5 rounded-xl shadow-xl flex flex-col gap-2.5">
+            <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
+              <span className="text-muted-foreground font-medium">
+                {dictionary?.course?.activeIn || 'Term'}:
+              </span>
+              <select
+                value={`${data.year}-${data.semester}`}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  const [y, s] = e.target.value.split('-');
+                  updateCourseTerm?.(data.courseId, data.dept, data.degree, y, s, data.name);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-800 outline-none cursor-pointer text-xs font-mono font-medium"
+                title={dictionary?.course?.activeIn || 'Select Term'}
+              >
+                {allTerms.map((term: any) => (
+                  <option key={`${term.year}-${term.semester}`} value={`${term.year}-${term.semester}`}>
+                    {term.label}
+                  </option>
                 ))}
-              </div>
-            )}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="font-semibold text-xs text-slate-700 dark:text-slate-300">
+                {dictionary?.map?.relatedCourses}
+              </span>
+              {!uniqueRelatedCourses || uniqueRelatedCourses.length === 0 ? (
+                <span className="text-xs text-muted-foreground">
+                  {dictionary?.map?.noConnections}
+                </span>
+              ) : (
+                <div className="flex flex-col gap-1 max-h-36 overflow-y-auto pe-1">
+                  {uniqueRelatedCourses.map((rc: any, idx: number) => (
+                    <button
+                      type="button"
+                      key={`${rc.id}-${idx}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fetchCourseData?.(
+                          rc.params.course,
+                          rc.params.dept,
+                          rc.params.degree,
+                          rc.params.year,
+                          rc.params.semester,
+                          rc.name,
+                          { x: xPos || 0, y: yPos || 0 }
+                        );
+                      }}
+                      className="flex items-center justify-between gap-2 text-start bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-lg transition-colors cursor-pointer group/rel"
+                      title={dictionary?.map?.addToMap}
+                    >
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="font-medium text-xs text-slate-900 dark:text-slate-100 truncate">
+                          {rc.name}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground font-mono truncate">
+                          {rc.id} • {rc.relation}
+                        </span>
+                      </div>
+                      <Plus className="h-3.5 w-3.5 text-slate-400 group-hover/rel:text-primary shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         </div>
       )}
 
       <Handle
         type="source"
         position={sourcePosition}
-        className={`w-3 h-3 ring-2 ring-white dark:ring-slate-900 ${sourcePosition === Position.Right ? '-right-1.5' : '-bottom-1.5'} bg-primary`}
+        className={cn(
+          'w-2.5 h-2.5 ring-2 ring-white dark:ring-slate-900 bg-primary',
+          sourcePosition === Position.Right ? '-right-1.5' : '-bottom-1.5'
+        )}
       />
     </div>
   );

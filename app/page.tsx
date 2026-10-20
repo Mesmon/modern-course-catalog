@@ -1,13 +1,8 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Search, GraduationCap, Database, Sparkles, BookOpen, ArrowRight, Library } from 'lucide-react';
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { Calendar, Workflow, Library } from 'lucide-react';
 import { CourseList } from '@/components/CourseList';
 import { cookies } from 'next/headers';
 import { getDictionary, Locale } from '@/lib/dictionaries';
-
 import { DepartmentSearch } from '@/components/DepartmentSearch';
 import { TourGuideClient } from '@/components/TourGuideClient';
 
@@ -18,75 +13,72 @@ export default async function Home() {
   const dictionary = getDictionary(locale);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 dark:from-primary/10 via-background to-background">
+    <div className="min-h-screen bg-slate-50/40 dark:bg-slate-950/40">
       <TourGuideClient page="home" />
-      {/* Decorative background elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-        <div className="absolute top-[10%] left-[5%] w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-[10%] right-[5%] w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
-      </div>
 
-      <main className="container max-w-6xl px-4 py-20 flex flex-col items-center">
-        <div className="text-center space-y-6 mb-16 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-bold mb-4">
-            <Sparkles className="h-4 w-4" />
-            <span>{dictionary.home.tagline}</span>
+      <main className="container max-w-6xl mx-auto px-4 py-12 space-y-14">
+        {/* Hero & Department Search */}
+        <section className="max-w-2xl mx-auto text-center space-y-6 pt-2">
+          <div className="space-y-3">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
+              {dictionary.home.title}{' '}
+              <span className="text-primary">{dictionary.home.titleSuffix}</span>
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+              {dictionary.home.description}
+            </p>
           </div>
-          <h1 className="text-6xl md:text-7xl font-black text-slate-900 dark:text-slate-100 tracking-tighter leading-none">
-            {dictionary.home.title} <br />
-            <span className="text-primary">{dictionary.home.titleSuffix}</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            {dictionary.home.description}
-          </p>
-        </div>
 
-        <Card className="w-full max-w-2xl shadow-2xl shadow-primary/10 dark:shadow-primary/5 border-primary/10 dark:border-primary/20 backdrop-blur-sm bg-white/80 dark:bg-slate-950/80" id="tour-search">
-          <div className="h-2 bg-primary" />
-          <CardHeader className="space-y-1 p-8">
-            <CardTitle className="text-3xl font-black flex items-center gap-3">
-              <Search className="h-8 w-8 text-primary" />
-              {dictionary.home.searchTitle}
-            </CardTitle>
-            <CardDescription className="text-lg">
-              {dictionary.home.searchDesc}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-8 pt-0">
-            <DepartmentSearch dictionary={dictionary} locale={locale} />
-          </CardContent>
-        </Card>
-
-
-        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
-            {[
-                { title: dictionary.home.features.speed.title, desc: dictionary.home.features.speed.desc, icon: Sparkles },
-                { title: dictionary.home.features.data.title, desc: dictionary.home.features.data.desc, icon: Database },
-                { title: dictionary.home.features.design.title, desc: dictionary.home.features.design.desc, icon: GraduationCap },
-            ].map((feature, i) => (
-                <div key={i} className="flex flex-col items-center text-center p-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="h-12 w-12 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center mb-4">
-                        <feature.icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
-                    <p className="text-muted-foreground">{feature.desc}</p>
-                </div>
-            ))}
-        </div>
-
-        <div className="mt-32 w-full animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300" id="tour-full-catalog">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="bg-primary/10 p-3 rounded-2xl">
-              <Library className="h-8 w-8 text-primary" />
+          <div
+            id="tour-search"
+            className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-sm text-start space-y-3"
+          >
+            <div className="space-y-0.5">
+              <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                {dictionary.home.searchTitle}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {dictionary.home.searchDesc}
+              </p>
             </div>
-            <h2 className="text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{dictionary.home.fullCatalog}</h2>
+            <DepartmentSearch dictionary={dictionary} locale={locale} />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          {/* Quick Tools Bar */}
+          <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+            <Link
+              href="/schedule"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-slate-100 shadow-2xs transition-all"
+            >
+              <Calendar className="h-3.5 w-3.5 text-primary" />
+              <span>{dictionary.schedule.title}</span>
+            </Link>
+            <Link
+              href="/map"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-slate-100 shadow-2xs transition-all"
+            >
+              <Workflow className="h-3.5 w-3.5 text-primary" />
+              <span>{dictionary.map.title}</span>
+            </Link>
+          </div>
+        </section>
+
+        {/* Full Catalog Section */}
+        <section id="tour-full-catalog" className="space-y-5">
+          <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-2.5">
+              <Library className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+                {dictionary.home.fullCatalog}
+              </h2>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <CourseList />
           </div>
-        </div>
+        </section>
       </main>
     </div>
   );
 }
-

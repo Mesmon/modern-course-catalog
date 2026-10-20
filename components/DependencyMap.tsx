@@ -544,43 +544,59 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
 
   return (
     <div className="h-full w-full" id="tour-map-area">
-      <div className="absolute top-4 z-10 flex gap-2" style={{ [locale === 'he' ? 'right' : 'left']: '16px' }}>
-        <Button id="tour-map-add" onClick={() => setOpen(true)} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 border dark:border-slate-800 shadow-sm rounded-xl font-bold gap-2">
-            <Plus className="h-4 w-4" />
-            {dictionary.map.addCourse}
+      <div className="absolute top-4 z-10 flex flex-wrap gap-2" style={{ [locale === 'he' ? 'right' : 'left']: '16px' }}>
+        <Button id="tour-map-add" size="sm" onClick={() => setOpen(true)} className="h-9 px-3.5 rounded-lg font-medium text-xs gap-1.5 shadow-xs">
+          <Plus className="h-3.5 w-3.5" />
+          {dictionary.map.addCourse}
         </Button>
         {nodes.length > 0 && (
-          <Button onClick={() => {
-            const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(nodes, edges);
-            setNodes([...layoutedNodes]);
-            setEdges([...layoutedEdges]);
-          }} variant="outline" className="bg-white/80 dark:bg-slate-900/80 backdrop-blur shadow-sm rounded-xl font-bold gap-2 transition-all border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
-            <Workflow className="h-4 w-4" />
+          <Button
+            size="sm"
+            onClick={() => {
+              const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(nodes, edges);
+              setNodes([...layoutedNodes]);
+              setEdges([...layoutedEdges]);
+            }}
+            variant="outline"
+            className="h-9 px-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-xs rounded-lg font-medium text-xs gap-1.5 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+          >
+            <Workflow className="h-3.5 w-3.5" />
             {dictionary.map.chronologicalLayout || 'Chronological Layout'}
           </Button>
         )}
         {nodes.length > 0 && (
-          <Button onClick={() => { setNodes([]); setEdges([]); }} variant="outline" className="bg-white/80 dark:bg-slate-900/80 backdrop-blur text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700 dark:hover:text-red-400 border-red-100 dark:border-red-900/50 shadow-sm rounded-xl font-bold gap-2 transition-all">
-            <Trash2 className="h-4 w-4" />
+          <Button
+            size="sm"
+            onClick={() => { setNodes([]); setEdges([]); }}
+            variant="outline"
+            className="h-9 px-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700 dark:hover:text-red-300 border-red-200/80 dark:border-red-900/50 shadow-xs rounded-lg font-medium text-xs gap-1.5"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
             {dictionary.map.clearMap}
           </Button>
         )}
         {availableRelations.length > 0 && (
           <div className="relative">
             <Button 
+              size="sm"
               variant="outline" 
               onClick={() => setShowFilter(!showFilter)} 
-              className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur shadow-sm rounded-xl font-bold gap-2 transition-all border-slate-200 dark:border-slate-800 ${showFilter || (selectedRelations.length > 0 && selectedRelations.length !== availableRelations.length) ? 'text-primary border-primary/50 bg-primary/5 dark:bg-primary/20' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+              className={cn(
+                "h-9 px-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-xs rounded-lg font-medium text-xs gap-1.5 border-slate-200 dark:border-slate-800",
+                showFilter || (selectedRelations.length > 0 && selectedRelations.length !== availableRelations.length)
+                  ? 'text-primary border-primary/50 bg-primary/5 dark:bg-primary/20'
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+              )}
             >
-              <Filter className="h-4 w-4" />
+              <Filter className="h-3.5 w-3.5" />
               {dictionary.map.filterRelations}
             </Button>
             {showFilter && (
-              <div className={`absolute top-full mt-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-lg ${locale === 'he' ? 'right-0' : 'left-0'} z-50`}>
-                <div className="flex flex-col gap-2 text-start">
-                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">{dictionary.map.filterRelations}</span>
+              <div className={`absolute top-full mt-1.5 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 shadow-lg ${locale === 'he' ? 'right-0' : 'left-0'} z-50`}>
+                <div className="flex flex-col gap-1 text-start">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1.5 py-1">{dictionary.map.filterRelations}</span>
                   {availableRelations.map(rel => (
-                    <label key={rel} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg" dir={locale === 'he' ? 'rtl' : 'ltr'}>
+                    <label key={rel} className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg" dir={locale === 'he' ? 'rtl' : 'ltr'}>
                       <input 
                         type="checkbox" 
                         checked={selectedRelations.includes(rel)}
@@ -622,7 +638,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
       </CourseMapContext.Provider>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <div id="tour-map-search">
+        <div id="tour-map-search" dir={locale === 'en' ? 'ltr' : 'rtl'}>
           <CommandInput 
             placeholder={dictionary.map.searchPlaceholder} 
             className={locale === 'he' ? 'text-right' : 'text-left'} 
@@ -632,15 +648,16 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
         </div>
         <CommandList className={locale === 'he' ? 'text-right' : 'text-left'} dir={locale === 'en' ? 'ltr' : 'rtl'}>
           <CommandEmpty>
-            <div className="flex flex-col items-center justify-center text-center gap-4 py-6">
-              <p className="font-bold text-slate-700 dark:text-slate-300">{dictionary.navbar.noResults}</p>
-              <p className="text-sm text-muted-foreground whitespace-normal leading-tight mx-auto max-w-[300px]">
+            <div className="flex flex-col items-center justify-center text-center gap-3 py-6 px-4">
+              <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">{dictionary.navbar.noResults}</p>
+              <p className="text-xs text-muted-foreground whitespace-normal leading-relaxed mx-auto max-w-[280px]">
                 {dictionary.map.suggestDepartment}
               </p>
               {searchQuery && (
                  <Button 
+                   size="sm"
                    onClick={() => setShowFetchDeptDialog(true)} 
-                   className="mt-2"
+                   className="mt-1 rounded-lg"
                  >
                    {dictionary.map.searchDeptBtn}
                  </Button>
@@ -665,12 +682,14 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
                   
                   fetchCourseData(cId, dept, degree, year, semester, course.name);
                 }}
-                className="flex flex-col items-start py-3 px-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg m-1"
+                className="flex items-center justify-between gap-3 py-2.5 px-3 cursor-pointer rounded-lg my-0.5"
               >
-                <div className="flex flex-col gap-1 w-full text-start">
-                  <span className="font-bold text-slate-900 dark:text-slate-100 text-base">{course.name}</span>
-                  <span className="text-sm text-slate-500 dark:text-slate-400 font-mono tracking-tight w-fit">{course.id}</span>
-                </div>
+                <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
+                  {course.name}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono shrink-0 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                  {course.id}
+                </span>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -678,14 +697,14 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
       </CommandDialog>
 
       <Dialog open={showFetchDeptDialog} onOpenChange={setShowFetchDeptDialog}>
-        <DialogContent className={`sm:max-w-md ${locale === 'he' ? 'text-right' : 'text-left'}`} dir={locale === 'en' ? 'ltr' : 'rtl'}>
-          <DialogHeader className={locale === 'he' ? 'text-right' : 'text-left'}>
+        <DialogContent className="sm:max-w-md" dir={locale === 'en' ? 'ltr' : 'rtl'}>
+          <DialogHeader>
             <DialogTitle>{dictionary.map.fetchDeptTitle}</DialogTitle>
             <DialogDescription>
               {dictionary.map.fetchDeptDesc}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex items-center space-x-2 py-4" ref={suggestContainerRef}>
+          <div className="flex items-center py-2" ref={suggestContainerRef}>
             <div className="grid flex-1 gap-2 relative">
               <Input
                 value={fetchDeptInput}
@@ -702,16 +721,13 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
                 autoComplete="off"
               />
               {isLoadingDepartments && (
-                <div className={cn(
-                    "absolute top-1/2 -translate-y-1/2 h-4 w-4",
-                    locale === 'he' ? 'left-3' : 'right-3'
-                )}>
+                <div className="absolute top-1/2 -translate-y-1/2 end-3 h-4 w-4">
                   <Loader2 className="h-full w-full animate-spin text-primary/50" />
                 </div>
               )}
               {isSuggestOpen && filteredDepartments.length > 0 && (
-                <div className="absolute top-full z-[100] w-full mt-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                  <ul className="max-h-[200px] overflow-auto py-2">
+                <div className="absolute top-full z-[100] w-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150">
+                  <ul className="max-h-[200px] overflow-auto py-1">
                     {filteredDepartments.map((dept, index) => (
                       <li key={dept.id}>
                         <button
@@ -719,17 +735,15 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
                           onClick={() => {
                             setFetchDeptInput(dept.id);
                             setIsSuggestOpen(false);
-                            // Auto-fetch if wanted, or just populate input. Opting to populate for consistency.
                           }}
                           onMouseEnter={() => setSelectedIndex(index)}
                           className={cn(
-                            "w-full px-4 py-3 flex items-center justify-between hover:bg-primary/5 transition-colors group",
-                            selectedIndex === index && "bg-primary/5",
-                            locale === 'he' ? 'flex-row text-right' : 'flex-row-reverse text-left'
+                            "w-full px-3.5 py-2 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors text-start",
+                            selectedIndex === index && "bg-slate-50 dark:bg-slate-800/60"
                           )}
                         >
-                          <span className="text-slate-400 dark:text-slate-500 text-sm font-medium group-hover:text-primary transition-colors">#{dept.id}</span>
-                          <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">{dept.name}</span>
+                          <span className="font-medium text-sm text-slate-800 dark:text-slate-200 truncate">{dept.name}</span>
+                          <span className="text-slate-400 dark:text-slate-500 text-xs font-mono shrink-0">#{dept.id}</span>
                         </button>
                       </li>
                     ))}
@@ -738,7 +752,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
               )}
             </div>
           </div>
-          <DialogFooter className={`sm:justify-end gap-2 mt-4 ${locale === 'he' ? 'flex-row-reverse sm:space-x-reverse' : ''}`}>
+          <DialogFooter className="gap-2 pt-2">
             <Button
               type="button"
               variant="outline"
@@ -753,7 +767,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
               onClick={handleFetchDepartment}
               disabled={isFetchingDept || !fetchDeptInput}
             >
-              {isFetchingDept && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isFetchingDept && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
               {dictionary.map.searchDeptBtn}
             </Button>
           </DialogFooter>

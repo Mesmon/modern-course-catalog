@@ -126,20 +126,20 @@ export function AddToScheduleButton({
         variant={variant === 'outline' ? 'outline' : 'default'}
         onClick={handleClick}
         className={cn(
-          'font-bold gap-2 transition-all',
+          'font-medium gap-1.5 transition-all cursor-pointer',
           isScheduled && variant === 'outline' && 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10',
-          isScheduled && variant !== 'outline' && 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20',
+          isScheduled && variant !== 'outline' && 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs',
           className
         )}
       >
         {isScheduled ? (
           <>
-            <CalendarCheck className="h-4 w-4" />
+            <CalendarCheck className="h-3.5 w-3.5" />
             <span>{dictionary.schedule.inSchedule}</span>
           </>
         ) : (
           <>
-            <CalendarPlus className="h-4 w-4" />
+            <CalendarPlus className="h-3.5 w-3.5" />
             <span>{dictionary.schedule.addToSchedule}</span>
           </>
         )}
