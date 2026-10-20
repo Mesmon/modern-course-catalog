@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/sonner";
 import NextTopLoader from 'nextjs-toploader';
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -42,20 +43,21 @@ export default async function RootLayout({
         >
           <DictionaryProvider dictionary={dictionary} locale={locale}>
             <QueryProvider>
-              <NextTopLoader 
-                color="#059669"
-                initialPosition={0.08}
-                crawlSpeed={200}
-                height={3}
-                crawl={true}
-                showSpinner={false}
-                easing="ease"
-                speed={200}
-                shadow="0 0 10px #059669,0 0 5px #059669"
-              />
-              <Navbar />
-              {children}
-              <OnboardingDialog />
+              <AuthProvider>
+                <NextTopLoader 
+                  color="#059669"
+                  initialPosition={0.08}
+                  crawlSpeed={200}
+                  height={3}
+                  crawl={true}
+                  showSpinner={false}
+                  easing="ease"
+                  speed={200}
+                  shadow="0 0 10px #059669,0 0 5px #059669"
+                />
+                <Navbar />
+                {children}
+                <OnboardingDialog />
 
               <Toaster 
                 position="top-center" 
@@ -69,6 +71,7 @@ export default async function RootLayout({
                   duration: 4000
                 }}
               />
+              </AuthProvider>
             </QueryProvider>
           </DictionaryProvider>
         </ThemeProvider>

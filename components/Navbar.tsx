@@ -5,6 +5,7 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { cookies } from 'next/headers';
 import { getDictionary, Locale } from '@/lib/dictionaries';
 import { ThemeToggle } from './ThemeToggle';
+import { UserAuthMenu } from './UserAuthMenu';
 import { Button } from '@/components/ui/button';
 
 export async function Navbar() {
@@ -42,6 +43,7 @@ export async function Navbar() {
           <GlobalSearch />
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
+          <UserAuthMenu />
           <LanguageSwitcher />
           <ThemeToggle />
         </div>

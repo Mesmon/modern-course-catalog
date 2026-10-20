@@ -22,6 +22,13 @@ export interface ScheduleTerm {
 export const SCHEDULE_STORAGE_KEY = 'weeklyScheduleCourses_v1';
 export const SCHEDULE_TERM_KEY = 'weeklyScheduleActiveTerm_v1';
 export const SCHEDULE_EVENT = 'weekly-schedule-updated';
+export const SCHEDULE_CLOUD_HYDRATED_EVENT = 'weekly-schedule-cloud-hydrated';
+
+export const DEPENDENCY_MAP_NODES_KEY = 'dependencyMapNodes';
+export const DEPENDENCY_MAP_EDGES_KEY = 'dependencyMapEdges';
+export const DEPENDENCY_MAP_RELATIONS_KEY = 'dependencyMapRelations';
+export const DEPENDENCY_MAP_EVENT = 'dependency-map-updated';
+export const DEPENDENCY_MAP_CLOUD_HYDRATED_EVENT = 'dependency-map-cloud-hydrated';
 
 export const COURSE_COLOR_PALETTE = [
   {
@@ -127,6 +134,71 @@ export function saveScheduledCourses(courses: ScheduledCourse[]) {
     window.dispatchEvent(new Event(SCHEDULE_EVENT));
   } catch (e) {
     console.error('Failed to save schedule to localStorage', e);
+  }
+}
+
+export function hydrateScheduleFromCloud(courses: ScheduledCourse[], activeTerm?: ScheduleTerm) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(courses || []));
+    if (activeTerm && activeTerm.year && activeTerm.semester) {
+      localStorage.setItem(
+        SCHEDULE_TERM_KEY,
+        JSON.stringify({ year: String(activeTerm.year), semester: String(activeTerm.semester) })
+      );
+    }
+    window.dispatchEvent(new Event(SCHEDULE_CLOUD_HYDRATED_EVENT));
+  } catch (e) {
+    console.error('Failed to hydrate schedule from cloud', e);
+  }
+}
+
+export function loadDependencyMapStorage(): {
+  nodes: any[];
+  edges: any[];
+  selectedRelations: string[];
+} {
+  if (typeof window === 'undefined') {
+    return { nodes: [], edges: [], selectedRelations: ['קורס קדם'] };
+  }
+  try {
+    const rawNodes = localStorage.getItem(DEPENDENCY_MAP_NODES_KEY);
+    const rawEdges = localStorage.getItem(DEPENDENCY_MAP_EDGES_KEY);
+    const rawRelations = localStorage.getItem(DEPENDENCY_MAP_RELATIONS_KEY);
+    return {
+      nodes: rawNodes ? JSON.parse(rawNodes) : [],
+      edges: rawEdges ? JSON.parse(rawEdges) : [],
+      selectedRelations: rawRelations ? JSON.parse(rawRelations) : ['קורס קדם'],
+    };
+  } catch (e) {
+    return { nodes: [], edges: [], selectedRelations: ['קורס קדם'] };
+  }
+}
+
+export function hydrateDependencyMapFromCloud(data: {
+  nodes?: any[];
+  edges?: any[];
+  selectedRelations?: string[];
+}) {
+  if (typeof window === 'undefined') return;
+  try {
+    const nodes = Array.isArray(data.nodes) ? data.nodes : [];
+    const edges = Array.isArray(data.edges) ? data.edges : [];
+    const selectedRelations = Array.isArray(data.selectedRelations)
+      ? data.selectedRelations
+      : ['קורס קדם'];
+
+    if (nodes.length > 0 || edges.length > 0) {
+      localStorage.setItem(DEPENDENCY_MAP_NODES_KEY, JSON.stringify(nodes));
+      localStorage.setItem(DEPENDENCY_MAP_EDGES_KEY, JSON.stringify(edges));
+    } else {
+      localStorage.removeItem(DEPENDENCY_MAP_NODES_KEY);
+      localStorage.removeItem(DEPENDENCY_MAP_EDGES_KEY);
+    }
+    localStorage.setItem(DEPENDENCY_MAP_RELATIONS_KEY, JSON.stringify(selectedRelations));
+    window.dispatchEvent(new Event(DEPENDENCY_MAP_CLOUD_HYDRATED_EVENT));
+  } catch (e) {
+    console.error('Failed to hydrate dependency map from cloud', e);
   }
 }
 

@@ -232,5 +232,23 @@ export const he: Dictionary = {
     openInAppleCalendar: 'Apple',
     downloadIcsAll: 'הוסף את כל המערכת ל-Apple Calendar / קובץ .ics',
     icsDownloadedToast: 'קובץ היומן (.ics) ירד! פתיחתו תוסיף את כל השיעורים החוזרים ל-Apple Calendar (או לייבוא ב-Google Calendar).',
+  },
+  auth: {
+    signInWithGoogle: 'התחברות עם Google',
+    signInSubtitle: 'לסטודנטים של בן-גוריון בלבד (@post.bgu.ac.il)',
+    bguOnlyBadge: 'post.bgu.ac.il בלבד',
+    signedInAs: 'מחובר כ-',
+    cloudSynced: 'מסונכרן לענן (מערכת שעות ומפת קשרים)',
+    syncing: 'מסנכרן...',
+    syncNow: 'סנכרן עכשיו',
+    signOut: 'התנתק',
+    loginSuccessToast: 'התחברת בהצלחה! מערכת השעות ומפת הקשרים מסונכרנות לחשבונך.',
+    logoutToast: 'התנתקת מהחשבון.',
+    invalidDomainToast: 'ההתחברות מותרת אך ורק עם חשבון סטודנט של אוניברסיטת בן-גוריון (@post.bgu.ac.il).',
+    authErrorToast: 'ההתחברות עם Google נכשלה. אנא נסו שוב.',
+    syncedToast: 'הנתונים סונכרנו עם החשבון שלך.',
+    missingConfigTitle: 'נדרשת הגדרת Google OAuth',
+    missingConfigDesc: 'כדי להפעיל התחברות עם Google (@post.bgu.ac.il), יש להגדיר את משתני הסביבה הבאים בקובץ .env.local:',
   }
 };
+

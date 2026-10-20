@@ -230,7 +230,25 @@ export const en = {
     openInAppleCalendar: 'Apple',
     downloadIcsAll: 'Add Entire Schedule to Apple Calendar (.ics)',
     icsDownloadedToast: 'Schedule .ics file ready! Opening it adds all recurring classes to Apple Calendar (or import into Google Calendar).',
+  },
+  auth: {
+    signInWithGoogle: 'Sign in with Google',
+    signInSubtitle: 'BGU students only (@post.bgu.ac.il)',
+    bguOnlyBadge: '@post.bgu.ac.il only',
+    signedInAs: 'Signed in as',
+    cloudSynced: 'Synced to cloud (Schedule & Course Map)',
+    syncing: 'Syncing...',
+    syncNow: 'Sync Now',
+    signOut: 'Sign Out',
+    loginSuccessToast: 'Signed in! Your weekly schedule and relation map are now synced to your account.',
+    logoutToast: 'Signed out.',
+    invalidDomainToast: 'Sign-in is restricted exclusively to BGU student accounts (@post.bgu.ac.il).',
+    authErrorToast: 'Google sign-in failed. Please try again.',
+    syncedToast: 'Synced with your Google account.',
+    missingConfigTitle: 'Google OAuth Configuration Required',
+    missingConfigDesc: 'To enable Google Sign-In (@post.bgu.ac.il), add the following environment variables to your .env.local file:',
   }
 };
 
 export type Dictionary = typeof en;
+

@@ -21,6 +21,7 @@ import {
   generateMeetingIcs,
   generateScheduleIcs,
   SCHEDULE_EVENT,
+  SCHEDULE_CLOUD_HYDRATED_EVENT,
 } from '@/lib/schedule';
 import { CourseDetail, CourseGroup, CourseMeeting } from '@/types/course';
 import { GroupSelectorDialog } from './GroupSelectorDialog';
@@ -201,9 +202,11 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     };
     sync();
     window.addEventListener(SCHEDULE_EVENT, sync);
+    window.addEventListener(SCHEDULE_CLOUD_HYDRATED_EVENT, sync);
     window.addEventListener('storage', sync);
     return () => {
       window.removeEventListener(SCHEDULE_EVENT, sync);
+      window.removeEventListener(SCHEDULE_CLOUD_HYDRATED_EVENT, sync);
       window.removeEventListener('storage', sync);
     };
   }, []);

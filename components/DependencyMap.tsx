@@ -208,39 +208,78 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     });
   }, [edges, selectedRelations]);
 
-  // Load from local storage on mount
-  useEffect(() => {
+  const hasLoadedInitialRef = useRef(false);
+  const isHydratingFromCloudRef = useRef(false);
+
+  const loadMapFromLocalStorage = useCallback((isCloudHydration = false) => {
     const savedNodes = localStorage.getItem('dependencyMapNodes');
     const savedEdges = localStorage.getItem('dependencyMapEdges');
     const savedRelations = localStorage.getItem('dependencyMapRelations');
-    
-    let initialNodes = [];
-    let initialEdges = [];
-    
-    if (savedNodes) initialNodes = JSON.parse(savedNodes);
-    if (savedEdges) {
-      // Re-apply bezier and colors to cached edges
-      initialEdges = JSON.parse(savedEdges).map((e: any) => {
-        const isPreReq = e.label?.includes('קדם') || e.label?.includes('prerequisite') || false;
-        const isCoreq = e.label?.includes('צמוד') || e.label?.includes('corequisite') || false;
-        const strokeColor = isPreReq ? '#ef4444' : isCoreq ? '#eab308' : '#3b82f6';
-        
-        return {
-          ...e,
-          type: 'default',
-          markerEnd: { type: MarkerType.ArrowClosed, color: strokeColor },
-          style: { stroke: strokeColor, strokeWidth: 3 },
-        };
-      });
+
+    let initialNodes: Node[] = [];
+    let initialEdges: Edge[] = [];
+
+    if (savedNodes) {
+      try {
+        initialNodes = JSON.parse(savedNodes);
+      } catch {
+        initialNodes = [];
+      }
     }
-    if (savedRelations) setSelectedRelations(JSON.parse(savedRelations));
-    
+    if (savedEdges) {
+      try {
+        // Re-apply bezier and colors to cached edges
+        initialEdges = JSON.parse(savedEdges).map((e: any) => {
+          const isPreReq = e.label?.includes('קדם') || e.label?.includes('prerequisite') || false;
+          const isCoreq = e.label?.includes('צמוד') || e.label?.includes('corequisite') || false;
+          const strokeColor = isPreReq ? '#ef4444' : isCoreq ? '#eab308' : '#3b82f6';
+
+          return {
+            ...e,
+            type: 'default',
+            markerEnd: { type: MarkerType.ArrowClosed, color: strokeColor },
+            style: { stroke: strokeColor, strokeWidth: 3 },
+          };
+        });
+      } catch {
+        initialEdges = [];
+      }
+    }
+    if (savedRelations) {
+      try {
+        setSelectedRelations(JSON.parse(savedRelations));
+      } catch {
+        // ignore
+      }
+    }
+
+    if (isCloudHydration) {
+      isHydratingFromCloudRef.current = true;
+    }
+
     if (initialNodes.length > 0) {
       const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(initialNodes, initialEdges);
       setNodes(layoutedNodes);
       setEdges(layoutedEdges);
+    } else if (isCloudHydration) {
+      setNodes([]);
+      setEdges([]);
     }
-  }, []);
+  }, [setNodes, setEdges]);
+
+  // Load from local storage on mount & listen for cloud hydration
+  useEffect(() => {
+    loadMapFromLocalStorage(false);
+    hasLoadedInitialRef.current = true;
+
+    const handleCloudHydrate = () => {
+      loadMapFromLocalStorage(true);
+    };
+    window.addEventListener('dependency-map-cloud-hydrated', handleCloudHydrate);
+    return () => {
+      window.removeEventListener('dependency-map-cloud-hydrated', handleCloudHydrate);
+    };
+  }, [loadMapFromLocalStorage]);
 
   // Fetch departments for autocomplete
   useEffect(() => {
@@ -306,8 +345,13 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     }
   };
 
-  // Save to local storage on change
+  // Save to local storage on change & notify cloud sync
   useEffect(() => {
+    if (!hasLoadedInitialRef.current) return;
+    if (isHydratingFromCloudRef.current) {
+      isHydratingFromCloudRef.current = false;
+      return;
+    }
     if (nodes.length > 0 || edges.length > 0) {
       localStorage.setItem('dependencyMapNodes', JSON.stringify(nodes));
       localStorage.setItem('dependencyMapEdges', JSON.stringify(edges));
@@ -317,6 +361,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
       localStorage.removeItem('dependencyMapEdges');
       // Keep relations preference even if map is cleared
     }
+    window.dispatchEvent(new Event('dependency-map-updated'));
   }, [nodes, edges, selectedRelations]);
 
   const onRemoveNode = useCallback((nodeId: string) => {

@@ -10,6 +10,7 @@ import {
   removeScheduledCourse,
   saveActiveTerm,
   SCHEDULE_EVENT,
+  SCHEDULE_CLOUD_HYDRATED_EVENT,
   ScheduledCourse,
 } from '@/lib/schedule';
 import { GroupSelectorDialog } from '@/components/GroupSelectorDialog';
@@ -63,9 +64,11 @@ export function AddToScheduleButton({
     };
     sync();
     window.addEventListener(SCHEDULE_EVENT, sync);
+    window.addEventListener(SCHEDULE_CLOUD_HYDRATED_EVENT, sync);
     window.addEventListener('storage', sync);
     return () => {
       window.removeEventListener(SCHEDULE_EVENT, sync);
+      window.removeEventListener(SCHEDULE_CLOUD_HYDRATED_EVENT, sync);
       window.removeEventListener('storage', sync);
     };
   }, [fullId, year, semester]);
