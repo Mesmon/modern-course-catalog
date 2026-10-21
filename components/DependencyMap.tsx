@@ -39,7 +39,7 @@ function getRelationStyle(relationLabel?: string) {
 
   if (isCoreq) {
     return {
-      color: '#f59e0b', // amber-500
+      color: '#d97706', // amber-600
       isPreReq: false,
       isCoreq: true,
       dash: '6 4',
@@ -47,14 +47,14 @@ function getRelationStyle(relationLabel?: string) {
   }
   if (isPreReq) {
     return {
-      color: '#f43f5e', // rose-500
+      color: '#ea580c', // BGU orange-600
       isPreReq: true,
       isCoreq: false,
       dash: undefined,
     };
   }
   return {
-    color: '#3b82f6', // blue-500
+    color: '#059669', // emerald-600
     isPreReq: false,
     isCoreq: false,
     dash: undefined,
@@ -1068,11 +1068,11 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
       {/* Flow Direction & Legend Pill */}
       {nodes.length > 0 && (
         <div
-          className="absolute bottom-3 sm:bottom-4 z-10 flex items-center gap-2.5 sm:gap-4 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xs text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 pointer-events-none"
+          className="absolute bottom-3 sm:bottom-4 z-10 flex items-center gap-2.5 sm:gap-4 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-xs text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 pointer-events-none"
           style={{ [locale === 'he' ? 'right' : 'left']: '52px' }}
           dir="ltr"
         >
-          <div className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
+          <div className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-200">
             <span>{locale === 'he' ? 'קדם (שמאל)' : 'Prereqs (Left)'}</span>
             <ArrowRight className="h-3 w-3 text-primary shrink-0" />
             <span>{locale === 'he' ? 'המשך (ימין)' : 'Next (Right)'}</span>
@@ -1080,11 +1080,11 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
           <div className="h-3.5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
           <div className="hidden sm:flex items-center gap-3">
             <span className="flex items-center gap-1.5">
-              <span className="w-4 h-0.5 bg-rose-500 rounded-full inline-block" />
+              <span className="w-4 h-0.5 bg-orange-600 rounded-full inline-block" />
               <span>{locale === 'he' ? 'קורס קדם' : 'Prerequisite'}</span>
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-4 h-0.5 border-t-2 border-dashed border-amber-500 inline-block" />
+              <span className="w-4 h-0.5 border-t-2 border-dashed border-amber-600 inline-block" />
               <span>{locale === 'he' ? 'קורס צמוד' : 'Corequisite'}</span>
             </span>
           </div>
@@ -1124,7 +1124,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
             className="!hidden md:!block"
             zoomable
             pannable
-            nodeColor={(n) => (n.selected ? '#3b82f6' : '#cbd5e1')}
+            nodeColor={(n) => (n.selected ? '#ea580c' : '#cbd5e1')}
             maskColor="rgba(241, 245, 249, 0.7)"
           />
           <Background color="#cbd5e1" gap={20} />

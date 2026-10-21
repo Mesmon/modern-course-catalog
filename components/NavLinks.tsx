@@ -6,43 +6,55 @@ import { Workflow, Calendar, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function NavLinks({
+  catalogLabel,
   mapLabel,
   scheduleLabel,
 }: {
+  catalogLabel: string;
   mapLabel: string;
   scheduleLabel: string;
 }) {
   const pathname = usePathname();
   const isMap = pathname?.startsWith('/map');
   const isSchedule = pathname?.startsWith('/schedule');
+  const isCatalog = !isMap && !isSchedule;
 
   return (
-    <nav className="hidden md:flex items-center gap-1 shrink-0" aria-label="Main navigation">
+    <nav className="hidden md:flex items-center gap-6 h-full shrink-0" aria-label="Main navigation">
       <Link
-        href="/map"
-        id="tour-map-link"
+        href="/"
         className={cn(
-          'inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium transition-colors',
-          isMap
-            ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
-            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/70 dark:hover:bg-slate-800/50'
+          'inline-flex items-center gap-1.5 h-14 px-1 border-b-2 text-sm transition-colors',
+          isCatalog
+            ? 'border-primary text-primary font-semibold'
+            : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary font-normal'
         )}
       >
-        <Workflow className="h-4 w-4 shrink-0" />
-        <span>{mapLabel}</span>
+        <span>{catalogLabel}</span>
       </Link>
       <Link
         href="/schedule"
         id="tour-schedule-link"
         className={cn(
-          'inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium transition-colors',
+          'inline-flex items-center gap-1.5 h-14 px-1 border-b-2 text-sm transition-colors',
           isSchedule
-            ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold'
-            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/70 dark:hover:bg-slate-800/50'
+            ? 'border-primary text-primary font-semibold'
+            : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary font-normal'
         )}
       >
-        <Calendar className="h-4 w-4 shrink-0" />
         <span>{scheduleLabel}</span>
+      </Link>
+      <Link
+        href="/map"
+        id="tour-map-link"
+        className={cn(
+          'inline-flex items-center gap-1.5 h-14 px-1 border-b-2 text-sm transition-colors',
+          isMap
+            ? 'border-primary text-primary font-semibold'
+            : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary font-normal'
+        )}
+      >
+        <span>{mapLabel}</span>
       </Link>
     </nav>
   );
@@ -68,18 +80,32 @@ export function MobileBottomNav({
     <nav
       dir={dir}
       aria-label="Mobile bottom navigation"
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 h-14 border-t border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md grid grid-cols-3 items-center px-2 select-none"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 h-16 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md grid grid-cols-3 items-center px-3 select-none"
     >
+      <Link
+        href="/schedule"
+        id="tour-schedule-link-mobile"
+        className={cn(
+          'flex flex-col items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] transition-colors active:scale-95',
+          isSchedule
+            ? 'text-primary font-semibold'
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 font-medium'
+        )}
+      >
+        <Calendar className={cn('h-5 w-5 shrink-0', isSchedule && 'stroke-[2.25]')} />
+        <span className="truncate max-w-full px-1">{scheduleLabel}</span>
+      </Link>
+
       <Link
         href="/"
         className={cn(
-          'flex flex-col items-center justify-center gap-0.5 h-11 rounded-lg text-[11px] font-medium transition-colors',
+          'flex flex-col items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] transition-colors active:scale-95',
           isCatalog
-            ? 'text-primary font-semibold bg-primary/8 dark:bg-primary/15'
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+            ? 'text-primary font-semibold'
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 font-medium'
         )}
       >
-        <BookOpen className="h-4 w-4 shrink-0" />
+        <BookOpen className={cn('h-5 w-5 shrink-0', isCatalog && 'stroke-[2.25]')} />
         <span className="truncate max-w-full px-1">{catalogLabel}</span>
       </Link>
 
@@ -87,30 +113,15 @@ export function MobileBottomNav({
         href="/map"
         id="tour-map-link-mobile"
         className={cn(
-          'flex flex-col items-center justify-center gap-0.5 h-11 rounded-lg text-[11px] font-medium transition-colors',
+          'flex flex-col items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] transition-colors active:scale-95',
           isMap
-            ? 'text-primary font-semibold bg-primary/8 dark:bg-primary/15'
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+            ? 'text-primary font-semibold'
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 font-medium'
         )}
       >
-        <Workflow className="h-4 w-4 shrink-0" />
+        <Workflow className={cn('h-5 w-5 shrink-0', isMap && 'stroke-[2.25]')} />
         <span className="truncate max-w-full px-1">{mapLabel}</span>
-      </Link>
-
-      <Link
-        href="/schedule"
-        id="tour-schedule-link-mobile"
-        className={cn(
-          'flex flex-col items-center justify-center gap-0.5 h-11 rounded-lg text-[11px] font-medium transition-colors',
-          isSchedule
-            ? 'text-primary font-semibold bg-primary/8 dark:bg-primary/15'
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-        )}
-      >
-        <Calendar className="h-4 w-4 shrink-0" />
-        <span className="truncate max-w-full px-1">{scheduleLabel}</span>
       </Link>
     </nav>
   );
 }
-

@@ -192,26 +192,29 @@ export function CourseNode({
         type="target"
         position={targetPosition}
         style={{ left: -5 }}
-        className="w-2.5 h-2.5 !bg-rose-500 ring-2 ring-white dark:ring-slate-900 border-0"
+        className="w-2.5 h-2.5 !bg-orange-600 ring-2 ring-white dark:ring-slate-900 border-0"
       />
 
       <div className="flex items-start gap-2.5 mb-2 pe-7">
-        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0 mt-0.5">
+        <div className="h-7 w-7 rounded-md bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-900/60 flex items-center justify-center text-orange-700 dark:text-orange-400 shrink-0 mt-0.5">
           <BookOpen className="h-3.5 w-3.5" />
         </div>
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="font-mono text-[11px] font-medium text-muted-foreground" dir="ltr">
+            <span
+              className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border border-orange-200/80 dark:border-orange-900/60"
+              dir="ltr"
+            >
               {data.dept}.{data.degree}.{data.courseId}
             </span>
             {typeof data.stage === 'number' && (
-              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700">
                 {isHebrew ? `שלב ${data.stage + 1}` : `Stage ${data.stage + 1}`}
               </span>
             )}
           </div>
           <span
-            className="font-semibold text-sm leading-snug text-slate-900 dark:text-slate-100 line-clamp-2 mt-0.5"
+            className="font-bold text-sm leading-snug text-slate-900 dark:text-slate-100 line-clamp-2 mt-1"
             title={data.name}
           >
             {data.name}
@@ -255,7 +258,7 @@ export function CourseNode({
           <div className="flex items-center gap-1 text-[10px] font-mono shrink-0" dir="ltr">
             {prerequisites.length > 0 && (
               <span
-                className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 font-semibold"
+                className="px-1.5 py-0.5 rounded bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border border-orange-200/80 dark:border-orange-900/60 font-bold"
                 title={isHebrew ? 'קורסי קדם' : 'Prerequisites'}
               >
                 {prerequisites.length}→
@@ -263,7 +266,7 @@ export function CourseNode({
             )}
             {unlocks.length > 0 && (
               <span
-                className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold"
+                className="px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-900/60 font-bold"
                 title={isHebrew ? 'פותח קורסים' : 'Unlocks'}
               >
                 →{unlocks.length}
@@ -279,7 +282,7 @@ export function CourseNode({
           className="absolute top-full pt-2 w-[250px] sm:w-72 z-50 nowheel nopan nodrag start-0"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-200/90 dark:border-slate-800 p-3 sm:p-3.5 rounded-xl shadow-xl flex flex-col gap-2.5">
+          <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-200/90 dark:border-slate-800 p-3 sm:p-3.5 rounded-lg shadow-xl flex flex-col gap-2.5">
             <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
               <span className="text-muted-foreground font-medium">
                 {dictionary?.course?.activeIn || 'Term'}:
@@ -311,7 +314,7 @@ export function CourseNode({
               <div className="flex flex-col gap-2.5 max-h-48 overflow-y-auto pe-1 overscroll-contain">
                 {prerequisites.length > 0 && (
                   <div className="flex flex-col gap-1">
-                    <span className="font-semibold text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                    <span className="font-bold text-[11px] text-orange-700 dark:text-orange-400 flex items-center gap-1">
                       <ArrowLeft className="h-3 w-3 shrink-0" />
                       {isHebrew ? 'קורסי קדם / צמודים (משמאל)' : 'Prerequisites (Left)'}
                     </span>
@@ -321,7 +324,7 @@ export function CourseNode({
 
                 {unlocks.length > 0 && (
                   <div className="flex flex-col gap-1">
-                    <span className="font-semibold text-[11px] text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                    <span className="font-bold text-[11px] text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
                       <ArrowRight className="h-3 w-3 shrink-0" />
                       {isHebrew ? 'פותח קורסים (לימין)' : 'Unlocks Courses (Right)'}
                     </span>

@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { getDepartmentCoursesFromDB } from '@/lib/courses';
 import { ArrowLeft, BookOpen, ChevronLeft, Filter, Search } from 'lucide-react';
 import { cookies } from 'next/headers';
@@ -30,32 +29,37 @@ export default async function DepartmentPage({
   const dictionary = getDictionary(locale);
 
   return (
-    <div className="min-h-screen bg-slate-50/40 dark:bg-slate-950/40" dir={isRtl ? 'rtl' : 'ltr'}>
-      <main className="container max-w-6xl mx-auto px-3.5 sm:px-4 py-5 sm:py-8 space-y-5 sm:space-y-6">
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 sm:pb-5 border-b border-slate-200/80 dark:border-slate-800">
-          <div className="flex items-center gap-3 sm:gap-3.5">
+    <div className="min-h-screen bg-background" dir={isRtl ? 'rtl' : 'ltr'}>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-6">
+        {/* Breadcrumb + Page Header */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
             <Link
               href="/"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shrink-0"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 hover:border-primary hover:text-primary transition-colors shrink-0"
               aria-label={dictionary.department.back}
             >
-              <ArrowLeft className={cn('h-4 w-4 text-slate-600 dark:text-slate-400', isRtl && 'rotate-180')} />
+              <ArrowLeft className={cn('h-4 w-4', isRtl && 'rotate-180')} />
             </Link>
             <div>
-              <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="font-mono text-xs font-semibold text-primary bg-orange-50 dark:bg-orange-950/50 border border-orange-200/80 dark:border-orange-800/60 px-2 py-0.5 rounded">
+                  #{dept}
+                </span>
                 <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                   {dictionary.department.title} {dept}
                 </h1>
-                <Badge variant="secondary" className="font-medium text-xs px-2.5 py-0.5">
+                <span className="font-mono text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                   {courses.length} {dictionary.department.coursesFound}
-                </Badge>
+                </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {dictionary.department.degree}:{' '}
-                {degree === '2' ? dictionary.department.master : dictionary.department.bachelor} •{' '}
-                {dictionary.department.semesterPrefix} {semester} •{' '}
-                {dictionary.department.yearPrefix} {year}
+                <strong className="font-medium text-foreground">
+                  {degree === '2' ? dictionary.department.master : dictionary.department.bachelor}
+                </strong>{' '}
+                · {dictionary.department.semesterPrefix} {semester} · {dictionary.department.yearPrefix}{' '}
+                <span className="font-mono">{year}</span>
               </p>
             </div>
           </div>
@@ -63,25 +67,25 @@ export default async function DepartmentPage({
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-5 sm:gap-6 items-start">
           {/* Sidebar Filters */}
-          <aside className="lg:col-span-1 space-y-3">
-            <div className="p-3.5 sm:p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3 sm:space-y-4">
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 pb-2 border-b border-slate-100 dark:border-slate-800">
-                <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+          <aside className="lg:col-span-1 lg:sticky lg:top-20 space-y-3">
+            <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-4">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100 pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                <Filter className="h-3.5 w-3.5 text-primary" />
                 <span>{dictionary.department.filterResults}</span>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[11px] font-medium text-muted-foreground block">
+                <label className="text-[11px] font-semibold text-muted-foreground block">
                   {dictionary.department.degree}
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
                   <Link
                     href={`/departments/${dept}?deg=1&year=${year}&sem=${semester}`}
                     className={cn(
-                      'px-2.5 py-1.5 rounded-lg text-xs font-medium text-center border transition-colors',
+                      'px-2.5 py-1.5 rounded-lg text-xs font-semibold text-center border transition-colors',
                       degree === '1'
                         ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-slate-50/70 dark:bg-slate-950 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-foreground'
+                        : 'bg-slate-50/70 dark:bg-slate-950 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-primary/50 hover:text-foreground'
                     )}
                   >
                     {dictionary.department.bachelor}
@@ -89,10 +93,10 @@ export default async function DepartmentPage({
                   <Link
                     href={`/departments/${dept}?deg=2&year=${year}&sem=${semester}`}
                     className={cn(
-                      'px-2.5 py-1.5 rounded-lg text-xs font-medium text-center border transition-colors',
+                      'px-2.5 py-1.5 rounded-lg text-xs font-semibold text-center border transition-colors',
                       degree === '2'
                         ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-slate-50/70 dark:bg-slate-950 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-foreground'
+                        : 'bg-slate-50/70 dark:bg-slate-950 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-primary/50 hover:text-foreground'
                     )}
                   >
                     {dictionary.department.master}
@@ -100,8 +104,8 @@ export default async function DepartmentPage({
                 </div>
               </div>
 
-              <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <label className="text-[11px] font-medium text-muted-foreground block">
+              <div className="space-y-1.5 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+                <label className="text-[11px] font-semibold text-muted-foreground block">
                   {dictionary.department.yearPrefix || 'Year'}
                 </label>
                 <div className="grid grid-cols-4 lg:grid-cols-2 gap-1.5">
@@ -112,10 +116,10 @@ export default async function DepartmentPage({
                         key={y}
                         href={`/departments/${dept}?deg=${degree}&year=${y}&sem=${semester}`}
                         className={cn(
-                          'px-2 py-1.5 rounded-lg text-xs font-medium text-center border transition-colors',
+                          'px-2 py-1.5 rounded-lg font-mono text-xs font-semibold text-center border transition-colors',
                           active
                             ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-slate-50/70 dark:bg-slate-950 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-foreground'
+                            : 'bg-slate-50/70 dark:bg-slate-950 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-primary/50 hover:text-foreground'
                         )}
                       >
                         {y}
@@ -125,8 +129,8 @@ export default async function DepartmentPage({
                 </div>
               </div>
 
-              <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <label className="text-[11px] font-medium text-muted-foreground block">
+              <div className="space-y-1.5 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+                <label className="text-[11px] font-semibold text-muted-foreground block">
                   {dictionary.department.semesterPrefix || 'Semester'}
                 </label>
                 <div className="grid grid-cols-3 gap-1.5">
@@ -137,13 +141,13 @@ export default async function DepartmentPage({
                         key={s}
                         href={`/departments/${dept}?deg=${degree}&year=${year}&sem=${s}`}
                         className={cn(
-                          'px-2.5 py-1.5 rounded-lg text-xs font-medium text-center border transition-colors',
+                          'px-2.5 py-1.5 rounded-lg text-xs font-semibold text-center border transition-colors',
                           active
                             ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-slate-50/70 dark:bg-slate-950 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-foreground'
+                            : 'bg-slate-50/70 dark:bg-slate-950 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-primary/50 hover:text-foreground'
                         )}
                       >
-                        {s}
+                        {(dictionary.schedule?.semesters as Record<string, string>)?.[String(s)] || s}
                       </Link>
                     );
                   })}
@@ -160,30 +164,30 @@ export default async function DepartmentPage({
                   <Link
                     key={course.id}
                     href={`/courses/${course.id.split('.').pop()}?dept=${dept}&deg=${degree}&year=${year}&sem=${semester}`}
-                    className="group flex flex-col justify-between rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm transition-all"
+                    className="group flex flex-col justify-between rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs hover:border-primary/60 transition-colors"
                   >
                     <div className="space-y-2.5">
                       <div className="flex justify-between items-center gap-2">
-                        <span className="font-mono text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-md">
+                        <span className="font-mono text-xs font-semibold text-primary bg-orange-50 dark:bg-orange-950/40 border border-orange-200/70 dark:border-orange-800/60 px-2 py-0.5 rounded">
                           {course.id}
                         </span>
-                        <Badge variant="outline" className="text-[11px] font-mono font-normal border-slate-200 dark:border-slate-800 text-muted-foreground">
+                        <span className="text-[11px] font-mono text-muted-foreground px-2 py-0.5 rounded border border-slate-200 dark:border-slate-800">
                           {course.activeIn}
-                        </Badge>
+                        </span>
                       </div>
-                      <h2 className="text-base font-semibold leading-snug text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors">
+                      <h2 className="text-base font-bold leading-snug text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors">
                         {course.name}
                       </h2>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors">
                       <span className="inline-flex items-center gap-1.5">
-                        <BookOpen className="h-3.5 w-3.5 text-slate-400" />
+                        <BookOpen className="h-3.5 w-3.5 text-primary/80" />
                         <span>{dictionary.department.courseDetails}</span>
                       </span>
                       <ChevronLeft
                         className={cn(
-                          'h-4 w-4 text-slate-400 transition-transform',
+                          'h-4 w-4 transition-transform',
                           isRtl ? 'group-hover:-translate-x-0.5' : 'rotate-180 group-hover:translate-x-0.5'
                         )}
                       />
@@ -192,18 +196,18 @@ export default async function DepartmentPage({
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center px-6">
-                <div className="h-12 w-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center mb-4">
-                  <Search className="h-5 w-5 text-slate-400" />
+              <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center px-6">
+                <div className="h-11 w-11 bg-orange-50 dark:bg-orange-950/50 border border-orange-200/70 dark:border-orange-800/60 rounded-lg flex items-center justify-center mb-4">
+                  <Search className="h-5 w-5 text-primary" />
                 </div>
-                <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
                   {dictionary.department.noCoursesTitle}
                 </h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
+                <p className="text-xs sm:text-sm text-muted-foreground max-w-sm">
                   {dictionary.department.noCoursesDesc}
                 </p>
                 <Link href="/" className="mt-5">
-                  <Button variant="outline" size="sm" className="rounded-lg font-medium">
+                  <Button variant="outline" size="sm" className="rounded-lg font-semibold text-xs">
                     {dictionary.department.backToSearch}
                   </Button>
                 </Link>

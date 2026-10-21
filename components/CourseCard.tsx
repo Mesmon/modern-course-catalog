@@ -1,7 +1,6 @@
 "use client";
 
 import { Course } from '@/lib/courses';
-import { Badge } from '@/components/ui/badge';
 import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { CopyCourseId } from '@/components/CopyCourseId';
 import { ArrowUpRight } from 'lucide-react';
@@ -11,38 +10,47 @@ interface CourseCardProps {
 }
 
 export function CourseCard({ course }: CourseCardProps) {
-  const deptId = course.id.split('.')[0];
+  const parts = course.id.split('.');
+  const deptId = parts[0] || '202';
+  const degreeId = parts[1] || '1';
   const { dictionary, locale } = useDictionary();
 
   return (
     <div
-      className="group h-full flex flex-col justify-between rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-5 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm transition-all"
+      className="group h-full flex flex-col justify-between rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 hover:border-primary/60 dark:hover:border-primary/60 transition-colors"
       dir={locale === 'en' ? 'ltr' : 'rtl'}
     >
       <div className="space-y-2.5">
         <div className="flex items-center justify-between gap-2">
           <CopyCourseId
             id={course.id}
-            className="font-mono text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-md hover:bg-slate-200/70 dark:hover:bg-slate-700/80"
+            className="font-mono text-xs font-semibold text-primary bg-orange-50 dark:bg-orange-950/40 border border-orange-200/70 dark:border-orange-800/60 px-2 py-0.5 rounded hover:bg-orange-100/80 dark:hover:bg-orange-900/50 transition-colors"
+            iconClassName="h-3 w-3"
           />
-          <Badge variant="outline" className="shrink-0 font-mono text-[11px] font-medium text-muted-foreground border-slate-200 dark:border-slate-800">
-            {dictionary.department.title} {deptId}
-          </Badge>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+              {degreeId === '2' ? dictionary.department.master : dictionary.department.bachelor}
+            </span>
+            <span className="font-mono text-[11px] text-muted-foreground px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800">
+              #{deptId}
+            </span>
+          </div>
         </div>
 
-        <h3 className="text-base font-semibold leading-snug text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors line-clamp-2">
+        <h3 className="text-sm sm:text-base font-bold leading-snug text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors line-clamp-2">
           {course.name}
         </h3>
       </div>
 
       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+          <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
           <span>
-            {dictionary.course.availableIn}: <strong className="font-medium text-foreground">{course.activeIn}</strong>
+            {dictionary.course.availableIn}:{' '}
+            <strong className="font-mono font-semibold text-foreground">{course.activeIn}</strong>
           </span>
         </span>
-        <ArrowUpRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400" />
+        <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-primary transition-colors" />
       </div>
     </div>
   );
