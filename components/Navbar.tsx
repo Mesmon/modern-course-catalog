@@ -6,6 +6,7 @@ import { getDictionary, Locale } from '@/lib/dictionaries';
 import { ThemeToggle } from './ThemeToggle';
 import { UserAuthMenu } from './UserAuthMenu';
 import { NavLinks, MobileBottomNav } from './NavLinks';
+import { HelpTourButton } from './OnboardingDialog';
 
 export async function Navbar() {
   const cookieStore = await cookies();
@@ -42,16 +43,19 @@ export async function Navbar() {
 
           {/* Search & Utility Actions */}
           <div className="flex items-center gap-2 sm:gap-3 flex-1 justify-end min-w-0">
-            <div className="w-full max-w-[200px] sm:max-w-xs">
+            <div id="tour-global-search" className="w-full max-w-[200px] sm:max-w-xs">
               <GlobalSearch />
             </div>
 
             <div className="hidden sm:block h-4 w-px bg-slate-200 dark:bg-slate-800" />
 
             <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+              <HelpTourButton />
               <LanguageSwitcher />
               <ThemeToggle />
-              <UserAuthMenu />
+              <div id="tour-auth-menu">
+                <UserAuthMenu />
+              </div>
             </div>
           </div>
         </div>

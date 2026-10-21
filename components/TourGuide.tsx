@@ -1,51 +1,77 @@
 'use client';
 
 import { useEffect } from 'react';
-import { driver } from 'driver.js';
+import { driver, type DriveStep } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { useDictionary } from './providers/DictionaryProvider';
 
-export function TourGuide({ page }: { page: 'home' | 'map' }) {
+export function TourGuide({ page }: { page: 'home' | 'schedule' | 'map' }) {
   const { dictionary } = useDictionary();
 
   useEffect(() => {
     const storageKey = `modern_catalog_tour_${page}`;
-    const hasSeenTour = localStorage.getItem(storageKey);
-    const hasSeenOnboarding = localStorage.getItem('modern_catalog_has_seen_onboarding');
 
-    // If the tour was already seen, do nothing.
-    if (hasSeenTour) return;
+    // The function that initializes and drives the tour
+    const initializeTour = (force = false) => {
+      if (!force && localStorage.getItem(storageKey)) return;
 
-    // The function that actually initializes the tour
-    const initializeTour = () => {
-      // Delay slightly to ensure elements are rendered 
+      // Delay slightly to ensure target elements are rendered and animations settle
       setTimeout(() => {
-        let steps: any[] = [];
+        const isMobile = window.innerWidth < 768;
+        const candidateSteps: DriveStep[] = [];
 
         if (page === 'home') {
-          if (!document.getElementById('tour-search')) return;
-
-          steps = [
+          candidateSteps.push(
             {
               element: '#tour-search',
               popover: {
                 title: dictionary.tour.home.searchTitle,
                 description: dictionary.tour.home.searchDesc,
                 side: 'bottom',
-                align: 'start'
-              }
+                align: 'start',
+              },
+            },
+            {
+              element: '#tour-global-search',
+              popover: {
+                title: dictionary.tour.home.globalSearchTitle,
+                description: dictionary.tour.home.globalSearchDesc,
+                side: 'bottom',
+                align: 'center',
+              },
             },
             {
               element:
-                window.innerWidth < 768 && document.getElementById('tour-map-link-mobile')
+                isMobile && document.getElementById('tour-schedule-link-mobile')
+                  ? '#tour-schedule-link-mobile'
+                  : '#tour-schedule-link',
+              popover: {
+                title: dictionary.tour.home.scheduleTitle,
+                description: dictionary.tour.home.scheduleDesc,
+                side: isMobile ? 'top' : 'bottom',
+                align: 'start',
+              },
+            },
+            {
+              element:
+                isMobile && document.getElementById('tour-map-link-mobile')
                   ? '#tour-map-link-mobile'
                   : '#tour-map-link',
               popover: {
                 title: dictionary.tour.home.mapTitle,
                 description: dictionary.tour.home.mapDesc,
-                side: window.innerWidth < 768 ? 'top' : 'bottom',
-                align: 'start'
-              }
+                side: isMobile ? 'top' : 'bottom',
+                align: 'start',
+              },
+            },
+            {
+              element: '#tour-auth-menu',
+              popover: {
+                title: dictionary.tour.home.authTitle,
+                description: dictionary.tour.home.authDesc,
+                side: 'bottom',
+                align: 'end',
+              },
             },
             {
               element: '#tour-full-catalog',
@@ -53,73 +79,129 @@ export function TourGuide({ page }: { page: 'home' | 'map' }) {
                 title: dictionary.tour.home.catalogTitle,
                 description: dictionary.tour.home.catalogDesc,
                 side: 'top',
-                align: 'start'
-              }
+                align: 'start',
+              },
             }
-          ];
+          );
+        } else if (page === 'schedule') {
+          candidateSteps.push(
+            {
+              element: '#tour-schedule-term',
+              popover: {
+                title: dictionary.tour.schedule.termTitle,
+                description: dictionary.tour.schedule.termDesc,
+                side: 'bottom',
+                align: 'start',
+              },
+            },
+            {
+              element: '#tour-schedule-add',
+              popover: {
+                title: dictionary.tour.schedule.addTitle,
+                description: dictionary.tour.schedule.addDesc,
+                side: 'bottom',
+                align: 'end',
+              },
+            },
+            {
+              element: '#tour-schedule-sidebar',
+              popover: {
+                title: dictionary.tour.schedule.sidebarTitle,
+                description: dictionary.tour.schedule.sidebarDesc,
+                side: isMobile ? 'top' : 'left',
+                align: 'start',
+              },
+            },
+            {
+              element: '#tour-schedule-grid',
+              popover: {
+                title: dictionary.tour.schedule.gridTitle,
+                description: dictionary.tour.schedule.gridDesc,
+                side: 'top',
+                align: 'center',
+              },
+            }
+          );
         } else if (page === 'map') {
-            if (!document.getElementById('tour-map-add')) return;
-
-            steps = [
-                {
-                    element: '#tour-map-add',
-                    popover: {
-                        title: dictionary.tour.map.searchTitle,
-                        description: dictionary.tour.map.searchDesc,
-                        side: 'bottom',
-                        align: 'start'
-                    }
-                },
-                {
-                    element: '#tour-map-area',
-                    popover: {
-                        title: dictionary.tour.map.canvasTitle,
-                        description: dictionary.tour.map.canvasDesc,
-                        side: 'top',
-                        align: 'center'
-                    }
-                }
-            ];
+          candidateSteps.push(
+            {
+              element: '#tour-map-add',
+              popover: {
+                title: dictionary.tour.map.searchTitle,
+                description: dictionary.tour.map.searchDesc,
+                side: 'bottom',
+                align: 'start',
+              },
+            },
+            {
+              element: '#tour-map-layout',
+              popover: {
+                title: dictionary.tour.map.addTitle,
+                description: dictionary.tour.map.addDesc,
+                side: 'bottom',
+                align: 'start',
+              },
+            },
+            {
+              element: '#tour-map-area',
+              popover: {
+                title: dictionary.tour.map.canvasTitle,
+                description: dictionary.tour.map.canvasDesc,
+                side: 'top',
+                align: 'center',
+              },
+            }
+          );
         }
 
-        if (steps.length === 0) return;
+        // Only keep steps whose target element exists and is visible in the DOM
+        const validSteps = candidateSteps.filter((step) => {
+          if (typeof step.element !== 'string') return false;
+          const el = document.querySelector(step.element) as HTMLElement | null;
+          return Boolean(el && el.offsetParent !== null);
+        });
+
+        if (validSteps.length === 0) return;
 
         const driverObj = driver({
           showProgress: true,
+          animate: true,
+          smoothScroll: true,
+          stagePadding: 6,
+          stageRadius: 10,
+          popoverClass: 'bgu-tour-popover',
           progressText: dictionary.tour.progressText,
           nextBtnText: dictionary.tour.next,
           prevBtnText: dictionary.tour.prev,
           doneBtnText: dictionary.tour.done,
-          steps: steps,
+          steps: validSteps,
           onDestroyStarted: () => {
-              if (driverObj.hasNextStep()) {
-                  driverObj.destroy();
-              } else {
-                  driverObj.destroy();
-              }
-              // Mark as seen when destroyed (completed or skipped)
-              localStorage.setItem(storageKey, 'true');
-          }
+            driverObj.destroy();
+            localStorage.setItem(storageKey, 'true');
+          },
         });
 
         driverObj.drive();
-      }, 500); // 500ms delay to allow page transition and animations
+      }, 450);
     };
 
-    // If onboarding has already been seen in a previous session, start the tour.
-    // Otherwise, wait for the user to close the onboarding dialog.
-    if (hasSeenOnboarding) {
-        initializeTour();
-    } else {
-        const handleOnboardingCompleted = () => {
-            initializeTour();
-        };
+    const hasSeenTour = localStorage.getItem(storageKey);
+    const hasSeenOnboarding = localStorage.getItem('modern_catalog_has_seen_onboarding');
 
-        window.addEventListener('onboarding-completed', handleOnboardingCompleted);
-        
-        return () => window.removeEventListener('onboarding-completed', handleOnboardingCompleted);
+    // If onboarding was already completed previously and this page's tour hasn't run yet, launch it
+    if (hasSeenOnboarding && !hasSeenTour) {
+      initializeTour(false);
     }
+
+    // Always listen for 'onboarding-completed' so clicking "Start Interactive Tour" from the
+    // welcome dialog (or re-opening via the Navbar '?' button) launches the tour immediately
+    const handleOnboardingCompleted = () => {
+      initializeTour(true);
+    };
+
+    window.addEventListener('onboarding-completed', handleOnboardingCompleted);
+    return () => window.removeEventListener('onboarding-completed', handleOnboardingCompleted);
   }, [page, dictionary]);
 
-  return null; // This component doesn't render anything itself
+  return null;
 }

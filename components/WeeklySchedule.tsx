@@ -716,7 +716,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
       <section className="bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 px-4 sm:px-6 py-3.5">
         <div className="max-w-[1520px] mx-auto flex flex-wrap items-center justify-between gap-3.5">
           {/* Right (RTL): Title, Year, Semester & Metric Pill */}
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+          <div id="tour-schedule-term" className="flex flex-wrap items-center gap-3 sm:gap-4">
             <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
               {dictionary.schedule.title}
             </h1>
@@ -828,6 +828,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
             )}
 
             <Button
+              id="tour-schedule-add"
               size="sm"
               onClick={() => setSearchOpen(true)}
               disabled={isLoadingCourse}
@@ -843,7 +844,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
       {/* ================= MAIN WORKSPACE (2-COLUMN DENSE VIEW) ================= */}
       <main className="flex-1 max-w-[1520px] w-full mx-auto p-3.5 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* 1. SIDEBAR (הקורסים שלי) — Second on mobile so timetable is immediately visible */}
-        <aside className="order-2 lg:order-1 lg:col-span-3 flex flex-col gap-4 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 shadow-2xs">
+        <aside id="tour-schedule-sidebar" className="order-2 lg:order-1 lg:col-span-3 flex flex-col gap-4 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 shadow-2xs">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div>
               <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
@@ -1016,7 +1017,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
         </aside>
 
         {/* 2. MAIN TIME GRID AREA */}
-        <section className="order-1 lg:order-2 lg:col-span-9 flex flex-col bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
+        <section id="tour-schedule-grid" className="order-1 lg:order-2 lg:col-span-9 flex flex-col bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
           {/* Desktop Grid Topbar + Course Legend */}
           <div className="hidden md:flex items-center justify-between px-5 py-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/50 gap-4 flex-wrap">
             <div className="flex items-center gap-3">
