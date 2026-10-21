@@ -101,6 +101,16 @@ export const en = {
     logoText1: 'BGU',
     logoText2: 'Catalog'
   },
+  theme: {
+    title: 'Theme',
+    light: 'Light',
+    dark: 'Dark',
+    system: 'System',
+    systemHint: 'Match device settings',
+    active: 'Active',
+    currentlyLight: 'Currently Light',
+    currentlyDark: 'Currently Dark',
+  },
   map: {
     title: 'Dependency Map',
     addCourse: 'Add Course',

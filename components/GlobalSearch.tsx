@@ -67,7 +67,8 @@ export function GlobalSearch() {
             <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
           )}
           <span className="truncate text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            {dictionary.navbar.searchPlaceholder}
+            <span className="hidden sm:inline">{dictionary.navbar.searchPlaceholder}</span>
+            <span className="sm:hidden">{isRtl ? 'חיפוש...' : 'Search...'}</span>
           </span>
         </span>
         <kbd className="pointer-events-none hidden h-5 select-none items-center gap-0.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-1.5 font-mono text-[10px] font-medium text-slate-400 sm:inline-flex shrink-0">
