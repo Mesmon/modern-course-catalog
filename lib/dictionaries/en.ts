@@ -124,44 +124,71 @@ export const en = {
     chronologicalLayout: 'Chronological Layout'
   },
   onboarding: {
-    title: 'Welcome to the Modern BGU Course Catalog! 👋',
-    description: 'We built this to make finding courses faster and easier. Here is what you can do:',
+    badge: 'BGU Academic Catalog · 2027',
+    title: 'Welcome to the BGU Course Catalog & Planner',
+    description: 'Plan your degree, build conflict-free schedules, and explore prerequisite chains in one workspace:',
     features: {
       search: {
-        title: 'Lightning Fast Search',
-        desc: 'Find any course instantly without waiting for legacy systems to load.'
+        title: 'Instant Department & Course Search (⌘K)',
+        desc: 'Jump to any course by ID or name with ⌘K, or browse departments (#202, #201, #361) by degree and semester.'
+      },
+      schedule: {
+        title: 'Weekly Schedule & Calendar Export',
+        desc: 'Select lecture, recitation, and lab groups, spot time overlaps, and export recurring classes with room locations to Google or Apple Calendar.'
       },
       map: {
-        title: 'Interactive Dependency Map',
-        desc: 'Visualize course prerequisites and related courses in a beautiful node map.'
+        title: 'Left-to-Right Prerequisite Map',
+        desc: 'Visualize prerequisite chains and unlocked courses in an automatically arranged left-to-right flow graph.'
+      },
+      cloudSync: {
+        title: 'BGU Student Cloud Sync (@post.bgu.ac.il)',
+        desc: 'Sign in with your BGU Google account to sync your weekly schedule and prerequisite map across all your devices.'
       },
       offline: {
-        title: 'Smart Caching',
-        desc: 'Data is saved locally so it loads instantly on your next visit.'
+        title: 'Smart Local Persistence',
+        desc: 'Everything saves automatically in your browser even as a guest, and syncs to the cloud when you sign in.'
       }
     },
-    getStarted: 'Got it, let\'s explore!'
+    getStarted: 'Start Interactive Tour',
+    skipTour: 'Explore on my own',
+    helpTooltip: 'Guide & Interactive Tour'
   },
   tour: {
     next: 'Next',
     prev: 'Previous',
-    done: 'Done',
-    progressText: '{{current}} of {{total}}',
+    done: 'Finish',
+    progressText: '{{current}} / {{total}}',
     home: {
-      searchTitle: 'Find Courses Quickly',
-      searchDesc: 'Type a department name or number here to instantly see all available courses.',
-      mapTitle: 'Interactive Map',
-      mapDesc: 'Click here to visualize course prerequisites and how courses connect to each other.',
-      catalogTitle: 'Full Catalog',
-      catalogDesc: 'Browse through the complete list of available courses and filter them as needed.'
+      searchTitle: 'Department & Term Search',
+      searchDesc: 'Choose Bachelor/Master and Semester, then enter a department number (or click a popular department chip) to load its courses.',
+      globalSearchTitle: 'Quick Command Search (⌘K)',
+      globalSearchDesc: 'Press ⌘K (or Ctrl+K) from anywhere in the app to jump directly to any course by name or ID.',
+      scheduleTitle: 'Weekly Schedule Planner',
+      scheduleDesc: 'Build your semester timetable, pick study groups, detect overlaps, and export to Google or Apple Calendar.',
+      mapTitle: 'Interactive Prerequisite Map',
+      mapDesc: 'Explore prerequisite and blocking chains in an automatic left-to-right directed graph.',
+      authTitle: 'BGU Cloud Sync (@post.bgu.ac.il)',
+      authDesc: 'Sign in with your BGU student account to keep your schedule and prerequisite map synced across devices.',
+      catalogTitle: 'Full Course Catalog',
+      catalogDesc: 'Browse all cached courses and filter between Bachelor and Master degree levels.'
+    },
+    schedule: {
+      termTitle: 'Semester & Credits Overview',
+      termDesc: 'Switch between Semester A, Semester B, and Summer for 2027 and track your total courses and credits.',
+      addTitle: 'Add Courses & Choose Groups',
+      addDesc: 'Search for courses offered in the selected semester and pick your lecture, recitation, and lab groups.',
+      sidebarTitle: 'My Courses & Overlap Highlight',
+      sidebarDesc: 'Manage your added courses, see total weekly hours, add more courses from the list, or toggle overlap highlighting.',
+      gridTitle: 'Interactive Timetable & Calendar Export',
+      gridDesc: 'Click any class block to switch groups, resolve time conflicts, or export your schedule to Google and Apple Calendar.'
     },
     map: {
-      searchTitle: 'Add to Map',
-      searchDesc: 'Search for a course ID or name to add it to your dependency map.',
-      addTitle: 'Confirm Addition',
-      addDesc: 'Click this button to place the selected course onto the canvas.',
-      canvasTitle: 'Map Canvas',
-      canvasDesc: 'Drag courses around, zoom in/out, and click on nodes to see detailed course information and connections.'
+      searchTitle: 'Add Courses to the Map',
+      searchDesc: 'Search for any course by name or ID to place it on your prerequisite graph.',
+      addTitle: 'Auto-Arrange & Relation Filters',
+      addDesc: 'Courses automatically flow from Prerequisites (Left) to Next Courses (Right). You can also filter by Prerequisite vs. Corequisite.',
+      canvasTitle: 'Interactive Course Nodes',
+      canvasDesc: 'Hover or click any course node to inspect its prerequisites and unlocked courses, and click + to expand the chain on the map.'
     }
   },
   schedule: {

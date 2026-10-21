@@ -1016,6 +1016,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
         )}
         {nodes.length > 0 && (
           <Button
+            id="tour-map-layout"
             size="sm"
             onClick={() => runAutoLayout(nodes, edges, true)}
             variant="outline"
