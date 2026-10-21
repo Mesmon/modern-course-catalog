@@ -555,16 +555,23 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     }
   }, [availableRelations]);
 
-  // Nodes connected to the currently hovered node
+  // Active focused node (either hovered on desktop or tapped/selected on mobile)
+  const activeNodeId = useMemo(() => {
+    if (hoveredNodeId) return hoveredNodeId;
+    const selectedNode = nodes.find((n) => n.selected);
+    return selectedNode ? selectedNode.id : null;
+  }, [hoveredNodeId, nodes]);
+
+  // Nodes connected to the currently active node
   const connectedNodeIds = useMemo(() => {
-    if (!hoveredNodeId) return null;
-    const set = new Set<string>([hoveredNodeId]);
+    if (!activeNodeId) return null;
+    const set = new Set<string>([activeNodeId]);
     edges.forEach((e) => {
-      if (e.source === hoveredNodeId) set.add(e.target);
-      if (e.target === hoveredNodeId) set.add(e.source);
+      if (e.source === activeNodeId) set.add(e.target);
+      if (e.target === activeNodeId) set.add(e.source);
     });
     return set;
-  }, [hoveredNodeId, edges]);
+  }, [activeNodeId, edges]);
 
   const filteredEdges = useMemo<Edge[]>(() => {
     if (!selectedRelations || selectedRelations.length === 0) return [];
@@ -576,17 +583,17 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
       .map((e) => {
         const label = cleanRelationName(e.label as string);
         const styleInfo = getRelationStyle(label);
-        const isConnectedToHover =
-          hoveredNodeId && (e.source === hoveredNodeId || e.target === hoveredNodeId);
-        const isDimmed = hoveredNodeId && !isConnectedToHover;
+        const isConnectedToActive =
+          activeNodeId && (e.source === activeNodeId || e.target === activeNodeId);
+        const isDimmed = activeNodeId && !isConnectedToActive;
 
         return {
           ...e,
           type: 'default',
-          animated: Boolean(isConnectedToHover),
-          // Show text pill on the edge only when hovering a connected node so edges don't clutter
-          label: isConnectedToHover ? label : undefined,
-          zIndex: isConnectedToHover ? 40 : 1,
+          animated: Boolean(isConnectedToActive),
+          // Show text pill on the edge only when hovering/selecting a connected node so edges don't clutter
+          label: isConnectedToActive ? label : undefined,
+          zIndex: isConnectedToActive ? 40 : 1,
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: styleInfo.color,
@@ -595,7 +602,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
           },
           style: {
             stroke: styleInfo.color,
-            strokeWidth: isConnectedToHover ? 2.75 : 2,
+            strokeWidth: isConnectedToActive ? 2.75 : 2,
             strokeDasharray: styleInfo.dash,
             opacity: isDimmed ? 0.18 : 0.85,
             transition: 'opacity 150ms ease, stroke-width 150ms ease',
@@ -616,7 +623,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
           labelBgPadding: [6, 4] as [number, number],
         };
       });
-  }, [edges, selectedRelations, hoveredNodeId]);
+  }, [edges, selectedRelations, activeNodeId]);
 
   const hasLoadedInitialRef = useRef(false);
   const isHydratingFromCloudRef = useRef(false);
@@ -974,8 +981,16 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
 
   return (
     <div className="h-full w-full relative" id="tour-map-area">
-      <div className="absolute top-4 z-10 flex flex-wrap gap-2" style={{ [locale === 'he' ? 'right' : 'left']: '16px' }}>
-        <Button id="tour-map-add" size="sm" onClick={() => setOpen(true)} className="h-9 px-3.5 rounded-lg font-medium text-xs gap-1.5 shadow-xs">
+      <div
+        className="absolute top-3 sm:top-4 inset-x-3 sm:inset-x-4 z-10 flex flex-wrap items-center gap-1.5 sm:gap-2 pointer-events-none"
+        dir={locale === 'he' ? 'rtl' : 'ltr'}
+      >
+        <Button
+          id="tour-map-add"
+          size="sm"
+          onClick={() => setOpen(true)}
+          className="pointer-events-auto h-9 px-3 sm:px-3.5 rounded-lg font-medium text-xs gap-1.5 shadow-xs"
+        >
           <Plus className="h-3.5 w-3.5" />
           {dictionary.map.addCourse}
         </Button>
@@ -984,10 +999,15 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
             size="sm"
             onClick={() => runAutoLayout(nodes, edges, true)}
             variant="outline"
-            className="h-9 px-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-xs rounded-lg font-medium text-xs gap-1.5 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="pointer-events-auto h-9 px-2.5 sm:px-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-xs rounded-lg font-medium text-xs gap-1.5 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
-            <Workflow className="h-3.5 w-3.5" />
-            {locale === 'he' ? 'סידור אוטומטי (שמאל ⬅ ימין)' : 'Auto-Arrange (Left ➔ Right)'}
+            <Workflow className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden sm:inline">
+              {locale === 'he' ? 'סידור אוטומטי (שמאל ⬅ ימין)' : 'Auto-Arrange (Left ➔ Right)'}
+            </span>
+            <span className="sm:hidden">
+              {locale === 'he' ? 'סידור אוטומטי' : 'Auto-Arrange'}
+            </span>
           </Button>
         )}
         {nodes.length > 0 && (
@@ -995,27 +1015,27 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
             size="sm"
             onClick={() => { setNodes([]); setEdges([]); }}
             variant="outline"
-            className="h-9 px-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700 dark:hover:text-red-300 border-red-200/80 dark:border-red-900/50 shadow-xs rounded-lg font-medium text-xs gap-1.5"
+            className="pointer-events-auto h-9 px-2.5 sm:px-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700 dark:hover:text-red-300 border-red-200/80 dark:border-red-900/50 shadow-xs rounded-lg font-medium text-xs gap-1.5"
           >
-            <Trash2 className="h-3.5 w-3.5" />
-            {dictionary.map.clearMap}
+            <Trash2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden xs:inline">{dictionary.map.clearMap}</span>
           </Button>
         )}
         {availableRelations.length > 0 && (
-          <div className="relative">
+          <div className="relative pointer-events-auto">
             <Button 
               size="sm"
               variant="outline" 
               onClick={() => setShowFilter(!showFilter)} 
               className={cn(
-                "h-9 px-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-xs rounded-lg font-medium text-xs gap-1.5 border-slate-200 dark:border-slate-800",
+                "h-9 px-2.5 sm:px-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-xs rounded-lg font-medium text-xs gap-1.5 border-slate-200 dark:border-slate-800",
                 showFilter || (selectedRelations.length > 0 && selectedRelations.length !== availableRelations.length)
                   ? 'text-primary border-primary/50 bg-primary/5 dark:bg-primary/20'
                   : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
               )}
             >
-              <Filter className="h-3.5 w-3.5" />
-              {dictionary.map.filterRelations}
+              <Filter className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden sm:inline">{dictionary.map.filterRelations}</span>
             </Button>
             {showFilter && (
               <div className={`absolute top-full mt-1.5 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 shadow-lg ${locale === 'he' ? 'right-0' : 'left-0'} z-50`}>
@@ -1048,17 +1068,17 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
       {/* Flow Direction & Legend Pill */}
       {nodes.length > 0 && (
         <div
-          className="absolute bottom-4 z-10 hidden sm:flex items-center gap-4 px-3.5 py-2 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xs text-xs text-slate-600 dark:text-slate-300"
-          style={{ [locale === 'he' ? 'right' : 'left']: '56px' }}
+          className="absolute bottom-3 sm:bottom-4 z-10 flex items-center gap-2.5 sm:gap-4 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xs text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 pointer-events-none"
+          style={{ [locale === 'he' ? 'right' : 'left']: '52px' }}
           dir="ltr"
         >
-          <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-200">
-            <span>{locale === 'he' ? 'קורסי קדם (שמאל)' : 'Prerequisites (Left)'}</span>
-            <ArrowRight className="h-3.5 w-3.5 text-primary" />
-            <span>{locale === 'he' ? 'קורסי המשך (ימין)' : 'Next Courses (Right)'}</span>
+          <div className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
+            <span>{locale === 'he' ? 'קדם (שמאל)' : 'Prereqs (Left)'}</span>
+            <ArrowRight className="h-3 w-3 text-primary shrink-0" />
+            <span>{locale === 'he' ? 'המשך (ימין)' : 'Next (Right)'}</span>
           </div>
-          <div className="h-3.5 w-px bg-slate-200 dark:bg-slate-800" />
-          <div className="flex items-center gap-3">
+          <div className="h-3.5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+          <div className="hidden sm:flex items-center gap-3">
             <span className="flex items-center gap-1.5">
               <span className="w-4 h-0.5 bg-rose-500 rounded-full inline-block" />
               <span>{locale === 'he' ? 'קורס קדם' : 'Prerequisite'}</span>
@@ -1079,7 +1099,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
           dictionary,
           selectedRelations,
           existingNodeIds,
-          hoveredNodeId,
+          hoveredNodeId: activeNodeId,
           setHoveredNodeId,
           connectedNodeIds,
         }}
@@ -1096,11 +1116,12 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
           nodeTypes={nodeTypes}
           fitView
           fitViewOptions={{ padding: 0.22 }}
-          minZoom={0.2}
+          minZoom={0.15}
           maxZoom={1.5}
         >
-          <Controls />
+          <Controls showInteractive={false} />
           <MiniMap
+            className="!hidden md:!block"
             zoomable
             pannable
             nodeColor={(n) => (n.selected ? '#3b82f6' : '#cbd5e1')}

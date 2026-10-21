@@ -16,22 +16,22 @@ export default async function Home() {
     <div className="min-h-screen bg-slate-50/40 dark:bg-slate-950/40">
       <TourGuideClient page="home" />
 
-      <main className="container max-w-6xl mx-auto px-4 py-12 space-y-14">
+      <main className="container max-w-6xl mx-auto px-3.5 sm:px-4 py-6 sm:py-12 space-y-10 sm:space-y-14">
         {/* Hero & Department Search */}
-        <section className="max-w-2xl mx-auto text-center space-y-6 pt-2">
-          <div className="space-y-3">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
+        <section className="max-w-2xl mx-auto text-center space-y-5 sm:space-y-6 pt-1 sm:pt-2">
+          <div className="space-y-2.5 sm:space-y-3">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
               {dictionary.home.title}{' '}
               <span className="text-primary">{dictionary.home.titleSuffix}</span>
             </h1>
-            <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            <p className="text-xs sm:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
               {dictionary.home.description}
             </p>
           </div>
 
           <div
             id="tour-search"
-            className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-sm text-start space-y-3"
+            className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-sm text-start space-y-3"
           >
             <div className="space-y-0.5">
               <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">

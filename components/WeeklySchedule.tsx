@@ -158,6 +158,8 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
   const [allScheduledCourses, setAllScheduledCourses] = useState<ScheduledCourse[]>([]);
   const [activeTerm, setActiveTerm] = useState<ScheduleTerm>({ year: '2027', semester: '1' });
   const [isMounted, setIsMounted] = useState(false);
+  const [mobileDay, setMobileDay] = useState<(typeof DAYS)[number]>('א');
+  const [mobileViewMode, setMobileViewMode] = useState<'day' | 'week'>('day');
 
   // Search dialog state
   const [searchOpen, setSearchOpen] = useState(false);
@@ -512,6 +514,16 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     return map;
   }, [scheduledCourses]);
 
+  // Automatically switch mobileDay to the first day with classes if current day is empty
+  useEffect(() => {
+    if ((eventsByDay[mobileDay]?.length || 0) === 0) {
+      const firstActiveDay = DAYS.find(d => (eventsByDay[d]?.length || 0) > 0);
+      if (firstActiveDay) {
+        setMobileDay(firstActiveDay);
+      }
+    }
+  }, [eventsByDay, mobileDay]);
+
   const totalCredits = useMemo(() => {
     return scheduledCourses.reduce((sum, c) => sum + (parseFloat(c.points) || 0), 0);
   }, [scheduledCourses]);
@@ -536,17 +548,113 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     dictionary.schedule.semesters?.[activeTerm.semester] ||
     `${dictionary.schedule.semesterLabel} ${activeTerm.semester}`;
 
+  const renderEventBlock = (ev: CalendarEvent) => {
+    const startOffsetMin = Math.max(0, ev.startMin - START_HOUR * 60);
+    const durationMin = Math.max(30, ev.endMin - ev.startMin);
+    const topPx = (startOffsetMin / 60) * HOUR_HEIGHT;
+    const heightPx = (durationMin / 60) * HOUR_HEIGHT;
+
+    const widthPct = 100 / ev.totalColumns;
+    const offsetPct = ev.column * widthPct;
+
+    const palette =
+      COURSE_COLOR_PALETTE[ev.course.colorIndex % COURSE_COLOR_PALETTE.length];
+
+    const gcalUrl = buildGoogleCalendarUrl({
+      course: ev.course,
+      group: ev.group,
+      meeting: ev.meeting,
+    });
+
+    return (
+      <div
+        key={ev.uid}
+        onClick={() => handleOpenCourseGroups(ev.course)}
+        style={{
+          top: `${topPx + 2}px`,
+          height: `${heightPx - 4}px`,
+          width: `calc(${widthPct}% - 4px)`,
+          [isRtl ? 'right' : 'left']: `calc(${offsetPct}% + 2px)`,
+        }}
+        className={cn(
+          'group/block absolute z-10 rounded-lg border p-2 overflow-hidden cursor-pointer transition-all hover:z-30 hover:shadow-md flex flex-col justify-between',
+          palette.bg,
+          palette.border,
+          palette.text,
+          ev.hasOverlap && 'ring-2 ring-amber-500/80 dark:ring-amber-400/80'
+        )}
+        title={`${ev.course.name} (${ev.group.type} - ${dictionary.schedule.group} ${ev.group.id})\n${ev.meeting.startTime} - ${ev.meeting.endTime}\n${ev.meeting.location}`}
+      >
+        <div className="space-y-0.5 min-h-0 overflow-hidden">
+          <div className="flex items-center justify-between gap-1">
+            <span
+              className={cn(
+                'text-[10px] font-semibold px-1.5 py-0.2 rounded shrink-0',
+                palette.badge
+              )}
+            >
+              {ev.group.type} #{ev.group.id}
+            </span>
+            <div className="flex items-center gap-1 shrink-0">
+              {ev.hasOverlap && (
+                <span
+                  className="inline-flex items-center gap-0.5 text-[10px] font-semibold bg-amber-500 text-white px-1 rounded shrink-0"
+                  title={dictionary.schedule.overlapWarning}
+                >
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                  <span className="hidden xl:inline">{dictionary.schedule.overlapWarning}</span>
+                </span>
+              )}
+              <a
+                href={gcalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                title={dictionary.schedule.openInGoogleCalendar}
+                className="opacity-100 sm:opacity-0 sm:group-hover/block:opacity-100 p-0.5 rounded bg-white/80 dark:bg-slate-950/80 hover:bg-white dark:hover:bg-slate-900 transition-opacity shadow-xs"
+              >
+                <CalendarPlus className="h-3 w-3" />
+              </a>
+            </div>
+          </div>
+
+          <p className="font-bold text-xs leading-tight line-clamp-2 pt-0.5">
+            {ev.course.name}
+          </p>
+
+          {ev.group.lecturer && heightPx >= 75 && (
+            <p className="text-[10px] opacity-80 truncate">
+              {ev.group.lecturer}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-0.5 pt-1 border-t border-black/5 dark:border-white/10 text-[10px] font-medium opacity-90 shrink-0">
+          <div dir="ltr" className="font-mono font-semibold truncate">
+            {ev.meeting.startTime} - {ev.meeting.endTime}
+          </div>
+          {ev.meeting.location && heightPx >= 60 && (
+            <div className="truncate opacity-80 flex items-center gap-0.5">
+              <MapPin className="h-2.5 w-2.5 shrink-0" />
+              <span className="truncate">{ev.meeting.location}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="container max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-5 sm:space-y-6" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header Bar */}
-      <div className="flex flex-col gap-4 bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 sm:gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2.5 flex-wrap">
               <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
                 <Calendar className="h-4.5 w-4.5" />
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                 {dictionary.schedule.title}
               </h1>
               <Badge variant="secondary" className="font-semibold text-xs px-2.5 py-0.5 rounded-md">
@@ -617,7 +725,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
 
         {/* Year & Semester Selector Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3.5 border-t border-slate-100 dark:border-slate-800/80">
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             {/* Year Selector */}
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -632,7 +740,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                       type="button"
                       onClick={() => handleSelectTerm(yr, activeTerm.semester)}
                       className={cn(
-                        'px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer',
+                        'px-2 sm:px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer',
                         isActive
                           ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs'
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -662,7 +770,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                       type="button"
                       onClick={() => handleSelectTerm(activeTerm.year, sem)}
                       className={cn(
-                        'px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
+                        'px-2 sm:px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5',
                         isActive
                           ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-xs'
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -701,9 +809,9 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
       </div>
 
       {/* Main Layout: Sidebar of Courses + Weekly Timetable Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-        {/* Scheduled Courses List */}
-        <div className="lg:col-span-1 space-y-4 bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-5 sm:gap-6 items-start">
+        {/* Scheduled Courses List (second on mobile so timetable is immediately visible, first on desktop) */}
+        <div className="order-2 lg:order-1 lg:col-span-1 space-y-4 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-base text-slate-900 dark:text-slate-100">
               {dictionary.schedule.myCourses}
@@ -808,8 +916,118 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
         </div>
 
         {/* Weekly Calendar Grid */}
-        <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="order-1 lg:order-2 lg:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+          {/* Mobile Day Switcher & View Mode Toggle (< md) */}
+          <div className="md:hidden p-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/70 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {mobileViewMode === 'day'
+                  ? dictionary.schedule.days[mobileDay]
+                  : dictionary.schedule.title}
+              </span>
+              <div className="inline-flex p-0.5 rounded-lg bg-slate-200/70 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setMobileViewMode('day')}
+                  className={cn(
+                    'px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer',
+                    mobileViewMode === 'day'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400'
+                  )}
+                >
+                  {isRtl ? 'יומי' : 'Day'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileViewMode('week')}
+                  className={cn(
+                    'px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer',
+                    mobileViewMode === 'week'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400'
+                  )}
+                >
+                  {isRtl ? 'שבועי' : 'Week'}
+                </button>
+              </div>
+            </div>
+
+            {mobileViewMode === 'day' && (
+              <div className="grid grid-cols-6 gap-1">
+                {DAYS.map(day => {
+                  const count = eventsByDay[day]?.length || 0;
+                  const isActive = mobileDay === day;
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => setMobileDay(day)}
+                      className={cn(
+                        'py-1.5 px-1 rounded-lg text-xs font-semibold transition-all flex flex-col items-center justify-center gap-0.5 border cursor-pointer',
+                        isActive
+                          ? 'bg-primary text-primary-foreground border-primary shadow-2xs'
+                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-800'
+                      )}
+                    >
+                      <span>{day}&apos;</span>
+                      <span
+                        className={cn(
+                          'text-[10px] px-1.5 rounded-full font-bold leading-tight',
+                          count > 0
+                            ? isActive
+                              ? 'bg-white/25 text-white'
+                              : 'bg-primary/15 text-primary'
+                            : 'opacity-40'
+                        )}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Single-Day Timeline View (< md when mobileViewMode === 'day') */}
+          <div className={cn('md:hidden', mobileViewMode !== 'day' && 'hidden')}>
+            <div
+              className="relative grid grid-cols-[56px_1fr]"
+              style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}
+            >
+              {/* Time Labels Column */}
+              <div className="relative border-e border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-950/40 select-none">
+                {hoursList.slice(0, -1).map((hour, idx) => (
+                  <div
+                    key={hour}
+                    className="absolute w-full text-center text-[11px] font-mono font-medium text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800/60 flex items-start justify-center pt-1"
+                    style={{
+                      top: `${idx * HOUR_HEIGHT}px`,
+                      height: `${HOUR_HEIGHT}px`,
+                    }}
+                  >
+                    {String(hour).padStart(2, '0')}:00
+                  </div>
+                ))}
+              </div>
+
+              {/* Selected Day Column */}
+              <div className="relative">
+                {hoursList.slice(0, -1).map(hour => (
+                  <div
+                    key={hour}
+                    className="w-full border-b border-slate-100 dark:border-slate-800/60"
+                    style={{ height: `${HOUR_HEIGHT}px` }}
+                  />
+                ))}
+                {(eventsByDay[mobileDay] || []).map(ev => renderEventBlock(ev))}
+              </div>
+            </div>
+          </div>
+
+          {/* Full 6-Day Week Grid (always visible on md+, or on mobile when mobileViewMode === 'week') */}
+          <div className={cn('overflow-x-auto', mobileViewMode === 'day' ? 'hidden md:block' : 'block')}>
             <div className="min-w-[720px]">
               {/* Day Headers */}
               <div className="grid grid-cols-[64px_repeat(6,1fr)] border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80">
@@ -867,101 +1085,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                       ))}
 
                       {/* Scheduled Course Blocks */}
-                      {dayEvents.map(ev => {
-                        const startOffsetMin = Math.max(0, ev.startMin - START_HOUR * 60);
-                        const durationMin = Math.max(30, ev.endMin - ev.startMin);
-                        const topPx = (startOffsetMin / 60) * HOUR_HEIGHT;
-                        const heightPx = (durationMin / 60) * HOUR_HEIGHT;
-
-                        const widthPct = 100 / ev.totalColumns;
-                        const offsetPct = ev.column * widthPct;
-
-                        const palette =
-                          COURSE_COLOR_PALETTE[ev.course.colorIndex % COURSE_COLOR_PALETTE.length];
-
-                        const gcalUrl = buildGoogleCalendarUrl({
-                          course: ev.course,
-                          group: ev.group,
-                          meeting: ev.meeting,
-                        });
-
-                        return (
-                          <div
-                            key={ev.uid}
-                            onClick={() => handleOpenCourseGroups(ev.course)}
-                            style={{
-                              top: `${topPx + 2}px`,
-                              height: `${heightPx - 4}px`,
-                              width: `calc(${widthPct}% - 4px)`,
-                              [isRtl ? 'right' : 'left']: `calc(${offsetPct}% + 2px)`,
-                            }}
-                            className={cn(
-                              'group/block absolute z-10 rounded-lg border p-2 overflow-hidden cursor-pointer transition-all hover:z-30 hover:shadow-md flex flex-col justify-between',
-                              palette.bg,
-                              palette.border,
-                              palette.text,
-                              ev.hasOverlap && 'ring-2 ring-amber-500/80 dark:ring-amber-400/80'
-                            )}
-                            title={`${ev.course.name} (${ev.group.type} - ${dictionary.schedule.group} ${ev.group.id})\n${ev.meeting.startTime} - ${ev.meeting.endTime}\n${ev.meeting.location}`}
-                          >
-                            <div className="space-y-0.5 min-h-0 overflow-hidden">
-                              <div className="flex items-center justify-between gap-1">
-                                <span
-                                  className={cn(
-                                    'text-[10px] font-semibold px-1.5 py-0.2 rounded shrink-0',
-                                    palette.badge
-                                  )}
-                                >
-                                  {ev.group.type} #{ev.group.id}
-                                </span>
-                                <div className="flex items-center gap-1 shrink-0">
-                                  {ev.hasOverlap && (
-                                    <span
-                                      className="inline-flex items-center gap-0.5 text-[10px] font-semibold bg-amber-500 text-white px-1 rounded shrink-0"
-                                      title={dictionary.schedule.overlapWarning}
-                                    >
-                                      <AlertTriangle className="h-2.5 w-2.5" />
-                                      <span className="hidden xl:inline">{dictionary.schedule.overlapWarning}</span>
-                                    </span>
-                                  )}
-                                  <a
-                                    href={gcalUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={e => e.stopPropagation()}
-                                    title={dictionary.schedule.openInGoogleCalendar}
-                                    className="opacity-0 group-hover/block:opacity-100 p-0.5 rounded bg-white/80 dark:bg-slate-950/80 hover:bg-white dark:hover:bg-slate-900 transition-opacity shadow-xs"
-                                  >
-                                    <CalendarPlus className="h-3 w-3" />
-                                  </a>
-                                </div>
-                              </div>
-
-                              <p className="font-bold text-xs leading-tight line-clamp-2 pt-0.5">
-                                {ev.course.name}
-                              </p>
-
-                              {ev.group.lecturer && heightPx >= 75 && (
-                                <p className="text-[10px] opacity-80 truncate">
-                                  {ev.group.lecturer}
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="space-y-0.5 pt-1 border-t border-black/5 dark:border-white/10 text-[10px] font-medium opacity-90 shrink-0">
-                              <div dir="ltr" className="font-mono font-semibold truncate">
-                                {ev.meeting.startTime} - {ev.meeting.endTime}
-                              </div>
-                              {ev.meeting.location && heightPx >= 60 && (
-                                <div className="truncate opacity-80 flex items-center gap-0.5">
-                                  <MapPin className="h-2.5 w-2.5 shrink-0" />
-                                  <span className="truncate">{ev.meeting.location}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                      {dayEvents.map(ev => renderEventBlock(ev))}
                     </div>
                   );
                 })}

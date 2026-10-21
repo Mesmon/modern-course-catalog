@@ -162,13 +162,15 @@ export function CourseNode({
     );
   };
 
+  const showDetails = isHovered || selected;
+
   return (
     <div
       dir={isHebrew ? 'rtl' : 'ltr'}
       className={cn(
-        'bg-white dark:bg-slate-900 rounded-xl border flex flex-col p-3.5 w-[270px] transition-all duration-200 relative z-10',
+        'bg-white dark:bg-slate-900 rounded-xl border flex flex-col p-3.5 w-[250px] sm:w-[270px] transition-all duration-200 relative z-10',
         selected
-          ? 'border-primary ring-2 ring-primary/20 shadow-md z-40'
+          ? 'border-primary ring-2 ring-primary/20 shadow-lg z-50'
           : isHighlighted
           ? 'border-primary/70 ring-2 ring-primary/15 shadow-md z-30'
           : 'border-slate-200/90 dark:border-slate-800 shadow-xs',
@@ -224,8 +226,8 @@ export function CourseNode({
           onRemoveNode?.(id);
         }}
         className={cn(
-          'absolute top-2.5 end-2.5 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-opacity cursor-pointer',
-          isHovered ? 'opacity-100' : 'opacity-0'
+          'nodrag nopan absolute top-2.5 end-2.5 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-opacity cursor-pointer',
+          showDetails ? 'opacity-100' : 'opacity-0 pointer-events-none sm:pointer-events-auto'
         )}
         title={dictionary?.map?.removeFromMap || 'Remove'}
       >
@@ -271,10 +273,13 @@ export function CourseNode({
         )}
       </div>
 
-      {/* Hover Details Popover */}
-      {isHovered && !data.loading && (
-        <div className="absolute top-full pt-2 w-72 z-50 nowheel nopan start-0">
-          <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-200/90 dark:border-slate-800 p-3.5 rounded-xl shadow-xl flex flex-col gap-3">
+      {/* Hover / Tap Details Popover */}
+      {showDetails && !data.loading && (
+        <div
+          className="absolute top-full pt-2 w-[250px] sm:w-72 z-50 nowheel nopan nodrag start-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-200/90 dark:border-slate-800 p-3 sm:p-3.5 rounded-xl shadow-xl flex flex-col gap-2.5">
             <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
               <span className="text-muted-foreground font-medium">
                 {dictionary?.course?.activeIn || 'Term'}:
@@ -303,7 +308,7 @@ export function CourseNode({
                 {dictionary?.map?.noConnections}
               </span>
             ) : (
-              <div className="flex flex-col gap-2.5 max-h-52 overflow-y-auto pe-1">
+              <div className="flex flex-col gap-2.5 max-h-48 overflow-y-auto pe-1 overscroll-contain">
                 {prerequisites.length > 0 && (
                   <div className="flex flex-col gap-1">
                     <span className="font-semibold text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1">

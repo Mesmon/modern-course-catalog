@@ -2,11 +2,12 @@
 
 import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
-import { SearchIcon } from "lucide-react"
+import { SearchIcon, XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -49,7 +50,10 @@ function CommandDialog({
         <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
       <DialogContent
-        className={cn("overflow-hidden p-0 sm:max-w-xl", className)}
+        className={cn(
+          "overflow-hidden p-0 sm:max-w-xl top-[8%] translate-y-0 sm:top-[50%] sm:translate-y-[-50%]",
+          className
+        )}
         showCloseButton={showCloseButton}
       >
         <Command className="[&_[cmdk-group-heading]]:text-muted-foreground **:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-4 [&_[cmdk-input-wrapper]_svg]:w-4 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-3 [&_[cmdk-item]]:py-2.5 [&_[cmdk-item]_svg]:h-4 [&_[cmdk-item]_svg]:w-4">
@@ -67,13 +71,13 @@ function CommandInput({
   return (
     <div
       data-slot="command-input-wrapper"
-      className="flex h-12 items-center gap-2.5 border-b border-slate-100 dark:border-slate-800 px-4"
+      className="flex h-12 items-center gap-2.5 border-b border-slate-100 dark:border-slate-800 px-3.5 sm:px-4"
     >
       <SearchIcon className="size-4 shrink-0 text-slate-400" />
       <CommandPrimitive.Input
         data-slot="command-input"
         className={cn(
-          "placeholder:text-muted-foreground flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+          "placeholder:text-muted-foreground flex h-11 w-full rounded-md bg-transparent py-3 text-base sm:text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
         {...props}
@@ -81,6 +85,13 @@ function CommandInput({
       <kbd className="hidden sm:inline-flex h-5 items-center rounded border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-1.5 font-mono text-[10px] font-medium text-slate-400 shrink-0">
         ESC
       </kbd>
+      <DialogClose
+        type="button"
+        className="sm:hidden inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0"
+        aria-label="Close"
+      >
+        <XIcon className="size-4" />
+      </DialogClose>
     </div>
   )
 }
@@ -93,7 +104,7 @@ function CommandList({
     <CommandPrimitive.List
       data-slot="command-list"
       className={cn(
-        "max-h-[340px] scroll-py-1 overflow-x-hidden overflow-y-auto p-1",
+        "max-h-[52dvh] sm:max-h-[340px] scroll-py-1 overflow-x-hidden overflow-y-auto p-1",
         className
       )}
       {...props}

@@ -36,11 +36,14 @@ export function TourGuide({ page }: { page: 'home' | 'map' }) {
               }
             },
             {
-              element: '#tour-map-link',
+              element:
+                window.innerWidth < 768 && document.getElementById('tour-map-link-mobile')
+                  ? '#tour-map-link-mobile'
+                  : '#tour-map-link',
               popover: {
                 title: dictionary.tour.home.mapTitle,
                 description: dictionary.tour.home.mapDesc,
-                side: 'bottom',
+                side: window.innerWidth < 768 ? 'top' : 'bottom',
                 align: 'start'
               }
             },

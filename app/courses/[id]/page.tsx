@@ -84,9 +84,9 @@ export default async function CoursePage({
 
   return (
     <div className="min-h-screen bg-slate-50/40 dark:bg-slate-950/40" dir={isRtl ? 'rtl' : 'ltr'}>
-      <main className="container max-w-6xl mx-auto px-4 py-8 space-y-8">
+      <main className="container max-w-6xl mx-auto px-3.5 sm:px-4 py-5 sm:py-8 space-y-6 sm:space-y-8">
         {/* Top Action & Breadcrumb Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-slate-200/80 dark:border-slate-800">
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 pb-4 sm:pb-5 border-b border-slate-200/80 dark:border-slate-800">
           <Link
             href={`/departments/${deptParam}?deg=${degParam}&year=${reqYear}&sem=${reqSem}`}
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium group"
@@ -97,10 +97,10 @@ export default async function CoursePage({
             <span>{dictionary.department.back}</span>
           </Link>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             <CopyCourseId
               id={fullId}
-              className="font-mono text-xs font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 px-3 py-1.5 rounded-lg transition-colors"
+              className="font-mono text-xs font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors"
               iconClassName="h-3.5 w-3.5"
             />
             <AddToScheduleButton
@@ -134,11 +134,11 @@ export default async function CoursePage({
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
           {/* Left/Main Column */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-5 sm:space-y-6">
             {/* Title & Meta */}
-            <div className="space-y-3">
+            <div className="space-y-2.5 sm:space-y-3">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <Badge variant="secondary" className="font-medium text-xs px-2.5 py-0.5 rounded-md">
                   {course.semesterName}
@@ -147,13 +147,13 @@ export default async function CoursePage({
                   {dictionary.department.title} {deptParam}
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 leading-tight tracking-tight">
+              <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 leading-tight tracking-tight">
                 {course.name}
               </h1>
             </div>
 
             {/* Key Metrics */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
               {[
                 { label: dictionary.course.points, val: course.points, icon: Award },
                 { label: dictionary.course.hours, val: course.hours, icon: Clock },
@@ -165,13 +165,13 @@ export default async function CoursePage({
               ].map((stat, i) => (
                 <div
                   key={i}
-                  className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs space-y-2"
+                  className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 sm:p-4 shadow-2xs space-y-1.5 sm:space-y-2"
                 >
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <stat.icon className="h-4 w-4 text-primary shrink-0" />
-                    <span className="text-xs font-medium truncate">{stat.label}</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground">
+                    <stat.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
+                    <span className="text-[11px] sm:text-xs font-medium truncate">{stat.label}</span>
                   </div>
-                  <p className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 truncate">
+                  <p className="text-base sm:text-xl font-bold text-slate-900 dark:text-slate-100 truncate">
                     {stat.val}
                   </p>
                 </div>
@@ -179,7 +179,7 @@ export default async function CoursePage({
             </div>
 
             {/* Course Description / Abstract */}
-            <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xs space-y-3">
+            <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-2xs space-y-3">
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100 pb-2 border-b border-slate-100 dark:border-slate-800">
                 <FileText className="h-4 w-4 text-primary" />
                 <h2>{dictionary.course.description}</h2>

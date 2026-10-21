@@ -31,10 +31,10 @@ export default async function DepartmentPage({
 
   return (
     <div className="min-h-screen bg-slate-50/40 dark:bg-slate-950/40" dir={isRtl ? 'rtl' : 'ltr'}>
-      <main className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <main className="container max-w-6xl mx-auto px-3.5 sm:px-4 py-5 sm:py-8 space-y-5 sm:space-y-6">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200/80 dark:border-slate-800">
-          <div className="flex items-center gap-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 sm:pb-5 border-b border-slate-200/80 dark:border-slate-800">
+          <div className="flex items-center gap-3 sm:gap-3.5">
             <Link
               href="/"
               className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shrink-0"
@@ -43,8 +43,8 @@ export default async function DepartmentPage({
               <ArrowLeft className={cn('h-4 w-4 text-slate-600 dark:text-slate-400', isRtl && 'rotate-180')} />
             </Link>
             <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                   {dictionary.department.title} {dept}
                 </h1>
                 <Badge variant="secondary" className="font-medium text-xs px-2.5 py-0.5">
@@ -61,10 +61,10 @@ export default async function DepartmentPage({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-5 sm:gap-6 items-start">
           {/* Sidebar Filters */}
           <aside className="lg:col-span-1 space-y-3">
-            <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-4">
+            <div className="p-3.5 sm:p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3 sm:space-y-4">
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 pb-2 border-b border-slate-100 dark:border-slate-800">
                 <Filter className="h-3.5 w-3.5 text-muted-foreground" />
                 <span>{dictionary.department.filterResults}</span>
@@ -104,7 +104,7 @@ export default async function DepartmentPage({
                 <label className="text-[11px] font-medium text-muted-foreground block">
                   {dictionary.department.yearPrefix || 'Year'}
                 </label>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-4 lg:grid-cols-2 gap-1.5">
                   {[2027, 2026, 2025, 2024].map((y) => {
                     const active = y.toString() === year;
                     return (
@@ -112,7 +112,7 @@ export default async function DepartmentPage({
                         key={y}
                         href={`/departments/${dept}?deg=${degree}&year=${y}&sem=${semester}`}
                         className={cn(
-                          'px-2.5 py-1.5 rounded-lg text-xs font-medium text-center border transition-colors',
+                          'px-2 py-1.5 rounded-lg text-xs font-medium text-center border transition-colors',
                           active
                             ? 'bg-primary text-primary-foreground border-primary'
                             : 'bg-slate-50/70 dark:bg-slate-950 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-foreground'

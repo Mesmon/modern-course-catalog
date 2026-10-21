@@ -55,7 +55,9 @@ export default async function RootLayout({
                   speed={200}
                 />
                 <Navbar />
-                {children}
+                <div className="pb-14 md:pb-0">
+                  {children}
+                </div>
                 <OnboardingDialog />
                 <Toaster position={dir === 'rtl' ? 'bottom-left' : 'bottom-right'} dir={dir} duration={3200} />
               </AuthProvider>
