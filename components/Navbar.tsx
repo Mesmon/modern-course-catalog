@@ -25,13 +25,10 @@ export async function Navbar() {
           <div className="flex items-center gap-7 h-full shrink-0">
             <Link
               href="/"
-              className="flex items-center gap-2.5 group transition-opacity hover:opacity-95"
+              className="flex items-center gap-2 group transition-opacity hover:opacity-95"
             >
-              <div className="flex h-8 px-2 items-center justify-center rounded-md bg-primary text-primary-foreground font-mono text-xs font-bold tracking-tight shrink-0 shadow-2xs">
-                {isHe ? 'בג״ע' : 'BGU'}
-              </div>
               <span className="font-bold text-base sm:text-lg tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                <span className="text-primary font-mono font-bold me-1.5 hidden sm:inline">BGU</span>
+                <span className="text-primary font-mono font-bold me-1.5">BGU</span>
                 {isHe ? 'שנתון אקדמי' : 'Course Catalog'}
               </span>
             </Link>

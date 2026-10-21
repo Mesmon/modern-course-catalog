@@ -553,30 +553,32 @@ export default async function CoursePage({
             </div>
 
             {/* BLOCK 2: מועדי הוראה בשנתון */}
-            {course.offerings && course.offerings.length > 0 && (
+            {course.offerings && course.offerings.filter((off: any) => Number(off.year) >= 2027).length > 0 && (
               <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-2xs space-y-3">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
                   <Clock className="h-4 w-4 text-primary shrink-0" />
                   <span>{dictionary.course.availableIn}</span>
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
-                  {course.offerings.map((off: any, idx: number) => {
-                    const isActive = off.year === reqYear && off.semester === reqSem;
-                    return (
-                      <Link
-                        key={idx}
-                        href={`/courses/${id}?dept=${deptParam}&deg=${degParam}&year=${off.year}&sem=${off.semester}`}
-                        className={cn(
-                          'px-2.5 py-1 rounded text-xs font-medium transition-colors border',
-                          isActive
-                            ? 'bg-primary text-primary-foreground border-primary font-semibold'
-                            : 'bg-transparent border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-primary hover:text-primary'
-                        )}
-                      >
-                        {dictionary.course.semester} {off.semester} · {off.year}
-                      </Link>
-                    );
-                  })}
+                  {course.offerings
+                    .filter((off: any) => Number(off.year) >= 2027)
+                    .map((off: any, idx: number) => {
+                      const isActive = off.year === reqYear && off.semester === reqSem;
+                      return (
+                        <Link
+                          key={idx}
+                          href={`/courses/${id}?dept=${deptParam}&deg=${degParam}&year=${off.year}&sem=${off.semester}`}
+                          className={cn(
+                            'px-2.5 py-1 rounded text-xs font-medium transition-colors border',
+                            isActive
+                              ? 'bg-primary text-primary-foreground border-primary font-semibold'
+                              : 'bg-transparent border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-primary hover:text-primary'
+                          )}
+                        >
+                          {dictionary.course.semester} {off.semester} · {off.year}
+                        </Link>
+                      );
+                    })}
                 </div>
               </div>
             )}

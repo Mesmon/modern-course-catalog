@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { getDictionary, Locale } from '@/lib/dictionaries';
 import { DepartmentSearch } from '@/components/DepartmentSearch';
 import { TourGuideClient } from '@/components/TourGuideClient';
+import { ScrollToTopButton } from '@/components/ScrollToTopButton';
 
 export default async function Home() {
   const cookieStore = await cookies();
@@ -17,6 +18,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-background flex flex-col" dir={isRtl ? 'rtl' : 'ltr'}>
       <TourGuideClient page="home" />
+      <ScrollToTopButton label={isRtl ? 'חזרה למעלה' : 'Back to top'} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-10">
         {/* Editorial Hero & Search Workspace */}
@@ -106,7 +108,7 @@ export default async function Home() {
       </main>
 
       {/* Academic Footer (Stitch Design) */}
-      <footer className="border-t border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-950 mt-12">
+      <footer className="border-t border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-950 mt-12 pb-20 md:pb-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
           <div>
             {isRtl

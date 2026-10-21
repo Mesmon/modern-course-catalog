@@ -1,7 +1,8 @@
 import { Handle, Position } from '@xyflow/react';
-import { BookOpen, Trash2, Plus, Check, ArrowRight, ArrowLeft } from 'lucide-react';
+import { BookOpen, Trash2, Plus, Check, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { useState, useContext, useMemo } from 'react';
 import { CourseMapContext } from './DependencyMap';
+import { getAvailableAcademicYears, MIN_ACADEMIC_YEAR } from '@/lib/schedule';
 import { cn } from '@/lib/utils';
 
 export function CourseNode({
@@ -70,11 +71,12 @@ export function CourseNode({
 
   const allTerms = useMemo(() => {
     const terms: { year: string; semester: string; label: string }[] = [];
-    const currentYear = Math.max(new Date().getFullYear(), 2026);
+    const availableYears = getAvailableAcademicYears();
     const knownKeys = new Set<string>();
 
     if (data.offerings && Array.isArray(data.offerings)) {
       data.offerings.forEach((off: any) => {
+        if (Number(off.year) < MIN_ACADEMIC_YEAR) return;
         terms.push({
           year: off.year,
           semester: off.semester,
@@ -84,22 +86,24 @@ export function CourseNode({
       });
     }
 
-    const currentKey = `${data.year}-${data.semester}`;
+    const safeDataYear =
+      Number(data.year) >= MIN_ACADEMIC_YEAR ? String(data.year) : String(MIN_ACADEMIC_YEAR);
+    const currentKey = `${safeDataYear}-${data.semester || 1}`;
     if (!knownKeys.has(currentKey)) {
       terms.push({
-        year: data.year?.toString() || '2027',
+        year: safeDataYear,
         semester: data.semester?.toString() || '1',
-        label: `${data.year || 2027}-${data.semester || 1}`,
+        label: currentKey,
       });
       knownKeys.add(currentKey);
     }
 
-    for (let y = currentYear + 1; y >= currentYear - 3; y--) {
+    for (const yr of availableYears) {
       for (let s = 3; s >= 1; s--) {
-        const key = `${y}-${s}`;
+        const key = `${yr}-${s}`;
         if (!knownKeys.has(key)) {
           terms.push({
-            year: y.toString(),
+            year: yr,
             semester: s.toString(),
             label: key,
           });
@@ -174,7 +178,7 @@ export function CourseNode({
           : isHighlighted
           ? 'border-primary/70 ring-2 ring-primary/15 shadow-md z-30'
           : 'border-slate-200/90 dark:border-slate-800 shadow-xs',
-        data.loading && 'opacity-70 animate-pulse',
+        data.loading && 'border-primary/70 ring-2 ring-primary/15',
         isHovered && 'shadow-lg border-primary/60 dark:border-primary/60 z-50',
         isDimmed && 'opacity-40'
       )}
@@ -197,7 +201,11 @@ export function CourseNode({
 
       <div className="flex items-start gap-2.5 mb-2 pe-7">
         <div className="h-7 w-7 rounded-md bg-orange-50 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-900/60 flex items-center justify-center text-orange-700 dark:text-orange-400 shrink-0 mt-0.5">
-          <BookOpen className="h-3.5 w-3.5" />
+          {data.loading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+          ) : (
+            <BookOpen className="h-3.5 w-3.5" />
+          )}
         </div>
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-1.5">
@@ -207,7 +215,7 @@ export function CourseNode({
             >
               {data.dept}.{data.degree}.{data.courseId}
             </span>
-            {typeof data.stage === 'number' && (
+            {typeof data.stage === 'number' && !data.loading && (
               <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700">
                 {isHebrew ? `שלב ${data.stage + 1}` : `Stage ${data.stage + 1}`}
               </span>
@@ -237,44 +245,54 @@ export function CourseNode({
         <Trash2 className="h-3.5 w-3.5" />
       </button>
 
-      <div className="flex items-center justify-between gap-1.5 mt-1 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[11px] text-muted-foreground font-medium">
-        <div className="flex items-center gap-1.5 min-w-0">
-          {data.stats?.points && (
-            <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-md shrink-0">
-              {data.stats.points} {dictionary?.course?.points}
-            </span>
-          )}
-          {data.type && (
-            <span
-              className="bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-md truncate max-w-[115px]"
-              title={data.type}
-            >
-              {data.type}
-            </span>
-          )}
+      {data.loading ? (
+        <div className="mt-1 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 text-[11px] text-primary font-semibold">
+          <span className="flex items-center gap-1.5">
+            <Loader2 className="h-3 w-3 animate-spin shrink-0" />
+            <span>{isHebrew ? 'טוען קשרי קדם...' : 'Loading prerequisites...'}</span>
+          </span>
+          <span className="h-2 w-12 rounded bg-orange-100 dark:bg-orange-950/60 animate-pulse" />
         </div>
-
-        {(prerequisites.length > 0 || unlocks.length > 0) && (
-          <div className="flex items-center gap-1 text-[10px] font-mono shrink-0" dir="ltr">
-            {prerequisites.length > 0 && (
-              <span
-                className="px-1.5 py-0.5 rounded bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border border-orange-200/80 dark:border-orange-900/60 font-bold"
-                title={isHebrew ? 'קורסי קדם' : 'Prerequisites'}
-              >
-                {prerequisites.length}→
+      ) : (
+        <div className="flex items-center justify-between gap-1.5 mt-1 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[11px] text-muted-foreground font-medium">
+          <div className="flex items-center gap-1.5 min-w-0">
+            {data.stats?.points && (
+              <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-md shrink-0">
+                {data.stats.points} {dictionary?.course?.points}
               </span>
             )}
-            {unlocks.length > 0 && (
+            {data.type && (
               <span
-                className="px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-900/60 font-bold"
-                title={isHebrew ? 'פותח קורסים' : 'Unlocks'}
+                className="bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-md truncate max-w-[115px]"
+                title={data.type}
               >
-                →{unlocks.length}
+                {data.type}
               </span>
             )}
           </div>
-        )}
-      </div>
+
+          {(prerequisites.length > 0 || unlocks.length > 0) && (
+            <div className="flex items-center gap-1 text-[10px] font-mono shrink-0" dir="ltr">
+              {prerequisites.length > 0 && (
+                <span
+                  className="px-1.5 py-0.5 rounded bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border border-orange-200/80 dark:border-orange-900/60 font-bold"
+                  title={isHebrew ? 'קורסי קדם' : 'Prerequisites'}
+                >
+                  {prerequisites.length}→
+                </span>
+              )}
+              {unlocks.length > 0 && (
+                <span
+                  className="px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-900/60 font-bold"
+                  title={isHebrew ? 'פותח קורסים' : 'Unlocks'}
+                >
+                  →{unlocks.length}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Hover / Tap Details Popover */}
       {showDetails && !data.loading && (

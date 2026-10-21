@@ -522,9 +522,14 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
 
   const queryClient = useQueryClient();
 
-  const { data: courses = [] } = useAllCourses();
+  const {
+    data: courses = [],
+    isLoading: isLoadingCatalog,
+    isFetching: isFetchingCatalog,
+  } = useAllCourses();
 
   const existingNodeIds = useMemo(() => new Set(nodes.map((n) => n.id)), [nodes]);
+  const loadingNodes = useMemo(() => nodes.filter((n) => Boolean(n.data?.loading)), [nodes]);
 
   const availableRelations = useMemo(() => {
     const relations = new Set<string>();
@@ -989,11 +994,26 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
           id="tour-map-add"
           size="sm"
           onClick={() => setOpen(true)}
-          className="pointer-events-auto h-9 px-3 sm:px-3.5 rounded-lg font-medium text-xs gap-1.5 shadow-xs"
+          className="pointer-events-auto h-9 px-3 sm:px-3.5 rounded-lg font-medium text-xs gap-1.5 shadow-xs cursor-pointer"
         >
-          <Plus className="h-3.5 w-3.5" />
+          {loadingNodes.length > 0 ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Plus className="h-3.5 w-3.5" />
+          )}
           {dictionary.map.addCourse}
         </Button>
+
+        {loadingNodes.length > 0 && (
+          <div className="pointer-events-auto flex items-center gap-2 h-9 px-3 rounded-lg bg-orange-50/95 dark:bg-orange-950/80 backdrop-blur-md border border-orange-200 dark:border-orange-800/70 text-primary text-xs font-semibold shadow-xs animate-in fade-in duration-150">
+            <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+            <span className="truncate max-w-[220px]">
+              {locale === 'he'
+                ? `טוען קורס וקשרי קדם (${String((loadingNodes[0]?.data as any)?.name || '')})...`
+                : `Loading course & relations (${String((loadingNodes[0]?.data as any)?.name || '')})...`}
+            </span>
+          </div>
+        )}
         {nodes.length > 0 && (
           <Button
             size="sm"
@@ -1141,52 +1161,73 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
           />
         </div>
         <CommandList className={locale === 'he' ? 'text-right' : 'text-left'} dir={locale === 'en' ? 'ltr' : 'rtl'}>
-          <CommandEmpty>
-            <div className="flex flex-col items-center justify-center text-center gap-3 py-6 px-4">
-              <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">{dictionary.navbar.noResults}</p>
-              <p className="text-xs text-muted-foreground whitespace-normal leading-relaxed mx-auto max-w-[280px]">
-                {dictionary.map.suggestDepartment}
-              </p>
-              {searchQuery && (
-                 <Button 
-                   size="sm"
-                   onClick={() => setShowFetchDeptDialog(true)} 
-                   className="mt-1 rounded-lg"
-                 >
-                   {dictionary.map.searchDeptBtn}
-                 </Button>
-              )}
+          {isLoadingCatalog || (isFetchingCatalog && courses.length === 0) ? (
+            <div className="p-4 space-y-3" aria-busy="true">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />
+                <span>{locale === 'he' ? 'טוען קטלוג קורסים...' : 'Loading course catalog...'}</span>
+              </div>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-3 py-2.5 px-3 rounded-lg border border-slate-100 dark:border-slate-800/70 bg-slate-50/50 dark:bg-slate-900/40 animate-pulse"
+                >
+                  <div className="h-4 w-48 bg-slate-200 dark:bg-slate-800 rounded" />
+                  <div className="h-4 w-20 bg-orange-100 dark:bg-orange-950/60 rounded font-mono" />
+                </div>
+              ))}
             </div>
-          </CommandEmpty>
-          <CommandGroup heading={dictionary.home.fullCatalog}>
-            {courses.map((course: any) => (
-              <CommandItem
-                key={course.id}
-                value={`${course.id} ${course.name}`}
-                onSelect={() => {
-                  setOpen(false)
-                  const parts = course.id.split('.')
-                  const dept = (course as any).params?.dept || parts[0] || '202'
-                  const degree = (course as any).params?.degree || parts[1] || '1'
-                  const cId = (course as any).params?.course || parts[2] || course.id
-                  const activeParts = course.activeIn ? course.activeIn.split('-') : []
-                  const latestOffering = (course as any).offerings?.[0]
-                  const year = (course as any).params?.year || latestOffering?.year || activeParts[0] || '2027'
-                  const semester = (course as any).params?.semester || latestOffering?.semester || activeParts[1] || '1'
-                  
-                  fetchCourseData(cId, dept, degree, year, semester, course.name);
-                }}
-                className="flex items-center justify-between gap-3 py-2.5 px-3 cursor-pointer rounded-lg my-0.5"
-              >
-                <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
-                  {course.name}
-                </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono shrink-0 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                  {course.id}
-                </span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          ) : (
+            <>
+              <CommandEmpty>
+                <div className="flex flex-col items-center justify-center text-center gap-3 py-6 px-4">
+                  <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">{dictionary.navbar.noResults}</p>
+                  <p className="text-xs text-muted-foreground whitespace-normal leading-relaxed mx-auto max-w-[280px]">
+                    {dictionary.map.suggestDepartment}
+                  </p>
+                  {searchQuery && (
+                    <Button
+                      size="sm"
+                      onClick={() => setShowFetchDeptDialog(true)}
+                      className="mt-1 rounded-lg"
+                    >
+                      {dictionary.map.searchDeptBtn}
+                    </Button>
+                  )}
+                </div>
+              </CommandEmpty>
+              <CommandGroup heading={dictionary.home.fullCatalog}>
+                {courses.map((course: any) => (
+                  <CommandItem
+                    key={course.id}
+                    value={`${course.id} ${course.name}`}
+                    onSelect={() => {
+                      setOpen(false)
+                      const parts = course.id.split('.')
+                      const dept = (course as any).params?.dept || parts[0] || '202'
+                      const degree = (course as any).params?.degree || parts[1] || '1'
+                      const cId = (course as any).params?.course || parts[2] || course.id
+                      const activeParts = course.activeIn ? course.activeIn.split('-') : []
+                      const latestOffering = (course as any).offerings?.[0]
+                      const rawYear = (course as any).params?.year || latestOffering?.year || activeParts[0] || '2027'
+                      const year = Number(rawYear) >= 2027 ? String(rawYear) : '2027'
+                      const semester = (course as any).params?.semester || latestOffering?.semester || activeParts[1] || '1'
+
+                      fetchCourseData(cId, dept, degree, year, semester, course.name);
+                    }}
+                    className="flex items-center justify-between gap-3 py-2.5 px-3 cursor-pointer rounded-lg my-0.5"
+                  >
+                    <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
+                      {course.name}
+                    </span>
+                    <span className="text-xs text-primary bg-orange-50 dark:bg-orange-950/40 border border-orange-200/60 dark:border-orange-900/50 font-mono font-semibold shrink-0 px-1.5 py-0.5 rounded">
+                      {course.id}
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </>
+          )}
         </CommandList>
       </CommandDialog>
 

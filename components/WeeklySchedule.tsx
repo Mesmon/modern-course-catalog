@@ -20,6 +20,7 @@ import {
   buildGoogleCalendarUrl,
   generateMeetingIcs,
   generateScheduleIcs,
+  getAvailableAcademicYears,
   SCHEDULE_EVENT,
   SCHEDULE_CLOUD_HYDRATED_EVENT,
 } from '@/lib/schedule';
@@ -169,6 +170,8 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoadingCourse, setIsLoadingCourse] = useState(false);
+  const [loadingCourseMeta, setLoadingCourseMeta] = useState<{ id: string; name: string } | null>(null);
+  const availableYears = useMemo(() => getAvailableAcademicYears(), []);
 
   // Group selector dialog state
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
@@ -198,7 +201,12 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
   const suggestContainerRef = useRef<HTMLDivElement>(null);
 
   const queryClient = useQueryClient();
-  const { data: courses = [], refetch: refetchCourses } = useAllCourses();
+  const {
+    data: courses = [],
+    isLoading: isLoadingCatalog,
+    isFetching: isFetchingCatalog,
+    refetch: refetchCourses,
+  } = useAllCourses();
 
   useEffect(() => {
     setIsMounted(true);
@@ -313,6 +321,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     }
 
     setIsLoadingCourse(true);
+    setLoadingCourseMeta({ id: fullId, name: course.name });
     try {
       const res = await fetch(`/api/courses/${cId}?dept=${dept}&degree=${degree}&year=${year}&semester=${semester}`);
       if (!res.ok) {
@@ -370,6 +379,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
       toast.error(dictionary.common.error);
     } finally {
       setIsLoadingCourse(false);
+      setLoadingCourseMeta(null);
     }
   };
 
@@ -715,7 +725,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
 
             {/* Year Segmented Control */}
             <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs">
-              {YEARS.map(yr => {
+              {availableYears.map(yr => {
                 const isActive = activeTerm.year === yr;
                 return (
                   <button
@@ -849,7 +859,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
             </Badge>
           </div>
 
-          {scheduledCourses.length === 0 ? (
+          {scheduledCourses.length === 0 && !isLoadingCourse ? (
             <div className="py-10 px-4 text-center space-y-2 rounded-lg border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
               <Calendar className="h-7 w-7 text-slate-300 dark:text-slate-600 mx-auto" />
               <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">
@@ -862,7 +872,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                 size="sm"
                 variant="outline"
                 onClick={() => setSearchOpen(true)}
-                className="mt-2 h-8 text-xs font-medium gap-1.5"
+                className="mt-2 h-8 text-xs font-medium gap-1.5 cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5 text-primary" />
                 {dictionary.schedule.addCourse}
@@ -949,6 +959,45 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                   </div>
                 );
               })}
+
+              {/* Modern Pending Course Card while loading groups */}
+              {isLoadingCourse && loadingCourseMeta && (
+                <div className="relative bg-orange-50/60 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/70 border-s-4 border-s-primary rounded-lg p-3 animate-in fade-in duration-150">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 space-y-1">
+                      <span className="inline-block font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded border bg-white dark:bg-slate-900 text-primary border-orange-200 dark:border-orange-800">
+                        {loadingCourseMeta.id}
+                      </span>
+                      <p className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
+                        {loadingCourseMeta.name}
+                      </p>
+                      <p className="text-[11px] text-primary font-medium flex items-center gap-1.5">
+                        <Loader2 className="h-3 w-3 animate-spin shrink-0" />
+                        <span>
+                          {isRtl ? 'טוען קבוצות רישום ומועדים...' : 'Loading groups & schedule...'}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Button to add more courses directly under the added courses list */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isLoadingCourse}
+                onClick={() => setSearchOpen(true)}
+                className="w-full h-9 rounded-lg border-dashed border-slate-300 dark:border-slate-700 hover:border-primary hover:text-primary hover:bg-orange-50/40 dark:hover:bg-orange-950/25 text-xs font-semibold gap-1.5 cursor-pointer transition-colors"
+              >
+                {isLoadingCourse ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                ) : (
+                  <Plus className="h-3.5 w-3.5 text-primary" />
+                )}
+                <span>{dictionary.schedule.addCourse}</span>
+              </Button>
             </div>
           )}
 
@@ -1288,6 +1337,34 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
         </button>
       </div>
 
+      {/* Modern Course Loading Overlay when adding a course to the schedule */}
+      {isLoadingCourse && loadingCourseMeta && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/35 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          dir={isRtl ? 'rtl' : 'ltr'}
+          aria-busy="true"
+        >
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-xl max-w-sm w-full flex flex-col items-center text-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-800/60 flex items-center justify-center text-primary shadow-2xs">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+            <div className="space-y-1 min-w-0 w-full">
+              <span className="inline-block font-mono text-xs font-bold text-primary bg-orange-50 dark:bg-orange-950/50 px-2 py-0.5 rounded border border-orange-200/80 dark:border-orange-800/60">
+                {loadingCourseMeta.id}
+              </span>
+              <p className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate pt-1">
+                {loadingCourseMeta.name}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {isRtl
+                  ? 'שולף קבוצות רישום, מרצים ושעות הוראה מהשנתון...'
+                  : 'Fetching registration groups, lecturers, and schedule...'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search Course Dialog */}
       <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
         <div className="px-4 py-2.5 pe-12 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-xs text-muted-foreground" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -1313,57 +1390,77 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
           />
         </div>
         <CommandList className={isRtl ? 'text-right' : 'text-left'} dir={isRtl ? 'rtl' : 'ltr'}>
-          <CommandEmpty>
-            <div className="flex flex-col items-center justify-center text-center gap-3 py-6 px-4">
-              <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                {dictionary.schedule.noCoursesInTerm} ({activeSemesterLabel} {activeTerm.year})
-              </p>
-              <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
-                {dictionary.map.suggestDepartment}
-              </p>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setSearchOpen(false);
-                  setShowFetchDeptDialog(true);
-                }}
-                className="mt-1 rounded-lg"
-              >
-                {dictionary.schedule.fetchDeptBtn}
-              </Button>
-            </div>
-          </CommandEmpty>
-          <CommandGroup heading={`${activeSemesterLabel} • ${activeTerm.year}`}>
-            {relevantCatalogCourses.map((course: any) => {
-              const isScheduled = scheduledCourses.some(c => c.id === course.id);
-              const termOffering = course.offerings?.find(
-                (o: any) => String(o.year) === activeTerm.year && String(o.semester) === activeTerm.semester
-              );
-              const displayName = termOffering?.name || course.name;
-              return (
-                <CommandItem
-                  key={course.id}
-                  value={`${course.id} ${displayName}`}
-                  onSelect={() => handleSelectCourseFromSearch(course)}
-                  className="flex items-center justify-between gap-3 py-2.5 px-3 cursor-pointer rounded-lg my-0.5"
+          {isLoadingCatalog || (isFetchingCatalog && courses.length === 0) ? (
+            <div className="p-4 space-y-3" aria-busy="true">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />
+                <span>{isRtl ? 'טוען קטלוג קורסים...' : 'Loading course catalog...'}</span>
+              </div>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-3 py-2.5 px-3 rounded-lg border border-slate-100 dark:border-slate-800/70 bg-slate-50/50 dark:bg-slate-900/40 animate-pulse"
                 >
-                  <div className="flex flex-col gap-0.5 text-start min-w-0">
-                    <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
-                      {displayName}
-                    </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                      {course.id} • {activeTerm.year}-{activeTerm.semester}
-                    </span>
-                  </div>
-                  {isScheduled && (
-                    <Badge variant="secondary" className="text-[11px] font-semibold shrink-0">
-                      {dictionary.schedule.inSchedule}
-                    </Badge>
-                  )}
-                </CommandItem>
-              );
-            })}
-          </CommandGroup>
+                  <div className="h-4 w-48 bg-slate-200 dark:bg-slate-800 rounded" />
+                  <div className="h-4 w-20 bg-orange-100 dark:bg-orange-950/60 rounded font-mono" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              <CommandEmpty>
+                <div className="flex flex-col items-center justify-center text-center gap-3 py-6 px-4">
+                  <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                    {dictionary.schedule.noCoursesInTerm} ({activeSemesterLabel} {activeTerm.year})
+                  </p>
+                  <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+                    {dictionary.map.suggestDepartment}
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setSearchOpen(false);
+                      setShowFetchDeptDialog(true);
+                    }}
+                    className="mt-1 rounded-lg"
+                  >
+                    {dictionary.schedule.fetchDeptBtn}
+                  </Button>
+                </div>
+              </CommandEmpty>
+              <CommandGroup heading={`${activeSemesterLabel} • ${activeTerm.year}`}>
+                {relevantCatalogCourses.map((course: any) => {
+                  const isScheduled = scheduledCourses.some(c => c.id === course.id);
+                  const termOffering = course.offerings?.find(
+                    (o: any) => String(o.year) === activeTerm.year && String(o.semester) === activeTerm.semester
+                  );
+                  const displayName = termOffering?.name || course.name;
+                  return (
+                    <CommandItem
+                      key={course.id}
+                      value={`${course.id} ${displayName}`}
+                      onSelect={() => handleSelectCourseFromSearch(course)}
+                      className="flex items-center justify-between gap-3 py-2.5 px-3 cursor-pointer rounded-lg my-0.5"
+                    >
+                      <div className="flex flex-col gap-0.5 text-start min-w-0">
+                        <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
+                          {displayName}
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                          {course.id} • {activeTerm.year}-{activeTerm.semester}
+                        </span>
+                      </div>
+                      {isScheduled && (
+                        <Badge variant="secondary" className="text-[11px] font-semibold shrink-0">
+                          {dictionary.schedule.inSchedule}
+                        </Badge>
+                      )}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </>
+          )}
         </CommandList>
       </CommandDialog>
 

@@ -4,16 +4,20 @@ import { CourseCard } from '@/components/CourseCard';
 import { useAllCourses } from '@/hooks/useCourses';
 import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { Loader2, Library } from 'lucide-react';
-import Link from 'next/link';
-import { useEffect, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState, useMemo, useTransition } from 'react';
+import { MIN_ACADEMIC_YEAR } from '@/lib/schedule';
 import { cn } from '@/lib/utils';
 
 export function CourseList() {
   const { data: courses, isLoading, error } = useAllCourses();
   const { dictionary, locale } = useDictionary();
   const isRtl = locale === 'he';
+  const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const [degreeFilter, setDegreeFilter] = useState<'all' | '1' | '2'>('all');
+  const [loadingCourseId, setLoadingCourseId] = useState<string | null>(null);
+  const [isNavigating, startTransition] = useTransition();
 
   useEffect(() => {
     setIsMounted(true);
@@ -30,8 +34,30 @@ export function CourseList() {
 
   if (isLoading || !isMounted) {
     return (
-      <div className="flex justify-center items-center py-20 col-span-full">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="col-span-full space-y-5" dir={isRtl ? 'rtl' : 'ltr'} aria-busy="true">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200/90 dark:border-slate-800 pb-3.5">
+          <div className="flex items-center gap-2.5">
+            <Loader2 className="h-4.5 w-4.5 animate-spin text-primary shrink-0" />
+            <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
+              {isRtl ? 'טוען קטלוג קורסים...' : 'Loading course catalog...'}
+            </span>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <div className="h-5 w-24 rounded bg-orange-100 dark:bg-orange-950/50" />
+                <div className="h-4 w-16 rounded bg-slate-100 dark:bg-slate-800" />
+              </div>
+              <div className="h-5 w-3/4 rounded bg-slate-200 dark:bg-slate-800" />
+              <div className="h-3.5 w-1/3 rounded bg-slate-100 dark:bg-slate-800 pt-2" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -94,17 +120,24 @@ export function CourseList() {
             const cId = (course as any).params?.course || parts[2] || course.id;
             const activeParts = course.activeIn ? course.activeIn.split('-') : [];
             const latestOffering = (course as any).offerings?.[0];
-            const year = (course as any).params?.year || latestOffering?.year || activeParts[0] || '2027';
+            const rawYear = (course as any).params?.year || latestOffering?.year || activeParts[0] || '2027';
+            const year = Number(rawYear) >= MIN_ACADEMIC_YEAR ? String(rawYear) : '2027';
             const semester = (course as any).params?.semester || latestOffering?.semester || activeParts[1] || '1';
+            const isCardLoading = isNavigating && loadingCourseId === course.id;
 
             return (
-              <Link
+              <div
                 key={course.id}
-                href={`/courses/${cId}?dept=${dept}&deg=${degree}&year=${year}&sem=${semester}`}
-                className="block"
+                onClick={() => {
+                  setLoadingCourseId(course.id);
+                  startTransition(() => {
+                    router.push(`/courses/${cId}?dept=${dept}&deg=${degree}&year=${year}&sem=${semester}`);
+                  });
+                }}
+                className="block relative cursor-pointer"
               >
-                <CourseCard course={course} />
-              </Link>
+                <CourseCard course={course} isLoading={isCardLoading} />
+              </div>
             );
           })}
         </div>

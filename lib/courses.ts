@@ -44,9 +44,12 @@ export async function getDepartmentCoursesFromDB(dept: string, degree: string, y
     }
   }
 
-  console.log(`Department ${dept} (degree ${degree}) courses not found for ${year}-${semester} or history missing, scraping last 4 years...`);
+  console.log(`Department ${dept} (degree ${degree}) courses not found for ${year}-${semester} or history missing, scraping from 2027...`);
   const currentYear = Math.max(parseInt(year, 10) || 2027, 2027);
-  const yearsToScrape = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3];
+  const yearsToScrape: number[] = [];
+  for (let y = currentYear; y >= 2027; y--) {
+    yearsToScrape.push(y);
+  }
   const semestersToScrape = ['1', '2', '3']; // 1: Fall, 2: Spring, 3: Summer
   
   const courseMap = new Map<string, any>();
@@ -168,7 +171,7 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
   const baseCourse = await db.collection('courses').findOne({ 
     $or: [{ id: fullId }, { id: id }] 
   });
-  const offerings = baseCourse?.offerings || [];
+  const offerings = (baseCourse?.offerings || []).filter((o: any) => Number(o.year) >= 2027);
 
   if (offerings.length > 0) {
     const requestedExists = offerings.some((o: any) => o.year === year && o.semester === semester);

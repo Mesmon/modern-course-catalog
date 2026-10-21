@@ -5,6 +5,7 @@ import { ArrowLeft, BookOpen, ChevronLeft, Filter, Search } from 'lucide-react';
 import { cookies } from 'next/headers';
 import { getDictionary, Locale } from '@/lib/dictionaries';
 import { cn } from '@/lib/utils';
+import { getAvailableAcademicYears, MIN_ACADEMIC_YEAR } from '@/lib/schedule';
 
 export default async function DepartmentPage({
   params,
@@ -17,8 +18,10 @@ export default async function DepartmentPage({
   const sParams = await searchParams;
 
   const degree = sParams.deg || '1';
-  const year = sParams.year || '2027';
+  const rawYear = Number(sParams.year || '2027');
+  const year = Number.isFinite(rawYear) && rawYear >= MIN_ACADEMIC_YEAR ? String(rawYear) : '2027';
   const semester = sParams.sem || '1';
+  const availableYears = getAvailableAcademicYears();
 
   const courses = await getDepartmentCoursesFromDB(dept, degree, year, semester);
 
@@ -108,9 +111,9 @@ export default async function DepartmentPage({
                 <label className="text-[11px] font-semibold text-muted-foreground block">
                   {dictionary.department.yearPrefix || 'Year'}
                 </label>
-                <div className="grid grid-cols-4 lg:grid-cols-2 gap-1.5">
-                  {[2027, 2026, 2025, 2024].map((y) => {
-                    const active = y.toString() === year;
+                <div className={cn('grid gap-1.5', availableYears.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}>
+                  {availableYears.map((y) => {
+                    const active = y === year;
                     return (
                       <Link
                         key={y}

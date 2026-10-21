@@ -33,6 +33,7 @@
 :root {
   color-scheme: light dark;
   accent-color: #c2410c;
+  container-type: scroll-state;
 
   --background: oklch(0.985 0.003 247.858);
   --foreground: oklch(0.165 0.028 261.692);
@@ -136,6 +137,29 @@
   code, pre, kbd, .font-mono {
     font-family: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
   }
+}
+
+.scroll-sentinel {
+  height: 0;
+  width: 0;
+  visibility: hidden;
+}
+
+.back-to-top {
+  visibility: hidden;
+  opacity: 0;
+  translate: 0 20px;
+  transition:
+    visibility 0.3s,
+    opacity 0.3s ease,
+    translate 0.3s ease;
+}
+
+.scrolled .back-to-top,
+.back-to-top.is-scrolled {
+  visibility: visible;
+  opacity: 1;
+  translate: 0 0;
 }
 
 @theme inline {
