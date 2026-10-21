@@ -3,22 +3,30 @@
 import { Course } from '@/lib/courses';
 import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { CopyCourseId } from '@/components/CopyCourseId';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface CourseCardProps {
   course: Course;
+  isLoading?: boolean;
 }
 
-export function CourseCard({ course }: CourseCardProps) {
+export function CourseCard({ course, isLoading = false }: CourseCardProps) {
   const parts = course.id.split('.');
   const deptId = parts[0] || '202';
   const degreeId = parts[1] || '1';
   const { dictionary, locale } = useDictionary();
+  const isRtl = locale !== 'en';
 
   return (
     <div
-      className="group h-full flex flex-col justify-between rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 hover:border-primary/60 dark:hover:border-primary/60 transition-colors"
-      dir={locale === 'en' ? 'ltr' : 'rtl'}
+      className={cn(
+        'group h-full flex flex-col justify-between rounded-xl border bg-white dark:bg-slate-900 p-4 sm:p-5 transition-all',
+        isLoading
+          ? 'border-primary ring-2 ring-primary/15 bg-orange-50/20 dark:bg-orange-950/15'
+          : 'border-slate-200/90 dark:border-slate-800 hover:border-primary/60 dark:hover:border-primary/60'
+      )}
+      dir={isRtl ? 'rtl' : 'ltr'}
     >
       <div className="space-y-2.5">
         <div className="flex items-center justify-between gap-2">
@@ -43,14 +51,25 @@ export function CourseCard({ course }: CourseCardProps) {
       </div>
 
       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-          <span>
-            {dictionary.course.availableIn}:{' '}
-            <strong className="font-mono font-semibold text-foreground">{course.activeIn}</strong>
+        {isLoading ? (
+          <span className="inline-flex items-center gap-1.5 text-primary font-semibold">
+            <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+            <span>{isRtl ? 'טוען נתוני קורס...' : 'Loading course...'}</span>
           </span>
-        </span>
-        <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-primary transition-colors" />
+        ) : (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+            <span>
+              {dictionary.course.availableIn}:{' '}
+              <strong className="font-mono font-semibold text-foreground">{course.activeIn}</strong>
+            </span>
+          </span>
+        )}
+        {isLoading ? (
+          <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
+        ) : (
+          <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-primary transition-colors" />
+        )}
       </div>
     </div>
   );

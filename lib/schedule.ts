@@ -97,6 +97,23 @@ export const COURSE_COLOR_PALETTE = [
   },
 ];
 
+export const MIN_ACADEMIC_YEAR = 2027;
+
+/**
+ * Returns academic years starting from 2027 (never before 2027).
+ * Currently (in 2026) returns ['2027'].
+ * In subsequent calendar years (2027+), automatically adds newer academic years.
+ */
+export function getAvailableAcademicYears(): string[] {
+  const calYear = new Date().getFullYear();
+  const maxYear = calYear >= MIN_ACADEMIC_YEAR ? calYear + 1 : MIN_ACADEMIC_YEAR;
+  const years: string[] = [];
+  for (let y = maxYear; y >= MIN_ACADEMIC_YEAR; y--) {
+    years.push(String(y));
+  }
+  return years;
+}
+
 export function loadActiveTerm(): ScheduleTerm {
   if (typeof window === 'undefined') return { year: '2027', semester: '1' };
   try {
@@ -104,7 +121,9 @@ export function loadActiveTerm(): ScheduleTerm {
     if (!raw) return { year: '2027', semester: '1' };
     const parsed = JSON.parse(raw);
     if (parsed && parsed.year && parsed.semester) {
-      return { year: String(parsed.year), semester: String(parsed.semester) };
+      const yrNum = Number(parsed.year);
+      const safeYear = Number.isFinite(yrNum) && yrNum >= MIN_ACADEMIC_YEAR ? String(yrNum) : '2027';
+      return { year: safeYear, semester: String(parsed.semester) };
     }
     return { year: '2027', semester: '1' };
   } catch (e) {
