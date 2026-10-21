@@ -17,9 +17,19 @@ interface DepartmentSearchProps {
   locale: 'en' | 'he';
 }
 
+const POPULAR_DEPTS = [
+  { id: '202', labelHe: 'הנדסת מערכות תוכנה ומידע', labelEn: 'Software & Info Systems' },
+  { id: '201', labelHe: 'מדעי המחשב', labelEn: 'Computer Science' },
+  { id: '361', labelHe: 'הנדסת חשמל ומחשבים', labelEn: 'Electrical Engineering' },
+  { id: '364', labelHe: 'הנדסת תעשייה וניהול', labelEn: 'Industrial Engineering' },
+];
+
 export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) {
   const isRtl = locale === 'he';
   const [query, setQuery] = useState('');
+  const [degree, setDegree] = useState<'1' | '2'>('1');
+  const [year, setYear] = useState('2027');
+  const [semester, setSemester] = useState('1');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -70,7 +80,7 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
   const handleSearch = (deptId: string) => {
     const trimmed = deptId.trim();
     if (trimmed) {
-      router.push(`/departments/${trimmed}`);
+      router.push(`/departments/${trimmed}?deg=${degree}&year=${year}&sem=${semester}`);
     }
   };
 
@@ -95,81 +105,157 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
   };
 
   return (
-    <div className="w-full relative" ref={containerRef} dir={isRtl ? 'rtl' : 'ltr'}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSearch(query);
-        }}
-        className="flex flex-col sm:flex-row gap-2.5"
-      >
-        <div className="relative flex-1">
-          <Search
-            className="absolute top-1/2 -translate-y-1/2 start-3.5 h-4 w-4 text-slate-400 pointer-events-none"
-          />
-          <Input
-            name="dept"
-            type="text"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setIsOpen(true);
-              setSelectedIndex(-1);
-            }}
-            onFocus={() => setIsOpen(true)}
-            onKeyDown={handleKeyDown}
-            placeholder={dictionary.home.searchPlaceholder}
-            className="h-11 ps-10 pe-9 text-sm rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 focus:bg-white dark:focus:bg-slate-950 transition-colors"
-            required
-            autoComplete="off"
-          />
-          {isLoading && (
-            <div className="absolute top-1/2 -translate-y-1/2 end-3.5 h-4 w-4">
-              <Loader2 className="h-full w-full animate-spin text-muted-foreground" />
-            </div>
-          )}
+    <div className="w-full space-y-3" dir={isRtl ? 'rtl' : 'ltr'}>
+      {/* Segmented Term & Degree Controls */}
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
+          {(['1', '2'] as const).map((deg) => (
+            <button
+              key={deg}
+              type="button"
+              onClick={() => setDegree(deg)}
+              className={cn(
+                'px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer',
+                degree === deg
+                  ? 'bg-white dark:bg-slate-800 text-primary shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              )}
+            >
+              {deg === '1' ? dictionary.department.bachelor : dictionary.department.master}
+            </button>
+          ))}
         </div>
-        <Button
-          type="submit"
-          className="h-11 px-5 text-sm font-semibold rounded-xl gap-2 shrink-0 cursor-pointer"
-        >
-          <span>{dictionary.home.searchBtn}</span>
-          <ArrowRight className={cn('h-4 w-4', isRtl && 'rotate-180')} />
-        </Button>
-      </form>
 
-      {isOpen && filteredDepartments.length > 0 && (
-        <div className="absolute z-50 w-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-lg overflow-hidden">
-          <ul className="max-h-64 overflow-y-auto p-1">
-            {filteredDepartments.map((dept, index) => (
-              <li key={dept.id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setQuery(dept.id);
-                    setIsOpen(false);
-                    handleSearch(dept.id);
-                  }}
-                  onMouseEnter={() => setSelectedIndex(index)}
-                  className={cn(
-                    'w-full px-3 py-2 flex items-center justify-between gap-3 rounded-lg text-start transition-colors cursor-pointer',
-                    selectedIndex === index
-                      ? 'bg-slate-100 dark:bg-slate-800'
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                  )}
-                >
-                  <span className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">
-                    {dept.name}
-                  </span>
-                  <span className="font-mono text-xs text-slate-400 dark:text-slate-500 shrink-0">
-                    #{dept.id}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
+        <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
+          {['2027', '2026', '2025'].map((yr) => (
+            <button
+              key={yr}
+              type="button"
+              onClick={() => setYear(yr)}
+              className={cn(
+                'px-2 py-1 rounded-md font-mono font-semibold transition-all cursor-pointer',
+                year === yr
+                  ? 'bg-white dark:bg-slate-800 text-primary shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              )}
+            >
+              {yr}
+            </button>
+          ))}
         </div>
-      )}
+
+        <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
+          {(['1', '2', '3'] as const).map((sem) => (
+            <button
+              key={sem}
+              type="button"
+              onClick={() => setSemester(sem)}
+              className={cn(
+                'px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer',
+                semester === sem
+                  ? 'bg-white dark:bg-slate-800 text-primary shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              )}
+            >
+              {dictionary.schedule?.semesters?.[sem] || `${dictionary.department.semesterPrefix} ${sem}`}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Department Autocomplete Input */}
+      <div className="relative" ref={containerRef}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSearch(query);
+          }}
+          className="flex flex-col sm:flex-row gap-2"
+        >
+          <div className="relative flex-1">
+            <Search className="absolute top-1/2 -translate-y-1/2 start-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
+            <Input
+              name="dept"
+              type="text"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setIsOpen(true);
+                setSelectedIndex(-1);
+              }}
+              onFocus={() => setIsOpen(true)}
+              onKeyDown={handleKeyDown}
+              placeholder={dictionary.home.searchPlaceholder}
+              className="h-10 ps-10 pe-9 text-sm rounded-lg border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 focus:bg-white dark:focus:bg-slate-950 transition-colors"
+              required
+              autoComplete="off"
+            />
+            {isLoading && (
+              <div className="absolute top-1/2 -translate-y-1/2 end-3.5 h-4 w-4">
+                <Loader2 className="h-full w-full animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </div>
+          <Button
+            type="submit"
+            className="h-10 px-5 text-xs font-semibold rounded-lg gap-2 shrink-0 cursor-pointer shadow-2xs"
+          >
+            <span>{dictionary.home.searchBtn}</span>
+            <ArrowRight className={cn('h-3.5 w-3.5', isRtl && 'rotate-180')} />
+          </Button>
+        </form>
+
+        {isOpen && filteredDepartments.length > 0 && (
+          <div className="absolute z-50 w-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg overflow-hidden">
+            <ul className="max-h-60 overflow-y-auto p-1 divide-y divide-slate-100 dark:divide-slate-800/60">
+              {filteredDepartments.map((dept, index) => (
+                <li key={dept.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuery(dept.id);
+                      setIsOpen(false);
+                      handleSearch(dept.id);
+                    }}
+                    onMouseEnter={() => setSelectedIndex(index)}
+                    className={cn(
+                      'w-full px-3 py-2 flex items-center justify-between gap-3 rounded-md text-start transition-colors cursor-pointer',
+                      selectedIndex === index
+                        ? 'bg-orange-50/80 dark:bg-orange-950/40 text-primary'
+                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    )}
+                  >
+                    <span className="font-medium text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
+                      {dept.name}
+                    </span>
+                    <span className="font-mono text-xs font-semibold text-primary bg-orange-50 dark:bg-orange-950/50 px-1.5 py-0.5 rounded border border-orange-200/70 dark:border-orange-800/50 shrink-0">
+                      #{dept.id}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* Quick Popular Department Chips */}
+      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+        <span className="text-[11px] text-muted-foreground me-1">
+          {isRtl ? 'מחלקות נפוצות:' : 'Popular:'}
+        </span>
+        {POPULAR_DEPTS.map((d) => (
+          <button
+            key={d.id}
+            type="button"
+            onClick={() => handleSearch(d.id)}
+            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 hover:border-primary/50 hover:text-primary text-[11px] text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
+          >
+            <span className="font-mono font-semibold text-primary">#{d.id}</span>
+            <span>{isRtl ? d.labelHe : d.labelEn}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

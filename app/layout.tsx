@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { IBM_Plex_Sans_Hebrew, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { cookies } from "next/headers";
@@ -12,13 +12,28 @@ import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 
-const inter = Inter({ subsets: ["latin"] });
+const ibmPlexSansHebrew = IBM_Plex_Sans_Hebrew({
+  subsets: ["hebrew", "latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-ibm-plex",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-jetbrains-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "BGU Course Catalog",
-  description: "Course catalog, prerequisite map, and weekly schedule planner for Ben-Gurion University",
+  title: "BGU שנתון אקדמי · Course Catalog",
+  description: "Course catalog, prerequisite map, and weekly schedule planner for Ben-Gurion University of the Negev",
   icons: {
     icon: "/favicon.png",
+  },
+  other: {
+    "color-scheme": "light dark",
   },
 };
 
@@ -35,7 +50,10 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen bg-background antialiased selection:bg-primary/15`} suppressHydrationWarning>
+      <body
+        className={`${ibmPlexSansHebrew.variable} ${jetbrainsMono.variable} font-sans min-h-screen bg-background text-foreground antialiased selection:bg-primary/15 selection:text-primary`}
+        suppressHydrationWarning
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -44,8 +62,8 @@ export default async function RootLayout({
           <DictionaryProvider dictionary={dictionary} locale={locale}>
             <QueryProvider>
               <AuthProvider>
-                <NextTopLoader 
-                  color="#059669"
+                <NextTopLoader
+                  color="#ea580c"
                   initialPosition={0.08}
                   crawlSpeed={200}
                   height={2}
@@ -55,7 +73,7 @@ export default async function RootLayout({
                   speed={200}
                 />
                 <Navbar />
-                <div className="pb-14 md:pb-0">
+                <div className="pb-16 md:pb-0">
                   {children}
                 </div>
                 <OnboardingDialog />
