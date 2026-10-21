@@ -38,13 +38,17 @@ export function UserAuthMenu() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   if (isLoading) {
@@ -111,7 +115,7 @@ export function UserAuthMenu() {
       {menuOpen && (
         <div
           className={cn(
-            'absolute top-full mt-1.5 w-72 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg p-3.5 z-50 space-y-3 animate-in fade-in-0 zoom-in-95 duration-150',
+            'absolute top-full mt-1.5 w-72 max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg p-3.5 z-50 space-y-3 animate-in fade-in-0 zoom-in-95 duration-150',
             isRtl ? 'left-0 text-right' : 'right-0 text-left'
           )}
           dir={isRtl ? 'rtl' : 'ltr'}

@@ -42,8 +42,8 @@ export async function Navbar() {
           </div>
 
           {/* Search & Utility Actions */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 justify-end min-w-0">
-            <div id="tour-global-search" className="w-full max-w-[200px] sm:max-w-xs">
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-1 justify-end min-w-0">
+            <div id="tour-global-search" className="w-full max-w-[130px] sm:max-w-xs">
               <GlobalSearch />
             </div>
 

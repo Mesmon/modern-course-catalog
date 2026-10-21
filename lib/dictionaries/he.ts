@@ -103,6 +103,16 @@ export const he: Dictionary = {
     logoText1: 'קטלוג',
     logoText2: 'קורסים'
   },
+  theme: {
+    title: 'ערכת נושא',
+    light: 'בהיר',
+    dark: 'כהה',
+    system: 'מערכת',
+    systemHint: 'התאמה אוטומטית להגדרות המכשיר',
+    active: 'פעיל',
+    currentlyLight: 'כרגע בהיר',
+    currentlyDark: 'כרגע כהה',
+  },
   map: {
     title: 'מפת תלויות',
     addCourse: 'הוסף קורס',
