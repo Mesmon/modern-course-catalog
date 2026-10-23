@@ -31,7 +31,7 @@ export function HelpTourButton() {
       onClick={() => window.dispatchEvent(new Event('open-onboarding-dialog'))}
       title={dictionary.onboarding.helpTooltip}
       aria-label={dictionary.onboarding.helpTooltip}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-primary/60 hover:text-primary transition-colors cursor-pointer"
+      className="inline-flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-lg border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-primary/60 hover:text-primary transition-colors cursor-pointer"
     >
       <HelpCircle className="h-4 w-4" aria-hidden="true" />
     </button>

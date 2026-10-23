@@ -307,6 +307,7 @@ export function isCourseOfferedInTerm(course: any, year: string, semester: strin
 }
 
 export function timeToMinutes(time: string): number {
+  if (!time || typeof time !== 'string') return 0;
   const [h, m] = time.split(':').map(Number);
   return (h || 0) * 60 + (m || 0);
 }

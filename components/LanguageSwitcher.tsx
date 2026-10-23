@@ -20,10 +20,10 @@ export function LanguageSwitcher() {
       variant="ghost"
       size="sm"
       onClick={toggleLanguage}
-      className="h-9 px-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 gap-1.5 text-xs font-medium cursor-pointer"
+      className="h-9 px-2 sm:px-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 gap-1.5 text-xs font-semibold sm:font-medium cursor-pointer"
       aria-label="Toggle language"
     >
-      <Globe className="h-3.5 w-3.5" />
+      <Globe className="h-3.5 w-3.5 hidden sm:block" />
       <span>{locale === 'en' ? 'עב' : 'EN'}</span>
     </Button>
   );

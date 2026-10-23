@@ -73,7 +73,7 @@ export default async function RootLayout({
                   speed={200}
                 />
                 <Navbar />
-                <div className="pb-16 md:pb-0">
+                <div className="pb-20 md:pb-0">
                   {children}
                 </div>
                 <OnboardingDialog />

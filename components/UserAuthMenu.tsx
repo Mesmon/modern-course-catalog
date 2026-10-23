@@ -65,11 +65,12 @@ export function UserAuthMenu() {
         size="sm"
         onClick={signInWithGoogle}
         title={dictionary.auth.signInSubtitle}
-        className="h-9 px-3 rounded-lg font-medium gap-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs shadow-xs cursor-pointer"
+        aria-label={dictionary.auth.signInWithGoogle}
+        className="h-9 w-9 sm:w-auto px-0 sm:px-3 rounded-lg font-medium gap-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs shadow-xs cursor-pointer"
       >
-        <GoogleLogo className="h-3.5 w-3.5 shrink-0" />
+        <GoogleLogo className="h-4 w-4 sm:h-3.5 sm:w-3.5 shrink-0" />
         <span className="hidden lg:inline">{dictionary.auth.signInWithGoogle}</span>
-        <span className="lg:hidden">BGU</span>
+        <span className="hidden sm:inline lg:hidden">BGU</span>
       </Button>
     );
   }

@@ -58,17 +58,17 @@ export function GlobalSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="relative flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 px-3 text-sm text-muted-foreground transition-colors cursor-pointer"
+        aria-label={dictionary.navbar.searchPlaceholder}
+        className="relative flex h-9 w-9 sm:w-full items-center justify-center sm:justify-between gap-2 rounded-lg border border-slate-200/90 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 hover:bg-slate-100/80 dark:hover:bg-slate-800/80 px-0 sm:px-3 text-sm text-muted-foreground transition-colors cursor-pointer"
       >
         <span className="inline-flex items-center gap-2 truncate">
           {isPending ? (
-            <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
+            <Loader2 className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-primary animate-spin shrink-0" />
           ) : (
-            <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+            <Search className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-slate-500 sm:text-slate-400 shrink-0" />
           )}
-          <span className="truncate text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            <span className="hidden sm:inline">{dictionary.navbar.searchPlaceholder}</span>
-            <span className="sm:hidden">{isRtl ? 'חיפוש...' : 'Search...'}</span>
+          <span className="hidden sm:inline truncate text-sm text-slate-500 dark:text-slate-400">
+            {dictionary.navbar.searchPlaceholder}
           </span>
         </span>
         <kbd className="pointer-events-none hidden h-5 select-none items-center gap-0.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-1.5 font-mono text-[10px] font-medium text-slate-400 sm:inline-flex shrink-0">

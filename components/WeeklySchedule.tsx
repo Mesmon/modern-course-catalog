@@ -510,8 +510,8 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
         (group.meetings || []).forEach((meeting, mIdx) => {
           const day = meeting.day;
           if (!rawByDay[day]) return;
-          const startMin = timeToMinutes(meeting.startTime);
-          const endMin = timeToMinutes(meeting.endTime);
+          const startMin = timeToMinutes(meeting.startTime || (meeting as any).startHour);
+          const endMin = timeToMinutes(meeting.endTime || (meeting as any).endHour);
           if (endMin <= startMin) return;
           rawByDay[day].push({
             uid: `${course.id}-${group.id}-${mIdx}`,
@@ -713,118 +713,138 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
   return (
     <div className="min-h-[calc(100dvh-3.5rem)] flex flex-col" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* ================= SUB-HEADER / CONTROLS ROW (Stitch Design) ================= */}
-      <section className="bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 px-4 sm:px-6 py-3.5">
-        <div className="max-w-[1520px] mx-auto flex flex-wrap items-center justify-between gap-3.5">
+      <section className="bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 px-3.5 sm:px-6 py-2.5 sm:py-3.5">
+        <div className="max-w-[1520px] mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5 sm:gap-3.5">
           {/* Right (RTL): Title, Year, Semester & Metric Pill */}
-          <div id="tour-schedule-term" className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              {dictionary.schedule.title}
-            </h1>
+          <div id="tour-schedule-term" className="flex flex-col sm:flex-row sm:items-center justify-between lg:justify-start gap-2 sm:gap-4 w-full lg:w-auto">
+            <div className="flex items-center justify-between sm:justify-start gap-2.5">
+              <div className="flex items-center gap-2">
+                <h1 className="text-base sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+                  {dictionary.schedule.title}
+                </h1>
 
-            <div className="h-5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
-
-            {/* Year Segmented Control */}
-            <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs">
-              {availableYears.map(yr => {
-                const isActive = activeTerm.year === yr;
-                return (
-                  <button
-                    key={yr}
-                    type="button"
-                    onClick={() => handleSelectTerm(yr, activeTerm.semester)}
-                    className={cn(
-                      'px-2.5 py-1 rounded-md font-mono font-semibold transition-all cursor-pointer',
-                      isActive
-                        ? 'bg-white dark:bg-slate-800 text-primary shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                    )}
-                  >
-                    {yr}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Semester Segmented Control */}
-            <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs">
-              {SEMESTERS.map(sem => {
-                const isActive = activeTerm.semester === sem;
-                const countInSem = allScheduledCourses.filter(
-                  c => c.year === activeTerm.year && c.semester === sem
-                ).length;
-                return (
-                  <button
-                    key={sem}
-                    type="button"
-                    onClick={() => handleSelectTerm(activeTerm.year, sem)}
-                    className={cn(
-                      'px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer flex items-center gap-1.5',
-                      isActive
-                        ? 'bg-white dark:bg-slate-800 text-primary shadow-2xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                    )}
-                  >
-                    <span>{dictionary.schedule.semesters?.[sem] || sem}</span>
-                    {countInSem > 0 && (
-                      <span
+                {/* Year Segmented Control */}
+                <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs">
+                  {availableYears.map(yr => {
+                    const isActive = activeTerm.year === yr;
+                    return (
+                      <button
+                        key={yr}
+                        type="button"
+                        onClick={() => handleSelectTerm(yr, activeTerm.semester)}
                         className={cn(
-                          'px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold',
+                          'px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md font-mono text-xs font-semibold transition-all cursor-pointer',
                           isActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-primary/15 text-primary'
+                            ? 'bg-white dark:bg-slate-800 text-primary shadow-2xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                         )}
                       >
-                        {countInSem}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+                        {yr}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Metric Badge (BGU Orange Pill) on mobile floats on end */}
+              <div className="inline-flex sm:hidden items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/25 text-primary font-semibold text-[11px]">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                <span>
+                  {scheduledCourses.length} {dictionary.schedule.totalCourses} ·{' '}
+                  {totalCredits.toFixed(1).replace(/\.0$/, '')} {dictionary.schedule.totalCredits}
+                </span>
+              </div>
             </div>
 
-            {/* Metric Badge (BGU Orange Pill) */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary font-semibold text-xs">
-              <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
-              <span>
-                {scheduledCourses.length} {dictionary.schedule.totalCourses} ·{' '}
-                {totalCredits.toFixed(1).replace(/\.0$/, '')} {dictionary.schedule.totalCredits}
-              </span>
+            <div className="h-5 w-px bg-slate-200 dark:bg-slate-800 hidden lg:block" />
+
+            <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto overflow-x-auto">
+              {/* Semester Segmented Control */}
+              <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs shrink-0">
+                {SEMESTERS.map(sem => {
+                  const isActive = activeTerm.semester === sem;
+                  const countInSem = allScheduledCourses.filter(
+                    c => c.year === activeTerm.year && c.semester === sem
+                  ).length;
+                  return (
+                    <button
+                      key={sem}
+                      type="button"
+                      onClick={() => handleSelectTerm(activeTerm.year, sem)}
+                      className={cn(
+                        'px-2 sm:px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 whitespace-nowrap',
+                        isActive
+                          ? 'bg-white dark:bg-slate-800 text-primary shadow-2xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                      )}
+                    >
+                      <span className="hidden sm:inline">{dictionary.schedule.semesters?.[sem] || sem}</span>
+                      <span className="sm:hidden">{dictionary.schedule.semestersShort?.[sem] || sem}</span>
+                      {countInSem > 0 && (
+                        <span
+                          className={cn(
+                            'px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold',
+                            isActive
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-primary/15 text-primary'
+                          )}
+                        >
+                          {countInSem}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Metric Badge (BGU Orange Pill) - Desktop view */}
+              <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary font-semibold text-xs shrink-0">
+                <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                <span>
+                  {scheduledCourses.length} {dictionary.schedule.totalCourses} ·{' '}
+                  {totalCredits.toFixed(1).replace(/\.0$/, '')} {dictionary.schedule.totalCredits}
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Left (RTL): Actions (Clear, Calendar Exports, Primary Add Course) */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 w-full lg:w-auto overflow-x-auto pt-1 sm:pt-0 border-t border-slate-100 sm:border-0 dark:border-slate-800/80">
             {scheduledCourses.length > 0 && (
-              <>
+              <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={handleClearSchedule}
-                  className="px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+                  title={dictionary.schedule.clearSchedule}
+                  className="px-2 sm:px-2.5 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
-                  <span>{dictionary.schedule.clearSchedule}</span>
+                  <span className="hidden sm:inline">{dictionary.schedule.clearSchedule}</span>
+                  <span className="sm:hidden">{isRtl ? 'נקה' : 'Clear'}</span>
                 </button>
 
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setGcalDialogOpen(true)}
-                  className="h-8 px-3 rounded-lg font-medium text-xs gap-1.5 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  className="h-8 px-2 sm:px-3 rounded-lg font-medium text-xs gap-1 sm:gap-1.5 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
                   <CalendarPlus className="h-3.5 w-3.5 text-primary" />
-                  <span>Google Calendar</span>
+                  <span className="hidden sm:inline">Google Calendar</span>
+                  <span className="sm:hidden">Google</span>
                 </Button>
 
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleDownloadIcs}
-                  className="h-8 px-3 rounded-lg font-medium text-xs gap-1.5 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  className="h-8 px-2 sm:px-3 rounded-lg font-medium text-xs gap-1 sm:gap-1.5 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
                   <Download className="h-3.5 w-3.5 text-slate-500" />
-                  <span>Apple Calendar</span>
+                  <span className="hidden sm:inline">Apple Calendar</span>
+                  <span className="sm:hidden">Apple</span>
                 </Button>
-              </>
+              </div>
             )}
 
             <Button
@@ -832,7 +852,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
               size="sm"
               onClick={() => setSearchOpen(true)}
               disabled={isLoadingCourse}
-              className="h-8 px-3.5 rounded-lg font-semibold text-xs gap-1.5 shadow-2xs cursor-pointer"
+              className="h-8 px-3 sm:px-3.5 rounded-lg font-semibold text-xs gap-1.5 shadow-2xs cursor-pointer ms-auto sm:ms-0"
             >
               {isLoadingCourse ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
               <span>{dictionary.schedule.addCourse}</span>

@@ -21,7 +21,7 @@ export async function Navbar() {
         className="sticky top-0 z-40 w-full border-b border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md"
         dir={isHe ? 'rtl' : 'ltr'}
       >
-        <div className="max-w-[1520px] mx-auto flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
+        <div className="max-w-[1520px] mx-auto flex h-14 items-center justify-between gap-2 sm:gap-3 px-3 sm:px-6">
           {/* Brand Logo + Desktop Nav Links */}
           <div className="flex items-center gap-7 h-full shrink-0">
             <Link
@@ -29,8 +29,8 @@ export async function Navbar() {
               className="flex items-center gap-2 group transition-opacity hover:opacity-95"
             >
               <span className="font-bold text-base sm:text-lg tracking-tight text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                <span className="text-primary font-mono font-bold me-1.5">BGU</span>
-                {isHe ? 'שנתון אקדמי' : 'Course Catalog'}
+                <span className="text-primary font-mono font-bold sm:me-1.5">BGU</span>
+                <span className="hidden sm:inline">{isHe ? 'שנתון אקדמי' : 'Course Catalog'}</span>
               </span>
             </Link>
 
@@ -42,8 +42,8 @@ export async function Navbar() {
           </div>
 
           {/* Search & Utility Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-3 flex-1 justify-end min-w-0">
-            <div id="tour-global-search" className="w-full max-w-[130px] sm:max-w-xs">
+          <div className="flex items-center gap-1 sm:gap-3 flex-1 justify-end min-w-0">
+            <div id="tour-global-search" className="shrink-0 sm:shrink sm:w-full sm:max-w-xs">
               <GlobalSearch />
             </div>
 
