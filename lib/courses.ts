@@ -1,6 +1,10 @@
 import clientPromise from '@/lib/mongodb';
 import { fetchCourseList, fetchCourseDetail } from '@/lib/scraper';
 import { CourseDetail } from '@/types/course';
+import type { Collection, Document } from 'mongodb';
+
+const COURSE_DATA_STALE_MS = 24 * 60 * 60 * 1000;
+const courseRefreshesInProgress = new Set<string>();
 
 export interface Course {
   id: string;
@@ -212,6 +216,9 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
   
   if (existingCourse && Array.isArray(existingCourse.relatedCourses) && Array.isArray(existingCourse.groups)) {
     const { _id, ...rest } = existingCourse;
+    if (isCourseStale(existingCourse.lastUpdated)) {
+      void refreshCourseDetailInBackground(collection, id, dept, degree, year, semester);
+    }
     return { ...rest, offerings, blockedCourses } as CourseDetail;
   }
 
@@ -226,18 +233,7 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
     });
 
     if (courseDetail) {
-      await collection.updateOne(
-        { id: courseDetail.id, year, semester },
-        { 
-          $set: {
-            ...courseDetail,
-            year,
-            semester,
-            lastUpdated: new Date()
-          }
-        },
-        { upsert: true }
-      );
+      await persistCourseDetail(collection, courseDetail, year, semester);
       courseDetail.offerings = offerings;
       courseDetail.year = year;
       courseDetail.semester = semester;
@@ -247,5 +243,67 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
   } catch (err) {
     console.error(`Failed to fetch course details for ${id}`, err);
     return null;
+  }
+}
+
+function isCourseStale(lastUpdated: unknown): boolean {
+  if (!lastUpdated) {
+    return true;
+  }
+
+  const timestamp = new Date(lastUpdated as string | number | Date).getTime();
+  return !Number.isFinite(timestamp) || Date.now() - timestamp >= COURSE_DATA_STALE_MS;
+}
+
+async function persistCourseDetail(
+  collection: Collection<Document>,
+  courseDetail: CourseDetail,
+  year: string,
+  semester: string
+) {
+  await collection.updateOne(
+    { id: courseDetail.id, year, semester },
+    {
+      $set: {
+        ...courseDetail,
+        year,
+        semester,
+        lastUpdated: new Date()
+      }
+    },
+    { upsert: true }
+  );
+}
+
+async function refreshCourseDetailInBackground(
+  collection: Collection<Document>,
+  id: string,
+  dept: string,
+  degree: string,
+  year: string,
+  semester: string
+): Promise<void> {
+  const refreshKey = `${dept}.${degree}.${id}:${year}:${semester}`;
+  if (courseRefreshesInProgress.has(refreshKey)) {
+    return;
+  }
+
+  courseRefreshesInProgress.add(refreshKey);
+  try {
+    const courseDetail = await fetchCourseDetail({
+      courseId: id,
+      dept,
+      degree,
+      year,
+      semester,
+    });
+
+    if (courseDetail) {
+      await persistCourseDetail(collection, courseDetail, year, semester);
+    }
+  } catch (err) {
+    console.error(`Failed to refresh stale course details for ${id}`, err);
+  } finally {
+    courseRefreshesInProgress.delete(refreshKey);
   }
 }
