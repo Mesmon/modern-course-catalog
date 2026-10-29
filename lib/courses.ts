@@ -169,6 +169,7 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
     } else if (!existingCourse) {
       existingCourse = fallback; // Keep it if both are flawed but one exists, prevents hard crashes later
     }
+
   }
   
   // Sometimes id is already the full id, sometimes it's just the course part
@@ -186,6 +187,7 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
         return getCourseDetailFromDB(id, dept, degree, latest.year, latest.semester);
       }
     }
+
   }
 
   // Look up what courses this course blocks (Forward Prerequisites)
@@ -306,4 +308,23 @@ async function refreshCourseDetailInBackground(
   } finally {
     courseRefreshesInProgress.delete(refreshKey);
   }
+}
+
+export async function refetchCourseDetail(
+  id: string,
+  dept: string,
+  degree: string,
+  year: string,
+  semester: string
+): Promise<CourseDetail | null> {
+  const client = await clientPromise;
+  const collection = client.db('course_catalog').collection('course_details');
+  const courseDetail = await fetchCourseDetail({ courseId: id, dept, degree, year, semester });
+
+  if (!courseDetail) {
+    return null;
+  }
+
+  await persistCourseDetail(collection, courseDetail, year, semester);
+  return courseDetail;
 }

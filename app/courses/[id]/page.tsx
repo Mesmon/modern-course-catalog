@@ -22,6 +22,7 @@ import { getDictionary, Locale } from '@/lib/dictionaries';
 import { notFound, redirect } from 'next/navigation';
 import { CopyCourseId } from '@/components/CopyCourseId';
 import { AddToScheduleButton } from '@/components/AddToScheduleButton';
+import { RefetchCourseButton } from '@/components/RefetchCourseButton';
 import { cn } from '@/lib/utils';
 
 export default async function CoursePage({
@@ -56,6 +57,12 @@ export default async function CoursePage({
   }
 
   const fullId = `${deptParam}.${degParam}.${id}`;
+  const lastFetched = course.lastUpdated
+    ? new Intl.DateTimeFormat(locale === 'he' ? 'he-IL' : 'en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(new Date(course.lastUpdated))
+    : null;
 
   const sP = course.syllabusParams;
   const syllabusLink = sP
@@ -139,6 +146,17 @@ export default async function CoursePage({
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              <RefetchCourseButton
+                courseId={id}
+                dept={deptParam}
+                degree={degParam}
+                year={reqYear}
+                semester={reqSem}
+                label={dictionary.course.refetch}
+                loadingLabel={dictionary.course.refetching}
+                successMessage={dictionary.course.refetchSuccess}
+                errorMessage={dictionary.course.refetchError}
+              />
               <AddToScheduleButton
                 courseId={id}
                 dept={deptParam}
@@ -177,6 +195,10 @@ export default async function CoursePage({
                 </Button>
               )}
             </div>
+          </div>
+          <div className="mt-3 text-xs text-muted-foreground">
+            {dictionary.course.lastFetched}:{' '}
+            {lastFetched || dictionary.course.unknown}
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCourseDetailFromDB } from '@/lib/courses';
+import { getCourseDetailFromDB, refetchCourseDetail } from '@/lib/courses';
 
 export async function GET(
   req: Request,
@@ -23,5 +23,30 @@ export async function GET(
   } catch (error) {
     console.error('Failed to fetch course detail:', error);
     return NextResponse.json({ error: 'Failed to fetch course detail' }, { status: 500 });
+  }
+}
+
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const { searchParams } = new URL(req.url);
+    const dept = searchParams.get('dept') || '202';
+    const degree = searchParams.get('degree') || '1';
+    const year = searchParams.get('year') || '2027';
+    const semester = searchParams.get('semester') || '1';
+
+    const courseDetail = await refetchCourseDetail(id, dept, degree, year, semester);
+
+    if (!courseDetail) {
+      return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('Failed to refetch course detail:', error);
+    return NextResponse.json({ error: 'Failed to refetch course detail' }, { status: 500 });
   }
 }

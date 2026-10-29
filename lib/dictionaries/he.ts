@@ -94,7 +94,12 @@ export const he: Dictionary = {
     syllabus: 'סילבוס',
     noSyllabus: 'אין סילבוס',
     copiedToClipboard: 'מזהה הקורס הועתק',
-    prerequisiteFor: 'דרישת קדם עבור / חוסם'
+    prerequisiteFor: 'דרישת קדם עבור / חוסם',
+    refetch: 'משוך נתוני קורס',
+    refetching: 'מושך נתונים...',
+    refetchSuccess: 'נתוני הקורס עודכנו',
+    refetchError: 'עדכון נתוני הקורס נכשל',
+    lastFetched: 'נמשך לאחרונה'
   },
   navbar: {
     title: 'קטלוג BGU',
@@ -288,4 +293,3 @@ export const he: Dictionary = {
     missingConfigDesc: 'כדי להפעיל התחברות עם Google (@post.bgu.ac.il), יש להגדיר את משתני הסביבה הבאים בקובץ .env.local:',
   }
 };
-

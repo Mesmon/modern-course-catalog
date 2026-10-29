@@ -92,7 +92,12 @@ export const en = {
     syllabus: 'Syllabus',
     noSyllabus: 'No Syllabus',
     copiedToClipboard: 'Course ID copied to clipboard',
-    prerequisiteFor: 'Prerequisite For / Blocks'
+    prerequisiteFor: 'Prerequisite For / Blocks',
+    refetch: 'Refetch course',
+    refetching: 'Fetching...',
+    refetchSuccess: 'Course data updated',
+    refetchError: 'Failed to update course data',
+    lastFetched: 'Last fetched'
   },
   navbar: {
     title: 'BGU Catalog',
@@ -288,4 +293,3 @@ export const en = {
 };
 
 export type Dictionary = typeof en;
-
