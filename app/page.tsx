@@ -37,7 +37,7 @@ export default async function Home() {
             id="tour-search"
             className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-2xs"
           >
-            <DepartmentSearch dictionary={dictionary} locale={locale} />
+            <DepartmentSearch />
           </div>
 
           {/* Subtle Quick Links to Schedule & Prerequisite Map */}

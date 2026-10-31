@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { RefreshCw, Clock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ import {
   syncRefetchedCourseToSchedule,
 } from '@/lib/schedule';
 import { Button } from '@/components/ui/button';
+import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { cn } from '@/lib/utils';
 
 interface CourseRefetchButtonProps {
@@ -24,13 +25,13 @@ interface CourseRefetchButtonProps {
   autoRefetchIfStale?: boolean;
   refreshRouter?: boolean;
   variant?: 'default' | 'compact' | 'inline';
-  dictionary: any;
-  locale: string;
+  dictionary?: any;
+  locale?: string;
   onRefetched?: (detail: CourseDetail) => void;
   className?: string;
 }
 
-export function CourseRefetchButton({
+export const CourseRefetchButton = memo(function CourseRefetchButton({
   courseId,
   dept,
   degree,
@@ -41,11 +42,14 @@ export function CourseRefetchButton({
   autoRefetchIfStale = false,
   refreshRouter = false,
   variant = 'default',
-  dictionary,
-  locale,
+  dictionary: dictionaryProp,
+  locale: localeProp,
   onRefetched,
   className,
 }: CourseRefetchButtonProps) {
+  const ctx = useDictionary();
+  const dictionary = dictionaryProp ?? ctx.dictionary;
+  const locale = localeProp ?? ctx.locale;
   const router = useRouter();
   const [isRefetching, setIsRefetching] = useState(false);
   const [isBackgroundUpdating, setIsBackgroundUpdating] = useState(false);
@@ -140,17 +144,46 @@ export function CourseRefetchButton({
     ]
   );
 
-  // Automatic background refetch when course data is stale
+  // Automatic background refetch when course data is stale — deferred to idle time
+  // and staggered so multiple stale courses never contend with initial hydration/LCP.
   useEffect(() => {
     if (!autoRefetchIfStale) return;
     const key = `${dept}.${degree}.${courseId}-${year}-${semester}`;
     if (autoTriggeredRef.current === key) return;
 
     const stale = isStale ?? isScheduledCourseStale(currentLastUpdated);
-    if (stale) {
-      autoTriggeredRef.current = key;
-      performRefetch(true);
+    if (!stale) return;
+
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+      hash = (hash * 31 + key.charCodeAt(i)) | 0;
     }
+    const staggerMs = 900 + (Math.abs(hash) % 6) * 350;
+    let idleHandle: number | null = null;
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    const timer = window.setTimeout(() => {
+      const run = () => {
+        if (autoTriggeredRef.current === key) return;
+        autoTriggeredRef.current = key;
+        performRefetch(true);
+      };
+      if (typeof win.requestIdleCallback === 'function') {
+        idleHandle = win.requestIdleCallback(run, { timeout: 2500 });
+      } else {
+        run();
+      }
+    }, staggerMs);
+
+    return () => {
+      window.clearTimeout(timer);
+      if (idleHandle !== null && typeof win.cancelIdleCallback === 'function') {
+        win.cancelIdleCallback(idleHandle);
+      }
+    };
   }, [
     autoRefetchIfStale,
     dept,
@@ -276,4 +309,4 @@ export function CourseRefetchButton({
       </Button>
     </div>
   );
-}
+});

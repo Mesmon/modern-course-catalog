@@ -1,37 +1,19 @@
 import { NextResponse } from 'next/server';
-import clientPromise from '@/lib/mongodb';
+import { getAllCoursesFromDB } from '@/lib/courses';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const client = await clientPromise;
-    const db = client.db('course_catalog');
-    const collection = db.collection('courses');
+    const { searchParams } = new URL(request.url);
+    const forceRefresh = searchParams.get('refresh') === '1';
+    const courses = await getAllCoursesFromDB({ forceRefresh });
 
-    // Return what's in DB
-    const coursesCursor = await collection.find({});
-    const courses = await coursesCursor.toArray();
-    
-    // Map internal _id away, and keep only 2027+ offerings/courses
-    const formattedCourses = courses
-      .map(c => {
-        const { _id, ...rest } = c;
-        const validOfferings = Array.isArray(rest.offerings)
-          ? rest.offerings.filter((o: any) => Number(o.year) >= 2027)
-          : [];
-        const activeYear = Number(String(rest.activeIn || '').split('-')[0]);
-        if (validOfferings.length === 0 && activeYear > 0 && activeYear < 2027) {
-          return null;
-        }
-        return {
-          ...rest,
-          offerings: validOfferings,
-          activeIn: validOfferings[0]?.activeIn || rest.activeIn,
-          lastUpdated: rest.lastUpdated ? new Date(rest.lastUpdated).toISOString() : undefined,
-        };
-      })
-      .filter(Boolean);
-
-    return NextResponse.json(formattedCourses);
+    return NextResponse.json(courses, {
+      headers: {
+        'Cache-Control': forceRefresh
+          ? 'no-cache'
+          : 'public, max-age=0, s-maxage=30, stale-while-revalidate=120',
+      },
+    });
   } catch (error) {
     console.error('Failed to fetch courses:', error);
     return NextResponse.json({ error: 'Failed to fetch courses' }, { status: 500 });

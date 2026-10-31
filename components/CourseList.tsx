@@ -5,46 +5,88 @@ import { useAllCourses } from '@/hooks/useCourses';
 import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { Loader2, Search, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useMemo, useTransition } from 'react';
+import { useState, useMemo, useTransition, useDeferredValue, useRef, useCallback } from 'react';
 import { MIN_ACADEMIC_YEAR } from '@/lib/schedule';
+import { Course } from '@/lib/courses';
 import { cn } from '@/lib/utils';
 
 const INITIAL_VISIBLE_COUNT = 9;
 const PAGE_STEP = 18;
 
-export function CourseList() {
-  const { data: courses, isLoading, error } = useAllCourses();
+interface CourseListProps {
+  initialCourses?: Course[];
+}
+
+export function CourseList({ initialCourses }: CourseListProps = {}) {
+  const { data: courses, isLoading, error } = useAllCourses(
+    initialCourses ? { initialData: initialCourses } : undefined
+  );
   const { dictionary, locale } = useDictionary();
   const isRtl = locale === 'he';
   const router = useRouter();
-  const [isMounted, setIsMounted] = useState(false);
   const [degreeFilter, setDegreeFilter] = useState<'all' | '1' | '2'>('all');
   const [searchFilter, setSearchFilter] = useState('');
+  const deferredSearch = useDeferredValue(searchFilter);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
   const [loadingCourseId, setLoadingCourseId] = useState<string | null>(null);
   const [isNavigating, startTransition] = useTransition();
+  const hoverPrefetchTimerRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    setIsMounted(true);
+  const scheduleHoverPrefetch = useCallback(
+    (href: string) => {
+      if (hoverPrefetchTimerRef.current !== null) {
+        window.clearTimeout(hoverPrefetchTimerRef.current);
+      }
+      hoverPrefetchTimerRef.current = window.setTimeout(() => {
+        hoverPrefetchTimerRef.current = null;
+        router.prefetch(href);
+      }, 150);
+    },
+    [router]
+  );
+
+  const cancelHoverPrefetch = useCallback(() => {
+    if (hoverPrefetchTimerRef.current !== null) {
+      window.clearTimeout(hoverPrefetchTimerRef.current);
+      hoverPrefetchTimerRef.current = null;
+    }
   }, []);
 
-  const filteredCourses = useMemo(() => {
+  const indexedCourses = useMemo(() => {
     if (!courses) return [];
-    const q = searchFilter.trim().toLowerCase();
-    return courses.filter(c => {
-      if (degreeFilter !== 'all') {
-        const deg = (c as any).params?.degree || c.id.split('.')[1] || '1';
-        if (String(deg) !== degreeFilter) return false;
+    return courses.map(course => {
+      const parts = course.id.split('.');
+      const dept = (course as any).params?.dept || parts[0] || '202';
+      const degree = String((course as any).params?.degree || parts[1] || '1');
+      const cId = (course as any).params?.course || parts[2] || course.id;
+      const activeParts = course.activeIn ? course.activeIn.split('-') : [];
+      const latestOffering = (course as any).offerings?.[0];
+      const rawYear = (course as any).params?.year || latestOffering?.year || activeParts[0] || '2027';
+      const year = Number(rawYear) >= MIN_ACADEMIC_YEAR ? String(rawYear) : '2027';
+      const semester = (course as any).params?.semester || latestOffering?.semester || activeParts[1] || '1';
+      return {
+        course,
+        degree,
+        idLower: course.id.toLowerCase(),
+        nameLower: (course.name || '').toLowerCase(),
+        href: `/courses/${cId}?dept=${dept}&deg=${degree}&year=${year}&sem=${semester}`,
+      };
+    });
+  }, [courses]);
+
+  const filteredCourses = useMemo(() => {
+    if (!indexedCourses.length) return [];
+    const q = deferredSearch.trim().toLowerCase();
+    return indexedCourses.filter(item => {
+      if (degreeFilter !== 'all' && item.degree !== degreeFilter) {
+        return false;
       }
       if (q) {
-        return (
-          c.id.toLowerCase().includes(q) ||
-          (c.name && c.name.toLowerCase().includes(q))
-        );
+        return item.idLower.includes(q) || item.nameLower.includes(q);
       }
       return true;
     });
-  }, [courses, degreeFilter, searchFilter]);
+  }, [indexedCourses, degreeFilter, deferredSearch]);
 
   const displayedCourses = useMemo(
     () => filteredCourses.slice(0, visibleCount),
@@ -52,7 +94,7 @@ export function CourseList() {
   );
   const remainingCount = Math.max(0, filteredCourses.length - displayedCourses.length);
 
-  if (isLoading || !isMounted) {
+  if (isLoading && !courses) {
     return (
       <div className="col-span-full space-y-5" dir={isRtl ? 'rtl' : 'ltr'} aria-busy="true">
         <div className="flex items-center justify-between gap-3 border-b border-slate-200/90 dark:border-slate-800 pb-3.5">
@@ -152,33 +194,35 @@ export function CourseList() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            {displayedCourses.map((course, idx) => {
-              const parts = course.id.split('.');
-              const dept = (course as any).params?.dept || parts[0] || '202';
-              const degree = (course as any).params?.degree || parts[1] || '1';
-              const cId = (course as any).params?.course || parts[2] || course.id;
-              const activeParts = course.activeIn ? course.activeIn.split('-') : [];
-              const latestOffering = (course as any).offerings?.[0];
-              const rawYear = (course as any).params?.year || latestOffering?.year || activeParts[0] || '2027';
-              const year = Number(rawYear) >= MIN_ACADEMIC_YEAR ? String(rawYear) : '2027';
-              const semester = (course as any).params?.semester || latestOffering?.semester || activeParts[1] || '1';
+            {displayedCourses.map(({ course, href }, idx) => {
               const isCardLoading = isNavigating && loadingCourseId === course.id;
+              const navigateToCourse = () => {
+                setLoadingCourseId(course.id);
+                startTransition(() => {
+                  router.push(href);
+                });
+              };
 
               return (
                 <div
                   key={course.id}
-                  style={
-                    idx >= INITIAL_VISIBLE_COUNT
-                      ? { contentVisibility: 'auto', containIntrinsicSize: 'auto none auto 136px' }
-                      : undefined
-                  }
-                  onClick={() => {
-                    setLoadingCourseId(course.id);
-                    startTransition(() => {
-                      router.push(`/courses/${cId}?dept=${dept}&deg=${degree}&year=${year}&sem=${semester}`);
-                    });
+                  role="link"
+                  tabIndex={0}
+                  onMouseEnter={() => scheduleHoverPrefetch(href)}
+                  onMouseLeave={cancelHoverPrefetch}
+                  onFocus={() => scheduleHoverPrefetch(href)}
+                  onBlur={cancelHoverPrefetch}
+                  onClick={navigateToCourse}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigateToCourse();
+                    }
                   }}
-                  className="block relative cursor-pointer"
+                  className={cn(
+                    'block relative cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                    idx >= INITIAL_VISIBLE_COUNT && 'cv-card-deferred'
+                  )}
                 >
                   <CourseCard course={course} isLoading={isCardLoading} />
                 </div>

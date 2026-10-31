@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { CalendarPlus, CalendarCheck } from 'lucide-react';
 import { CourseGroup } from '@/types/course';
@@ -15,9 +16,14 @@ import {
   SCHEDULE_CLOUD_HYDRATED_EVENT,
   ScheduledCourse,
 } from '@/lib/schedule';
-import { GroupSelectorDialog } from '@/components/GroupSelectorDialog';
+import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
+const GroupSelectorDialog = dynamic(
+  () => import('@/components/GroupSelectorDialog').then(m => m.GroupSelectorDialog),
+  { ssr: false }
+);
 
 interface AddToScheduleButtonProps {
   courseId: string;
@@ -28,8 +34,8 @@ interface AddToScheduleButtonProps {
   name: string;
   points: string;
   groups: CourseGroup[];
-  dictionary: any;
-  locale: string;
+  dictionary?: any;
+  locale?: string;
   variant?: 'default' | 'outline' | 'mobile';
   className?: string;
 }
@@ -43,13 +49,17 @@ export function AddToScheduleButton({
   name,
   points,
   groups,
-  dictionary,
-  locale,
+  dictionary: dictionaryProp,
+  locale: localeProp,
   variant = 'default',
   className,
 }: AddToScheduleButtonProps) {
+  const ctx = useDictionary();
+  const dictionary = dictionaryProp ?? ctx.dictionary;
+  const locale = localeProp ?? ctx.locale;
   const fullId = `${dept}.${degree}.${courseId}`;
   const [open, setOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
   const [existingEntry, setExistingEntry] = useState<ScheduledCourse | undefined>(undefined);
 
   useEffect(() => {
@@ -77,6 +87,12 @@ export function AddToScheduleButton({
     };
   }, [fullId, year, semester]);
 
+  const warmDialog = useCallback(() => {
+    if (existingEntry || (groups && groups.length > 1)) {
+      void import('@/components/GroupSelectorDialog');
+    }
+  }, [existingEntry, groups]);
+
   const handleClick = () => {
     if (!existingEntry && (!groups || groups.length <= 1)) {
       saveActiveTerm({ year, semester });
@@ -95,6 +111,7 @@ export function AddToScheduleButton({
       toast.success(dictionary.schedule.addedToast);
       return;
     }
+    setHasOpened(true);
     setOpen(true);
   };
 
@@ -128,6 +145,8 @@ export function AddToScheduleButton({
       <Button
         type="button"
         variant={variant === 'outline' ? 'outline' : 'default'}
+        onMouseEnter={warmDialog}
+        onFocus={warmDialog}
         onClick={handleClick}
         className={cn(
           'font-medium gap-1.5 transition-all cursor-pointer',
@@ -149,19 +168,21 @@ export function AddToScheduleButton({
         )}
       </Button>
 
-      <GroupSelectorDialog
-        open={open}
-        onOpenChange={setOpen}
-        courseName={name}
-        courseId={fullId}
-        groups={groups || []}
-        initialSelectedGroupIds={existingEntry?.selectedGroups?.map(g => g.id)}
-        isAlreadyScheduled={isScheduled}
-        onConfirm={handleConfirm}
-        onRemove={handleRemove}
-        dictionary={dictionary}
-        locale={locale}
-      />
+      {hasOpened && (
+        <GroupSelectorDialog
+          open={open}
+          onOpenChange={setOpen}
+          courseName={name}
+          courseId={fullId}
+          groups={groups || []}
+          initialSelectedGroupIds={existingEntry?.selectedGroups?.map(g => g.id)}
+          isAlreadyScheduled={isScheduled}
+          onConfirm={handleConfirm}
+          onRemove={handleRemove}
+          dictionary={dictionary}
+          locale={locale}
+        />
+      )}
     </>
   );
 }

@@ -164,11 +164,15 @@ export default async function DepartmentPage({
           <div className="lg:col-span-3">
             {courses.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {courses.map((course: any) => (
+                {courses.map((course: any, idx: number) => (
                   <Link
                     key={course.id}
                     href={`/courses/${course.id.split('.').pop()}?dept=${dept}&deg=${degree}&year=${year}&sem=${semester}`}
-                    className="group flex flex-col justify-between rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs hover:border-primary/60 transition-colors"
+                    prefetch={false}
+                    className={cn(
+                      'group flex flex-col justify-between rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs hover:border-primary/60 transition-colors',
+                      idx >= 8 && 'cv-card-deferred'
+                    )}
                   >
                     <div className="space-y-2.5">
                       <div className="flex justify-between items-center gap-2">
@@ -199,8 +203,6 @@ export default async function DepartmentPage({
                           lastUpdated={course.lastUpdated}
                           refreshRouter
                           variant="compact"
-                          dictionary={dictionary}
-                          locale={locale}
                         />
                         <ChevronLeft
                           className={cn(

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import clientPromise from '@/lib/mongodb';
+import { getCatalogDb } from '@/lib/mongodb';
 import { getServerSession, isAllowedBguEmail } from '@/lib/auth';
 
 export async function GET() {
@@ -9,8 +9,10 @@ export async function GET() {
   }
 
   try {
-    const client = await clientPromise;
-    const db = client.db('course_catalog');
+    const db = await getCatalogDb();
+    if (!db) {
+      return NextResponse.json({ error: 'db_unavailable' }, { status: 503 });
+    }
     const doc = await db.collection('user_profiles').findOne({ email: user.email });
 
     return NextResponse.json({
@@ -73,8 +75,10 @@ export async function PUT(request: NextRequest) {
       };
     }
 
-    const client = await clientPromise;
-    const db = client.db('course_catalog');
+    const db = await getCatalogDb();
+    if (!db) {
+      return NextResponse.json({ error: 'db_unavailable' }, { status: 503 });
+    }
     await db.collection('user_profiles').updateOne(
       { email: user.email },
       {

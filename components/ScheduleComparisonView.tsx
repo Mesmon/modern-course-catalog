@@ -620,7 +620,7 @@ export function ScheduleComparisonView({
                 <div
                   key={v.id}
                   className={cn(
-                    'bg-white dark:bg-slate-900 border rounded-xl overflow-hidden shadow-2xs flex flex-col',
+                    'isolated-schedule-region bg-white dark:bg-slate-900 border rounded-xl overflow-hidden shadow-2xs flex flex-col',
                     v.id === activeVersion
                       ? 'border-primary/60 ring-1 ring-primary/20'
                       : 'border-slate-200/90 dark:border-slate-800'
@@ -1099,7 +1099,7 @@ export function ScheduleComparisonView({
 
       {/* 4. COURSE & GROUP DIFFERENCES MATRIX */}
       {courseDiffRows.length > 0 && (
-        <section className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
+        <section className="cv-comparison-matrix bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
           <div className="px-4 sm:px-5 py-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/50 flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
               {dictionary.schedule.coursesComparison}

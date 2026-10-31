@@ -7,15 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Search, ArrowRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getAvailableAcademicYears } from '@/lib/schedule';
-
-interface Department {
-  id: string;
-  name: string;
-}
+import { useDepartments, DepartmentItem } from '@/hooks/useCourses';
+import { useDictionary } from '@/components/providers/DictionaryProvider';
 
 interface DepartmentSearchProps {
-  dictionary: any;
-  locale: 'en' | 'he';
+  dictionary?: any;
+  locale?: 'en' | 'he';
+  initialDepartments?: DepartmentItem[];
 }
 
 const POPULAR_DEPTS = [
@@ -25,50 +23,37 @@ const POPULAR_DEPTS = [
   { id: '364', labelHe: 'הנדסת תעשייה וניהול', labelEn: 'Industrial Engineering' },
 ];
 
-export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) {
+export function DepartmentSearch({
+  dictionary: dictionaryProp,
+  locale: localeProp,
+  initialDepartments,
+}: DepartmentSearchProps = {}) {
+  const ctx = useDictionary();
+  const dictionary = dictionaryProp ?? ctx.dictionary;
+  const locale = localeProp ?? ctx.locale;
   const isRtl = locale === 'he';
   const availableYears = useMemo(() => getAvailableAcademicYears(), []);
   const [query, setQuery] = useState('');
   const [degree, setDegree] = useState<'1' | '2'>('1');
   const [year, setYear] = useState('2027');
   const [semester, setSemester] = useState('1');
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [loadingDeptId, setLoadingDeptId] = useState<string | null>(null);
   const [isNavigating, startTransition] = useTransition();
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    async function fetchDepartments() {
-      try {
-        const res = await fetch('/api/departments');
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setDepartments(data);
-        } else {
-          setDepartments([]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch departments:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchDepartments();
-  }, []);
+  const { data: departments = [], isLoading } = useDepartments(
+    initialDepartments ? { initialData: initialDepartments } : undefined
+  );
 
-  useEffect(() => {
-    const filtered = departments.filter(
-      (dept) =>
-        query === '' ||
-        dept.id.includes(query) ||
-        dept.name.toLowerCase().includes(query.toLowerCase())
+  const filteredDepartments = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return departments;
+    return departments.filter(
+      dept => dept.id.includes(q) || dept.name.toLowerCase().includes(q)
     );
-    setFilteredDepartments(filtered);
   }, [query, departments]);
 
   useEffect(() => {
@@ -243,11 +228,14 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
           </span>
           {POPULAR_DEPTS.map((d) => {
             const isThisLoading = isBusy && loadingDeptId === d.id;
+            const deptHref = `/departments/${d.id}?deg=${degree}&year=${year}&sem=${semester}`;
             return (
               <button
                 key={d.id}
                 type="button"
                 disabled={isBusy}
+                onMouseEnter={() => router.prefetch(deptHref)}
+                onFocus={() => router.prefetch(deptHref)}
                 onClick={() => handleSearch(d.id)}
                 className={cn(
                   'inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] transition-colors cursor-pointer',

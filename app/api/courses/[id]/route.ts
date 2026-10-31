@@ -25,7 +25,13 @@ export async function GET(
       return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     }
 
-    return NextResponse.json(courseDetail);
+    return NextResponse.json(courseDetail, {
+      headers: {
+        'Cache-Control': refresh
+          ? 'no-cache'
+          : 'public, max-age=30, stale-while-revalidate=300',
+      },
+    });
   } catch (error) {
     console.error('Failed to fetch course detail:', error);
     return NextResponse.json({ error: 'Failed to fetch course detail' }, { status: 500 });

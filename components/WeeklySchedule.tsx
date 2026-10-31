@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useAllCourses } from '@/hooks/useCourses';
+import { useAllCourses, useDepartments, filterCoursesFast } from '@/hooks/useCourses';
+import { useDictionary } from '@/components/providers/DictionaryProvider';
 import {
   ScheduledCourse,
   ScheduleTerm,
@@ -34,10 +36,25 @@ import {
   SCHEDULE_CLOUD_HYDRATED_EVENT,
 } from '@/lib/schedule';
 import { CourseDetail, CourseGroup, CourseMeeting } from '@/types/course';
-import { GroupSelectorDialog } from './GroupSelectorDialog';
-import { ScheduleComparisonView } from './ScheduleComparisonView';
 import { CourseRefetchButton } from './CourseRefetchButton';
 import { Button } from './ui/button';
+
+const GroupSelectorDialog = dynamic(
+  () => import('./GroupSelectorDialog').then(m => m.GroupSelectorDialog),
+  { ssr: false }
+);
+
+const ScheduleComparisonView = dynamic(
+  () => import('./ScheduleComparisonView').then(m => m.ScheduleComparisonView),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex-1 max-w-[1520px] w-full mx-auto p-6 flex items-center justify-center min-h-[50vh]">
+        <div className="h-7 w-7 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    ),
+  }
+);
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import {
@@ -95,6 +112,7 @@ interface CalendarEvent {
   day: string;
   startMin: number;
   endMin: number;
+  gcalUrl: string;
   column: number;
   totalColumns: number;
   hasOverlap: boolean;
@@ -164,12 +182,16 @@ function layoutDayEvents(rawEvents: Omit<CalendarEvent, 'column' | 'totalColumns
   return result;
 }
 
-interface Department {
-  id: string;
-  name: string;
-}
-
-export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale: string }) {
+export function WeeklySchedule({
+  dictionary: dictionaryProp,
+  locale: localeProp,
+}: {
+  dictionary?: any;
+  locale?: string;
+} = {}) {
+  const dictCtx = useDictionary();
+  const dictionary = dictionaryProp ?? dictCtx.dictionary;
+  const locale = localeProp ?? dictCtx.locale;
   const isRtl = locale === 'he';
   const [allScheduledCourses, setAllScheduledCourses] = useState<ScheduledCourse[]>([]);
   const [activeTerm, setActiveTerm] = useState<ScheduleTerm>({ year: '2027', semester: '1' });
@@ -179,6 +201,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
   const [renamingVersionId, setRenamingVersionId] = useState<number | null>(null);
   const [renameInput, setRenameInput] = useState('');
   const [isMounted, setIsMounted] = useState(false);
+  const [catalogWarm, setCatalogWarm] = useState(false);
   const [mobileDay, setMobileDay] = useState<(typeof DAYS)[number]>('א');
   const [mobileViewMode, setMobileViewMode] = useState<'day' | 'week'>('day');
   const [showOverlaps, setShowOverlaps] = useState(true);
@@ -214,10 +237,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
   const [showFetchDeptDialog, setShowFetchDeptDialog] = useState(false);
   const [fetchDeptInput, setFetchDeptInput] = useState('');
   const [isFetchingDept, setIsFetchingDept] = useState(false);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([]);
   const [isSuggestOpen, setIsSuggestOpen] = useState(false);
-  const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
   const [gcalDialogOpen, setGcalDialogOpen] = useState(false);
   const suggestContainerRef = useRef<HTMLDivElement>(null);
 
@@ -226,8 +246,19 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     data: courses = [],
     isLoading: isLoadingCatalog,
     isFetching: isFetchingCatalog,
-    refetch: refetchCourses,
-  } = useAllCourses();
+  } = useAllCourses({ enabled: searchOpen || catalogWarm });
+
+  const { data: departments = [], isLoading: isLoadingDepartments } = useDepartments({
+    enabled: showFetchDeptDialog,
+  });
+
+  const filteredDepartments = useMemo(() => {
+    const q = fetchDeptInput.trim().toLowerCase();
+    if (!q) return departments;
+    return departments.filter(
+      d => d.id.includes(q) || d.name.toLowerCase().includes(q)
+    );
+  }, [fetchDeptInput, departments]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -247,11 +278,25 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     updateClock();
     const timer = setInterval(updateClock, 60000);
 
+    let idleId: number | null = null;
+    let warmTimer: number | null = null;
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (typeof win.requestIdleCallback === 'function') {
+      idleId = win.requestIdleCallback(() => setCatalogWarm(true), { timeout: 2200 });
+    } else {
+      warmTimer = window.setTimeout(() => setCatalogWarm(true), 1200);
+    }
+
     window.addEventListener(SCHEDULE_EVENT, sync);
     window.addEventListener(SCHEDULE_CLOUD_HYDRATED_EVENT, sync);
     window.addEventListener('storage', sync);
     return () => {
       clearInterval(timer);
+      if (idleId !== null) win.cancelIdleCallback?.(idleId);
+      if (warmTimer !== null) window.clearTimeout(warmTimer);
       window.removeEventListener(SCHEDULE_EVENT, sync);
       window.removeEventListener(SCHEDULE_CLOUD_HYDRATED_EVENT, sync);
       window.removeEventListener('storage', sync);
@@ -330,37 +375,29 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     );
   }, [courses, activeTerm]);
 
-  useEffect(() => {
-    if (searchOpen) {
-      refetchCourses();
-    }
-  }, [searchOpen, refetchCourses]);
+  const scheduledCourseIds = useMemo(
+    () => new Set(scheduledCourses.map(c => c.id)),
+    [scheduledCourses]
+  );
 
-  useEffect(() => {
-    async function loadDepts() {
-      try {
-        const res = await fetch('/api/departments');
-        const data = await res.json();
-        if (Array.isArray(data)) setDepartments(data);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsLoadingDepartments(false);
-      }
-    }
-    loadDepts();
-  }, []);
+  const getCourseTermDisplayName = useCallback(
+    (course: any) => {
+      const termOffering = course.offerings?.find(
+        (o: any) =>
+          String(o.year) === activeTerm.year && String(o.semester) === activeTerm.semester
+      );
+      return termOffering?.name || course.name || '';
+    },
+    [activeTerm.year, activeTerm.semester]
+  );
 
-  useEffect(() => {
-    setFilteredDepartments(
-      departments.filter(
-        d =>
-          fetchDeptInput === '' ||
-          d.id.includes(fetchDeptInput) ||
-          d.name.toLowerCase().includes(fetchDeptInput.toLowerCase())
-      )
-    );
-  }, [fetchDeptInput, departments]);
+  const filteredSearchCourses = useMemo(
+    () =>
+      searchOpen
+        ? filterCoursesFast(relevantCatalogCourses, searchQuery, 60, getCourseTermDisplayName).items
+        : [],
+    [searchOpen, relevantCatalogCourses, searchQuery, getCourseTermDisplayName]
+  );
 
   const handleSelectCourseFromSearch = async (course: any) => {
     if (!isCourseOfferedInTerm(course, activeTerm.year, activeTerm.semester)) {
@@ -616,6 +653,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
             day,
             startMin,
             endMin,
+            gcalUrl: buildGoogleCalendarUrl({ course, group, meeting }),
           });
         });
       });
@@ -672,14 +710,6 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     return arr;
   }, []);
 
-  if (!isMounted) {
-    return (
-      <div className="flex justify-center items-center min-h-[70vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   const activeSemesterLabel =
     dictionary.schedule.semesters?.[activeTerm.semester] ||
     `${dictionary.schedule.semesterLabel} ${activeTerm.semester}`;
@@ -708,11 +738,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     const palette =
       COURSE_COLOR_PALETTE[ev.course.colorIndex % COURSE_COLOR_PALETTE.length];
 
-    const gcalUrl = buildGoogleCalendarUrl({
-      course: ev.course,
-      group: ev.group,
-      meeting: ev.meeting,
-    });
+    const gcalUrl = ev.gcalUrl;
 
     const highlightConflict = ev.hasOverlap && showOverlaps;
 
@@ -955,6 +981,8 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
               <Button
                 id="tour-schedule-add"
                 size="sm"
+                onMouseEnter={() => setCatalogWarm(true)}
+                onFocus={() => setCatalogWarm(true)}
                 onClick={() => setSearchOpen(true)}
                 disabled={isLoadingCourse}
                 className="h-8 px-3 sm:px-3.5 rounded-lg font-semibold text-xs gap-1.5 shadow-2xs cursor-pointer ms-auto sm:ms-0"
@@ -1083,6 +1111,8 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
             type="button"
             size="sm"
             variant={isCompareMode ? 'default' : 'outline'}
+            onMouseEnter={() => void import('./ScheduleComparisonView')}
+            onFocus={() => void import('./ScheduleComparisonView')}
             onClick={() => setIsCompareMode(prev => !prev)}
             className={cn(
               'h-8 px-3 rounded-lg text-xs font-semibold gap-1.5 cursor-pointer shrink-0',
@@ -1141,7 +1171,20 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
             </Badge>
           </div>
 
-          {scheduledCourses.length === 0 && !isLoadingCourse ? (
+          {!isMounted ? (
+            <div className="space-y-2.5 animate-pulse" aria-busy="true">
+              {[1, 2].map(i => (
+                <div
+                  key={i}
+                  className="rounded-lg border border-slate-200/80 dark:border-slate-800 p-3 space-y-2"
+                >
+                  <div className="h-4 w-20 rounded bg-orange-100 dark:bg-orange-950/50" />
+                  <div className="h-4 w-3/4 rounded bg-slate-200 dark:bg-slate-800" />
+                  <div className="h-3.5 w-1/2 rounded bg-slate-100 dark:bg-slate-800" />
+                </div>
+              ))}
+            </div>
+          ) : scheduledCourses.length === 0 && !isLoadingCourse ? (
             <div className="py-10 px-4 text-center space-y-2 rounded-lg border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
               <Calendar className="h-7 w-7 text-slate-300 dark:text-slate-600 mx-auto" />
               <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">
@@ -1184,6 +1227,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                         </span>
                         <Link
                           href={`/courses/${course.courseId}?dept=${course.dept}&deg=${course.degree}&year=${course.year}&sem=${course.semester}`}
+                          prefetch={false}
                           className="font-semibold text-sm text-slate-900 dark:text-slate-100 hover:text-primary transition-colors flex items-center gap-1 mt-1 leading-snug"
                         >
                           <span className="truncate">{course.name}</span>
@@ -1669,7 +1713,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
       )}
 
       {/* Search Course Dialog */}
-      <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
+      <CommandDialog open={searchOpen} onOpenChange={setSearchOpen} shouldFilter={false}>
         <div className="px-4 py-2.5 pe-12 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-xs text-muted-foreground" dir={isRtl ? 'rtl' : 'ltr'}>
           <span className="flex items-center gap-1.5">
             <Filter className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -1709,60 +1753,56 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                 </div>
               ))}
             </div>
+          ) : filteredSearchCourses.length === 0 ? (
+            <CommandEmpty>
+              <div className="flex flex-col items-center justify-center text-center gap-3 py-6 px-4">
+                <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                  {dictionary.schedule.noCoursesInTerm} ({activeSemesterLabel} {activeTerm.year})
+                </p>
+                <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+                  {dictionary.map.suggestDepartment}
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setSearchOpen(false);
+                    setShowFetchDeptDialog(true);
+                  }}
+                  className="mt-1 rounded-lg"
+                >
+                  {dictionary.schedule.fetchDeptBtn}
+                </Button>
+              </div>
+            </CommandEmpty>
           ) : (
-            <>
-              <CommandEmpty>
-                <div className="flex flex-col items-center justify-center text-center gap-3 py-6 px-4">
-                  <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-                    {dictionary.schedule.noCoursesInTerm} ({activeSemesterLabel} {activeTerm.year})
-                  </p>
-                  <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
-                    {dictionary.map.suggestDepartment}
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setSearchOpen(false);
-                      setShowFetchDeptDialog(true);
-                    }}
-                    className="mt-1 rounded-lg"
+            <CommandGroup heading={`${activeSemesterLabel} • ${activeTerm.year}`}>
+              {filteredSearchCourses.map((course: any) => {
+                const isScheduled = scheduledCourseIds.has(course.id);
+                const displayName = getCourseTermDisplayName(course);
+                return (
+                  <CommandItem
+                    key={course.id}
+                    value={course.id}
+                    onSelect={() => handleSelectCourseFromSearch(course)}
+                    className="flex items-center justify-between gap-3 py-2.5 px-3 cursor-pointer rounded-lg my-0.5"
                   >
-                    {dictionary.schedule.fetchDeptBtn}
-                  </Button>
-                </div>
-              </CommandEmpty>
-              <CommandGroup heading={`${activeSemesterLabel} • ${activeTerm.year}`}>
-                {relevantCatalogCourses.map((course: any) => {
-                  const isScheduled = scheduledCourses.some(c => c.id === course.id);
-                  const termOffering = course.offerings?.find(
-                    (o: any) => String(o.year) === activeTerm.year && String(o.semester) === activeTerm.semester
-                  );
-                  const displayName = termOffering?.name || course.name;
-                  return (
-                    <CommandItem
-                      key={course.id}
-                      value={`${course.id} ${displayName}`}
-                      onSelect={() => handleSelectCourseFromSearch(course)}
-                      className="flex items-center justify-between gap-3 py-2.5 px-3 cursor-pointer rounded-lg my-0.5"
-                    >
-                      <div className="flex flex-col gap-0.5 text-start min-w-0">
-                        <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
-                          {displayName}
-                        </span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                          {course.id} • {activeTerm.year}-{activeTerm.semester}
-                        </span>
-                      </div>
-                      {isScheduled && (
-                        <Badge variant="secondary" className="text-[11px] font-semibold shrink-0">
-                          {dictionary.schedule.inSchedule}
-                        </Badge>
-                      )}
-                    </CommandItem>
-                  );
-                })}
-              </CommandGroup>
-            </>
+                    <div className="flex flex-col gap-0.5 text-start min-w-0">
+                      <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
+                        {displayName}
+                      </span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                        {course.id} • {activeTerm.year}-{activeTerm.semester}
+                      </span>
+                    </div>
+                    {isScheduled && (
+                      <Badge variant="secondary" className="text-[11px] font-semibold shrink-0">
+                        {dictionary.schedule.inSchedule}
+                      </Badge>
+                    )}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
           )}
         </CommandList>
       </CommandDialog>
@@ -1843,7 +1883,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto space-y-2 py-2 pe-1">
-            {scheduledCourses.map(course => {
+            {gcalDialogOpen && scheduledCourses.map(course => {
               const palette = COURSE_COLOR_PALETTE[course.colorIndex % COURSE_COLOR_PALETTE.length];
               return (course.selectedGroups || []).map(group =>
                 (group.meetings || []).map((meeting, mIdx) => {

@@ -274,6 +274,29 @@
   overflow: hidden;
 }
 
+/* Strictly below-the-fold deferred rendering (paired with rem intrinsic sizes) */
+.cv-card-deferred {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 9rem;
+}
+
+.cv-comparison-matrix {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 22rem;
+}
+
+/* Layout, style, and paint isolation for multi-column timetable regions */
+.isolated-schedule-region {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 26rem auto 40rem;
+}
+
+@supports not (content-visibility: auto) {
+  .isolated-schedule-region {
+    contain: layout style paint;
+  }
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

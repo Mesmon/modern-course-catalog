@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -12,18 +12,25 @@ interface CopyCourseIdProps {
   iconClassName?: string;
 }
 
-export function CopyCourseId({ id, className, iconClassName }: CopyCourseIdProps) {
+export const CopyCourseId = memo(function CopyCourseId({
+  id,
+  className,
+  iconClassName,
+}: CopyCourseIdProps) {
   const [copied, setCopied] = useState(false);
   const { dictionary } = useDictionary();
 
-  const onCopy = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    navigator.clipboard.writeText(id);
-    setCopied(true);
-    toast.success(dictionary.course.copiedToClipboard);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const onCopy = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      navigator.clipboard.writeText(id);
+      setCopied(true);
+      toast.success(dictionary.course.copiedToClipboard);
+      setTimeout(() => setCopied(false), 2000);
+    },
+    [id, dictionary.course.copiedToClipboard]
+  );
 
   return (
     <span
@@ -42,4 +49,4 @@ export function CopyCourseId({ id, className, iconClassName }: CopyCourseIdProps
       )}
     </span>
   );
-}
+});

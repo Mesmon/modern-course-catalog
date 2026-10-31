@@ -11,19 +11,25 @@ import NextTopLoader from 'nextjs-toploader';
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+import {
+  ALLOWED_GOOGLE_DOMAIN,
+  getGoogleOAuthConfig,
+  SESSION_COOKIE_NAME,
+  verifySessionToken,
+} from "@/lib/auth";
 
 const ibmPlexSansHebrew = IBM_Plex_Sans_Hebrew({
   subsets: ["hebrew", "latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-ibm-plex",
   display: "swap",
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   variable: "--font-jetbrains-mono",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -48,6 +54,16 @@ export default async function RootLayout({
   const dictionary = getDictionary(locale);
   const dir = locale === 'he' ? 'rtl' : 'ltr';
 
+  const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  const initialUser = verifySessionToken(sessionToken);
+  const { clientId, hasClientSecret, isConfigured } = getGoogleOAuthConfig();
+  const initialOauth = {
+    clientId: clientId || null,
+    hasClientSecret,
+    isConfigured,
+    allowedDomain: ALLOWED_GOOGLE_DOMAIN,
+  };
+
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
       <body
@@ -61,7 +77,7 @@ export default async function RootLayout({
         >
           <DictionaryProvider dictionary={dictionary} locale={locale}>
             <QueryProvider>
-              <AuthProvider>
+              <AuthProvider initialUser={initialUser} initialOauth={initialOauth}>
                 <NextTopLoader
                   color="#ea580c"
                   initialPosition={0.08}

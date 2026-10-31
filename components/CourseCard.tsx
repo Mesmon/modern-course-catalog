@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from 'react';
 import { Course } from '@/lib/courses';
 import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { CopyCourseId } from '@/components/CopyCourseId';
@@ -13,7 +14,7 @@ interface CourseCardProps {
   isLoading?: boolean;
 }
 
-export function CourseCard({ course, isLoading = false }: CourseCardProps) {
+export const CourseCard = memo(function CourseCard({ course, isLoading = false }: CourseCardProps) {
   const parts = course.id.split('.');
   const deptId = parts[0] || '202';
   const degreeId = parts[1] || '1';
@@ -73,8 +74,6 @@ export function CourseCard({ course, isLoading = false }: CourseCardProps) {
               semester={semester}
               lastUpdated={(course as any).lastUpdated}
               variant="compact"
-              dictionary={dictionary}
-              locale={locale}
             />
           </div>
         )}
@@ -86,4 +85,4 @@ export function CourseCard({ course, isLoading = false }: CourseCardProps) {
       </div>
     </div>
   );
-}
+});

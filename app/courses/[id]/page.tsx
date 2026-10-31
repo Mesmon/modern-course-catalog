@@ -150,8 +150,6 @@ export default async function CoursePage({
                 isStale={course.isStale}
                 autoRefetchIfStale
                 refreshRouter
-                dictionary={dictionary}
-                locale={locale}
               />
               <AddToScheduleButton
                 courseId={id}
@@ -162,8 +160,6 @@ export default async function CoursePage({
                 name={course.name}
                 points={course.points}
                 groups={course.groups || []}
-                dictionary={dictionary}
-                locale={locale}
                 variant="default"
                 className="rounded-lg h-9 px-4 text-xs font-semibold shadow-2xs"
               />
@@ -321,6 +317,7 @@ export default async function CoursePage({
                         <Link
                           key={idx}
                           href={`/courses/${rel.params.course}?dept=${rel.params.dept}&deg=${rel.degrees[0]}&year=${rel.params.year}&sem=${rel.params.semester}`}
+                          prefetch={false}
                           className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors group"
                         >
                           <div className="flex items-center gap-3 min-w-0">
@@ -352,6 +349,7 @@ export default async function CoursePage({
                         <Link
                           key={idx}
                           href={`/courses/${blk.params.course}?dept=${blk.params.dept}&deg=${blk.degrees[0]}&year=${blk.params.year}&sem=${blk.params.semester}`}
+                          prefetch={false}
                           className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors group"
                         >
                           <div className="flex items-center gap-3 min-w-0">
@@ -399,8 +397,6 @@ export default async function CoursePage({
                     name={course.name}
                     points={course.points}
                     groups={course.groups || []}
-                    dictionary={dictionary}
-                    locale={locale}
                     variant="outline"
                     className="h-8 text-xs font-semibold rounded-lg shrink-0"
                   />
@@ -547,8 +543,6 @@ export default async function CoursePage({
                   isStale={course.isStale}
                   refreshRouter
                   variant="inline"
-                  dictionary={dictionary}
-                  locale={locale}
                   className="pb-1.5 border-b border-slate-100 dark:border-slate-800/80"
                 />
                 <AddToScheduleButton
@@ -560,8 +554,6 @@ export default async function CoursePage({
                   name={course.name}
                   points={course.points}
                   groups={course.groups || []}
-                  dictionary={dictionary}
-                  locale={locale}
                   className="w-full h-9 rounded-lg text-xs font-semibold gap-2"
                 />
                 {syllabusLink ? (

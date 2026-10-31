@@ -7,7 +7,9 @@ import React, {
   useState,
   useCallback,
   useRef,
+  useMemo,
 } from 'react';
+import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import {
   SCHEDULE_EVENT,
@@ -20,13 +22,11 @@ import {
   hydrateDependencyMapFromCloud,
 } from '@/lib/schedule';
 import { useDictionary } from './DictionaryProvider';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+
+const LazyAuthMissingConfigDialog = dynamic(
+  () => import('./AuthMissingConfigDialog').then((m) => m.AuthMissingConfigDialog),
+  { ssr: false }
+);
 
 export interface AuthUser {
   sub: string;
@@ -36,7 +36,7 @@ export interface AuthUser {
   hd?: string;
 }
 
-interface OAuthInfo {
+export interface OAuthInfo {
   clientId: string | null;
   hasClientSecret: boolean;
   isConfigured: boolean;
@@ -53,24 +53,34 @@ interface AuthContextValue {
   syncNow: (showToast?: boolean) => Promise<void>;
 }
 
+const DEFAULT_OAUTH: OAuthInfo = {
+  clientId: null,
+  hasClientSecret: false,
+  isConfigured: false,
+  allowedDomain: 'post.bgu.ac.il',
+};
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { dictionary, locale } = useDictionary();
-  const isRtl = locale === 'he';
+export function AuthProvider({
+  children,
+  initialUser,
+  initialOauth,
+}: {
+  children: React.ReactNode;
+  initialUser?: AuthUser | null;
+  initialOauth?: OAuthInfo;
+}) {
+  const { dictionary } = useDictionary();
 
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const hasHydratedAuth = initialUser !== undefined;
+  const [user, setUser] = useState<AuthUser | null>(initialUser ?? null);
+  const [isLoading, setIsLoading] = useState(!hasHydratedAuth);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showMissingConfigDialog, setShowMissingConfigDialog] = useState(false);
-  const [oauth, setOauth] = useState<OAuthInfo>({
-    clientId: null,
-    hasClientSecret: false,
-    isConfigured: false,
-    allowedDomain: 'post.bgu.ac.il',
-  });
+  const [oauth, setOauth] = useState<OAuthInfo>(initialOauth ?? DEFAULT_OAUTH);
 
-  const userRef = useRef<AuthUser | null>(null);
+  const userRef = useRef<AuthUser | null>(user);
   userRef.current = user;
 
   const isPullingRef = useRef(false);
@@ -120,7 +130,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             data.schedule.versionsMap
           );
         } else if (data.schedule === null) {
-          // First time this account syncs: preserve any existing local schedule into the cloud
           const localCourses = loadScheduledCourses();
           if (localCourses.length > 0) {
             shouldSeedCloud = true;
@@ -137,7 +146,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (localMap.nodes.length > 0 || localMap.edges.length > 0) {
             shouldSeedCloud = true;
           } else {
-            hydrateDependencyMapFromCloud({ nodes: [], edges: [], selectedRelations: ['קורס קדם'] });
+            hydrateDependencyMapFromCloud({
+              nodes: [],
+              edges: [],
+              selectedRelations: ['קורס קדם'],
+            });
           }
         }
 
@@ -159,11 +172,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [dictionary.auth.syncedToast, pushToCloud]
   );
 
-  // Check session on mount & handle OAuth callback query parameters
+  // Sync server-provided auth props when router refreshes (e.g. after OAuth redirect)
+  useEffect(() => {
+    if (initialUser !== undefined) {
+      setUser(initialUser);
+      userRef.current = initialUser;
+      setIsLoading(false);
+    }
+    if (initialOauth) {
+      setOauth(initialOauth);
+    }
+  }, [initialUser, initialOauth]);
+
+  // Check session on mount ONLY if not already hydrated from SSR, & handle OAuth callback query parameters
   useEffect(() => {
     let mounted = true;
 
     async function initAuth() {
+      if (hasHydratedAuth) {
+        if (userRef.current) {
+          await pullFromCloud(false);
+        }
+        return;
+      }
+
       try {
         const res = await fetch('/api/auth/me', { cache: 'no-store' });
         if (res.ok) {
@@ -184,9 +216,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    initAuth();
+    void initAuth();
 
-    // Check URL params for auth feedback
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       const authError = url.searchParams.get('authError');
@@ -213,6 +244,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
     };
   }, [
+    hasHydratedAuth,
     dictionary.auth.authErrorToast,
     dictionary.auth.invalidDomainToast,
     dictionary.auth.loginSuccessToast,
@@ -229,7 +261,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clearTimeout(pushTimeoutRef.current);
       }
       pushTimeoutRef.current = setTimeout(() => {
-        pushToCloud();
+        void pushToCloud();
       }, 350);
     };
 
@@ -238,7 +270,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const handleVisibilityOrFocus = () => {
       if (document.visibilityState === 'visible' && userRef.current) {
-        pullFromCloud(false);
+        void pullFromCloud(false);
       }
     };
     window.addEventListener('focus', handleVisibilityOrFocus);
@@ -258,14 +290,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithGoogle = useCallback(() => {
     if (typeof window === 'undefined') return;
 
-    // 1. Standard OAuth 2.0 Redirect flow when both Client ID and Client Secret are configured
     if (oauth.hasClientSecret) {
       const returnTo = window.location.pathname + window.location.search;
       window.location.href = `/api/auth/google?returnTo=${encodeURIComponent(returnTo)}`;
       return;
     }
 
-    // 2. Google Identity Services (GIS) popup token flow when only Client ID is configured
     if (oauth.clientId) {
       const launchGisPopup = () => {
         const googleObj = (window as any).google;
@@ -314,7 +344,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 3. Not configured yet: show helpful configuration dialog
     setShowMissingConfigDialog(true);
   }, [
     oauth,
@@ -342,40 +371,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [pullFromCloud]
   );
 
+  const contextValue = useMemo(
+    () => ({
+      user,
+      isLoading,
+      isSyncing,
+      oauth,
+      signInWithGoogle,
+      signOut,
+      syncNow,
+    }),
+    [user, isLoading, isSyncing, oauth, signInWithGoogle, signOut, syncNow]
+  );
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isSyncing,
-        oauth,
-        signInWithGoogle,
-        signOut,
-        syncNow,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
 
-      <Dialog open={showMissingConfigDialog} onOpenChange={setShowMissingConfigDialog}>
-        <DialogContent className={isRtl ? 'text-right' : 'text-left'} dir={isRtl ? 'rtl' : 'ltr'}>
-          <DialogHeader className={isRtl ? 'text-right' : 'text-left'}>
-            <DialogTitle>{dictionary.auth.missingConfigTitle}</DialogTitle>
-            <DialogDescription>{dictionary.auth.missingConfigDesc}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 text-xs font-mono bg-slate-950 text-slate-100 p-4 rounded-xl overflow-x-auto" dir="ltr">
-            <div>GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com</div>
-            <div>GOOGLE_CLIENT_SECRET=your_google_client_secret</div>
-            <div>AUTH_SECRET=your_random_secret_string</div>
-          </div>
-          <p className="text-xs text-muted-foreground" dir="ltr">
-            Authorized Redirect URI:{' '}
-            <code className="bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded font-mono">
-              {typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}
-              /api/auth/callback/google
-            </code>
-          </p>
-        </DialogContent>
-      </Dialog>
+      {showMissingConfigDialog && (
+        <LazyAuthMissingConfigDialog
+          open={showMissingConfigDialog}
+          onOpenChange={setShowMissingConfigDialog}
+        />
+      )}
     </AuthContext.Provider>
   );
 }

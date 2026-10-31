@@ -22,7 +22,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { CourseNode } from './CourseNode';
-import { useAllCourses } from '@/hooks/useCourses';
+import { useAllCourses, useDepartments, filterCoursesFast } from '@/hooks/useCourses';
+import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { Plus, Trash2, Filter, Loader2, Workflow, ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -493,18 +494,33 @@ const nodeTypes = {
   course: CourseNode,
 };
 
-interface Department {
-  id: string;
-  name: string;
-}
-
 export const CourseMapContext = createContext<any>(null);
 
-export function DependencyMap({ dictionary, locale }: { dictionary: any, locale: string }) {
+export function DependencyMap({
+  dictionary: dictionaryProp,
+  locale: localeProp,
+}: {
+  dictionary?: any;
+  locale?: string;
+} = {}) {
+  const dictCtx = useDictionary();
+  const dictionary = dictionaryProp ?? dictCtx.dictionary;
+  const locale = localeProp ?? dictCtx.locale;
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [catalogWarm, setCatalogWarm] = useState(false);
   useEffect(() => {
     setMounted(true);
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (typeof win.requestIdleCallback === 'function') {
+      const id = win.requestIdleCallback(() => setCatalogWarm(true), { timeout: 2000 });
+      return () => win.cancelIdleCallback?.(id);
+    }
+    const timer = window.setTimeout(() => setCatalogWarm(true), 1200);
+    return () => window.clearTimeout(timer);
   }, []);
   const isDark = mounted && resolvedTheme === 'dark';
 
@@ -519,12 +535,11 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
   const [fetchDeptInput, setFetchDeptInput] = useState('');
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const rfInstanceRef = useRef<ReactFlowInstance | null>(null);
+  const nodesRef = useRef<Node[]>(nodes);
+  nodesRef.current = nodes;
   
-  // Autocomplete state
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([]);
+  // Autocomplete state (lazy-loaded only when Fetch Department dialog opens)
   const [isSuggestOpen, setIsSuggestOpen] = useState(false);
-  const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const suggestContainerRef = useRef<HTMLDivElement>(null);
 
@@ -534,12 +549,39 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     data: courses = [],
     isLoading: isLoadingCatalog,
     isFetching: isFetchingCatalog,
-  } = useAllCourses();
+  } = useAllCourses({ enabled: open || catalogWarm });
 
-  const existingNodeIds = useMemo(() => new Set(nodes.map((n) => n.id)), [nodes]);
-  const loadingNodes = useMemo(() => nodes.filter((n) => Boolean(n.data?.loading)), [nodes]);
+  const { data: departments = [], isLoading: isLoadingDepartments } = useDepartments({
+    enabled: showFetchDeptDialog,
+  });
 
-  const availableRelations = useMemo(() => {
+  const filteredDepartments = useMemo(() => {
+    const q = fetchDeptInput.trim().toLowerCase();
+    if (!q) return departments;
+    return departments.filter(
+      (dept) => dept.id.includes(q) || dept.name.toLowerCase().includes(q)
+    );
+  }, [fetchDeptInput, departments]);
+
+  const filteredCatalogCourses = useMemo(
+    () => (open ? filterCoursesFast(courses, searchQuery, 60).items : []),
+    [open, courses, searchQuery]
+  );
+
+  // Stabilize node ID set so position updates during drag do not invalidate context consumers
+  const nodeIdsKey = nodes.map((n) => n.id).join(',');
+  const existingNodeIds = useMemo(
+    () => new Set(nodeIdsKey ? nodeIdsKey.split(',') : []),
+    [nodeIdsKey]
+  );
+  const loadingNodes = useMemo(
+    () => nodes.filter((n) => Boolean(n.data?.loading)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [nodeIdsKey, nodes.filter((n) => Boolean(n.data?.loading)).map((n) => n.id).join(',')]
+  );
+
+  // Stabilize relation signature so dragging nodes never triggers setSelectedRelations cascades
+  const relationsKey = useMemo(() => {
     const relations = new Set<string>();
     nodes.forEach((n) => {
       if (n.data && Array.isArray((n.data as any).relatedCourses)) {
@@ -554,16 +596,24 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
         relations.add(cleanRelationName(e.label));
       }
     });
-    return Array.from(relations);
+    return Array.from(relations).join('||');
   }, [nodes, edges]);
 
-  // Keep selectedRelations inclusive of newly discovered relation types by default
+  const availableRelations = useMemo(
+    () => (relationsKey ? relationsKey.split('||') : []),
+    [relationsKey]
+  );
+
+  // Keep selectedRelations inclusive of newly discovered relation types without creating new array refs on no-op
   useEffect(() => {
     if (availableRelations.length > 0) {
       setSelectedRelations((prev) => {
         const cleanedPrev = prev.map(cleanRelationName);
-        const merged = new Set([...cleanedPrev, ...availableRelations]);
-        return Array.from(merged);
+        const merged = Array.from(new Set([...cleanedPrev, ...availableRelations]));
+        if (merged.length === prev.length && merged.every((v, idx) => v === prev[idx])) {
+          return prev;
+        }
+        return merged;
       });
     }
   }, [availableRelations]);
@@ -728,38 +778,9 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     };
   }, [loadMapFromLocalStorage]);
 
-  // Fetch departments for autocomplete
-  useEffect(() => {
-    async function fetchDepartments() {
-      try {
-        const res = await fetch('/api/departments');
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setDepartments(data);
-        } else {
-          setDepartments([]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch departments:', error);
-      } finally {
-        setIsLoadingDepartments(false);
-      }
-    }
-    fetchDepartments();
-  }, []);
-
-  // Filter departments based on input
-  useEffect(() => {
-    const filtered = departments.filter((dept) =>
-      fetchDeptInput === '' || 
-      dept.id.includes(fetchDeptInput) || 
-      dept.name.toLowerCase().includes(fetchDeptInput.toLowerCase())
-    )
-    setFilteredDepartments(filtered);
-  }, [fetchDeptInput, departments]);
-
   // Handle clicks outside the dropdown
   useEffect(() => {
+    if (!isSuggestOpen) return;
     function handleClickOutside(event: MouseEvent) {
       if (suggestContainerRef.current && !suggestContainerRef.current.contains(event.target as globalThis.Node)) {
         setIsSuggestOpen(false);
@@ -767,7 +788,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isSuggestOpen]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -791,23 +812,45 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     }
   };
 
-  // Save to local storage on change & notify cloud sync
+  // Debounce localStorage persistence & cloud sync notifications so node dragging stays at 60fps
+  const latestMapSnapshotRef = useRef({ nodes, edges, selectedRelations });
+  latestMapSnapshotRef.current = { nodes, edges, selectedRelations };
+  const hasPendingPersistRef = useRef(false);
+
+  const flushPersist = useCallback(() => {
+    if (!hasPendingPersistRef.current) return;
+    hasPendingPersistRef.current = false;
+    const snap = latestMapSnapshotRef.current;
+    if (snap.nodes.length > 0 || snap.edges.length > 0) {
+      localStorage.setItem('dependencyMapNodes', JSON.stringify(snap.nodes));
+      localStorage.setItem('dependencyMapEdges', JSON.stringify(snap.edges));
+      localStorage.setItem('dependencyMapRelations', JSON.stringify(snap.selectedRelations));
+    } else {
+      localStorage.removeItem('dependencyMapNodes');
+      localStorage.removeItem('dependencyMapEdges');
+    }
+    window.dispatchEvent(new Event('dependency-map-updated'));
+  }, []);
+
   useEffect(() => {
     if (!hasLoadedInitialRef.current) return;
     if (isHydratingFromCloudRef.current) {
       isHydratingFromCloudRef.current = false;
       return;
     }
-    if (nodes.length > 0 || edges.length > 0) {
-      localStorage.setItem('dependencyMapNodes', JSON.stringify(nodes));
-      localStorage.setItem('dependencyMapEdges', JSON.stringify(edges));
-      localStorage.setItem('dependencyMapRelations', JSON.stringify(selectedRelations));
-    } else if (nodes.length === 0 && edges.length === 0) {
-      localStorage.removeItem('dependencyMapNodes');
-      localStorage.removeItem('dependencyMapEdges');
-    }
-    window.dispatchEvent(new Event('dependency-map-updated'));
-  }, [nodes, edges, selectedRelations]);
+    hasPendingPersistRef.current = true;
+    const timer = window.setTimeout(flushPersist, 300);
+    return () => window.clearTimeout(timer);
+  }, [nodes, edges, selectedRelations, flushPersist]);
+
+  useEffect(() => {
+    const handlePageHide = () => flushPersist();
+    window.addEventListener('pagehide', handlePageHide);
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+      flushPersist();
+    };
+  }, [flushPersist]);
 
   const onRemoveNode = useCallback((nodeId: string) => {
     setHoveredNodeId((prev) => (prev === nodeId ? null : prev));
@@ -855,7 +898,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     [setEdges, selectedRelations]
   );
 
-  const fetchCourseData = async (
+  const fetchCourseData = useCallback(async (
     courseId: string,
     dept: string,
     degree: string,
@@ -866,7 +909,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     forceUpdate = false
   ) => {
     const newNodeId = courseId;
-    if (!forceUpdate && nodes.some((n) => n.id === newNodeId)) return;
+    if (!forceUpdate && nodesRef.current.some((n) => n.id === newNodeId)) return;
 
     if (!forceUpdate) {
       const initialPos = sourcePos
@@ -961,7 +1004,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
         nds.map((n) => (n.id === newNodeId ? { ...n, data: { ...n.data, loading: false } } : n))
       );
     }
-  };
+  }, [locale, dictionary?.course?.prerequisiteFor, setNodes, setEdges]);
 
   const handleFetchDepartment = async () => {
     if (!fetchDeptInput) return;
@@ -993,6 +1036,30 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     setNodes((nds) => nds.map(n => n.id === courseId ? { ...n, data: { ...n.data, year: Number(year), semester: Number(semester), ...(lastUpdated ? { lastUpdated } : {}) } } : n));
   }, [setNodes]);
 
+  const mapContextValue = useMemo(
+    () => ({
+      onRemoveNode,
+      fetchCourseData,
+      updateCourseTerm,
+      dictionary,
+      selectedRelations,
+      existingNodeIds,
+      hoveredNodeId: activeNodeId,
+      setHoveredNodeId,
+      connectedNodeIds,
+    }),
+    [
+      onRemoveNode,
+      fetchCourseData,
+      updateCourseTerm,
+      dictionary,
+      selectedRelations,
+      existingNodeIds,
+      activeNodeId,
+      connectedNodeIds,
+    ]
+  );
+
   return (
     <div className="h-full w-full relative" id="tour-map-area">
       <div
@@ -1002,6 +1069,8 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
         <Button
           id="tour-map-add"
           size="sm"
+          onMouseEnter={() => setCatalogWarm(true)}
+          onFocus={() => setCatalogWarm(true)}
           onClick={() => setOpen(true)}
           className="pointer-events-auto h-9 px-3 sm:px-3.5 rounded-lg font-medium text-xs gap-1.5 shadow-xs cursor-pointer"
         >
@@ -1120,19 +1189,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
         </div>
       )}
 
-      <CourseMapContext.Provider
-        value={{
-          onRemoveNode,
-          fetchCourseData,
-          updateCourseTerm,
-          dictionary,
-          selectedRelations,
-          existingNodeIds,
-          hoveredNodeId: activeNodeId,
-          setHoveredNodeId,
-          connectedNodeIds,
-        }}
-      >
+      <CourseMapContext.Provider value={mapContextValue}>
         <ReactFlow
           nodes={nodes}
           edges={filteredEdges}
@@ -1143,6 +1200,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
             rfInstanceRef.current = instance;
           }}
           nodeTypes={nodeTypes}
+          onlyRenderVisibleElements={nodes.length > 25}
           colorMode={isDark ? 'dark' : 'light'}
           proOptions={{ hideAttribution: true }}
           fitView
@@ -1167,7 +1225,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
         </ReactFlow>
       </CourseMapContext.Provider>
 
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
         <div id="tour-map-search" dir={locale === 'en' ? 'ltr' : 'rtl'}>
           <CommandInput 
             placeholder={dictionary.map.searchPlaceholder} 
@@ -1193,56 +1251,55 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
                 </div>
               ))}
             </div>
-          ) : (
-            <>
-              <CommandEmpty>
-                <div className="flex flex-col items-center justify-center text-center gap-3 py-6 px-4">
-                  <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">{dictionary.navbar.noResults}</p>
-                  <p className="text-xs text-muted-foreground whitespace-normal leading-relaxed mx-auto max-w-[280px]">
-                    {dictionary.map.suggestDepartment}
-                  </p>
-                  {searchQuery && (
-                    <Button
-                      size="sm"
-                      onClick={() => setShowFetchDeptDialog(true)}
-                      className="mt-1 rounded-lg"
-                    >
-                      {dictionary.map.searchDeptBtn}
-                    </Button>
-                  )}
-                </div>
-              </CommandEmpty>
-              <CommandGroup heading={dictionary.home.fullCatalog}>
-                {courses.map((course: any) => (
-                  <CommandItem
-                    key={course.id}
-                    value={`${course.id} ${course.name}`}
-                    onSelect={() => {
-                      setOpen(false)
-                      const parts = course.id.split('.')
-                      const dept = (course as any).params?.dept || parts[0] || '202'
-                      const degree = (course as any).params?.degree || parts[1] || '1'
-                      const cId = (course as any).params?.course || parts[2] || course.id
-                      const activeParts = course.activeIn ? course.activeIn.split('-') : []
-                      const latestOffering = (course as any).offerings?.[0]
-                      const rawYear = (course as any).params?.year || latestOffering?.year || activeParts[0] || '2027'
-                      const year = Number(rawYear) >= 2027 ? String(rawYear) : '2027'
-                      const semester = (course as any).params?.semester || latestOffering?.semester || activeParts[1] || '1'
-
-                      fetchCourseData(cId, dept, degree, year, semester, course.name);
-                    }}
-                    className="flex items-center justify-between gap-3 py-2.5 px-3 cursor-pointer rounded-lg my-0.5"
+          ) : filteredCatalogCourses.length === 0 ? (
+            <CommandEmpty>
+              <div className="flex flex-col items-center justify-center text-center gap-3 py-6 px-4">
+                <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">{dictionary.navbar.noResults}</p>
+                <p className="text-xs text-muted-foreground whitespace-normal leading-relaxed mx-auto max-w-[280px]">
+                  {dictionary.map.suggestDepartment}
+                </p>
+                {searchQuery && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowFetchDeptDialog(true)}
+                    className="mt-1 rounded-lg"
                   >
-                    <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
-                      {course.name}
-                    </span>
-                    <span className="text-xs text-primary bg-orange-50 dark:bg-orange-950/40 border border-orange-200/60 dark:border-orange-900/50 font-mono font-semibold shrink-0 px-1.5 py-0.5 rounded">
-                      {course.id}
-                    </span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </>
+                    {dictionary.map.searchDeptBtn}
+                  </Button>
+                )}
+              </div>
+            </CommandEmpty>
+          ) : (
+            <CommandGroup heading={dictionary.home.fullCatalog}>
+              {filteredCatalogCourses.map((course: any) => (
+                <CommandItem
+                  key={course.id}
+                  value={course.id}
+                  onSelect={() => {
+                    setOpen(false)
+                    const parts = course.id.split('.')
+                    const dept = (course as any).params?.dept || parts[0] || '202'
+                    const degree = (course as any).params?.degree || parts[1] || '1'
+                    const cId = (course as any).params?.course || parts[2] || course.id
+                    const activeParts = course.activeIn ? course.activeIn.split('-') : []
+                    const latestOffering = (course as any).offerings?.[0]
+                    const rawYear = (course as any).params?.year || latestOffering?.year || activeParts[0] || '2027'
+                    const year = Number(rawYear) >= 2027 ? String(rawYear) : '2027'
+                    const semester = (course as any).params?.semester || latestOffering?.semester || activeParts[1] || '1'
+
+                    fetchCourseData(cId, dept, degree, year, semester, course.name);
+                  }}
+                  className="flex items-center justify-between gap-3 py-2.5 px-3 cursor-pointer rounded-lg my-0.5"
+                >
+                  <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
+                    {course.name}
+                  </span>
+                  <span className="text-xs text-primary bg-orange-50 dark:bg-orange-950/40 border border-orange-200/60 dark:border-orange-900/50 font-mono font-semibold shrink-0 px-1.5 py-0.5 rounded">
+                    {course.id}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
           )}
         </CommandList>
       </CommandDialog>

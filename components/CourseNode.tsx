@@ -1,12 +1,12 @@
 import { Handle, Position } from '@xyflow/react';
 import { BookOpen, Trash2, Plus, Check, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
-import { useState, useContext, useMemo } from 'react';
+import { memo, useState, useContext, useMemo } from 'react';
 import { CourseMapContext } from './DependencyMap';
 import { CourseRefetchButton } from './CourseRefetchButton';
 import { getAvailableAcademicYears, MIN_ACADEMIC_YEAR } from '@/lib/schedule';
 import { cn } from '@/lib/utils';
 
-export function CourseNode({
+export const CourseNode = memo(function CourseNode({
   id,
   data,
   selected,
@@ -394,5 +394,5 @@ export function CourseNode({
       />
     </div>
   );
-}
+});
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import { Dictionary, Locale } from '@/lib/dictionaries';
 
 interface DictionaryContextType {
@@ -19,8 +19,9 @@ export function DictionaryProvider({
   locale: Locale;
   children: React.ReactNode;
 }) {
+  const value = useMemo(() => ({ dictionary, locale }), [dictionary, locale]);
   return (
-    <DictionaryContext.Provider value={{ dictionary, locale }}>
+    <DictionaryContext.Provider value={value}>
       {children}
     </DictionaryContext.Provider>
   );
