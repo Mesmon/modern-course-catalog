@@ -9,13 +9,13 @@ export interface Course {
   lastUpdated?: string;
 }
 
-export const COURSE_STALE_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+export const COURSE_STALE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours (1 full day)
 
 export function isCourseTimestampStale(lastUpdated?: string | Date | null): boolean {
-  if (!lastUpdated) return true;
+  if (!lastUpdated) return false;
   const ts = new Date(lastUpdated).getTime();
-  if (Number.isNaN(ts)) return true;
-  return Date.now() - ts > COURSE_STALE_TTL_MS;
+  if (Number.isNaN(ts)) return false;
+  return Date.now() - ts >= COURSE_STALE_TTL_MS;
 }
 
 export async function getDepartmentCoursesFromDB(dept: string, degree: string, year: string, semester: string): Promise<any[]> {

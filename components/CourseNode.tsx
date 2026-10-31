@@ -340,14 +340,15 @@ export function CourseNode({
                 variant="compact"
                 dictionary={dictionary}
                 locale={data.locale || 'he'}
-                onRefetched={() => {
+                onRefetched={(detail) => {
                   updateCourseTerm?.(
                     data.courseId,
                     data.dept,
                     data.degree,
                     String(data.year || '2027'),
                     String(data.semester || '1'),
-                    data.name
+                    data.name,
+                    detail.lastUpdated || new Date().toISOString()
                   );
                 }}
               />

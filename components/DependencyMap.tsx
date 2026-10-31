@@ -989,8 +989,8 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
     }
   };
 
-  const updateCourseTerm = useCallback((courseId: string, dept: string, degree: string, year: string, semester: string, name: string) => {
-    setNodes((nds) => nds.map(n => n.id === courseId ? { ...n, data: { ...n.data, year: Number(year), semester: Number(semester) } } : n));
+  const updateCourseTerm = useCallback((courseId: string, dept: string, degree: string, year: string, semester: string, name: string, lastUpdated?: string) => {
+    setNodes((nds) => nds.map(n => n.id === courseId ? { ...n, data: { ...n.data, year: Number(year), semester: Number(semester), ...(lastUpdated ? { lastUpdated } : {}) } } : n));
   }, [setNodes]);
 
   return (
