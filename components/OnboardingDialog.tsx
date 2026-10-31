@@ -46,11 +46,6 @@ export function OnboardingDialog() {
 
   useEffect(() => {
     setMounted(true);
-    const hasSeenOnboarding = localStorage.getItem(ONBOARDING_STORAGE_KEY);
-    if (!hasSeenOnboarding) {
-      setIsOpen(true);
-    }
-
     const handleOpen = () => setIsOpen(true);
     window.addEventListener('open-onboarding-dialog', handleOpen);
     return () => window.removeEventListener('open-onboarding-dialog', handleOpen);

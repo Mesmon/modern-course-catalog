@@ -20,84 +20,57 @@ export default async function Home() {
       <TourGuideClient page="home" />
       <ScrollToTopButton label={isRtl ? 'חזרה למעלה' : 'Back to top'} />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-10">
-        {/* Editorial Hero & Search Workspace */}
-        <section className="space-y-6">
-          <div className="space-y-2.5 max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-orange-50 dark:bg-orange-950/50 border border-orange-200/80 dark:border-orange-800/60 text-primary text-xs font-semibold">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              <span>{isRtl ? 'שנת הלימודים תשפ״ז · 2027' : 'Academic Year 2026–2027'}</span>
-            </div>
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-12">
+        {/* Centered, Calm Hero & Unified Department Search */}
+        <section className="max-w-3xl mx-auto space-y-6">
+          <div className="text-center space-y-2">
             <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
               {dictionary.home.title}{' '}
               <span className="text-primary">{dictionary.home.titleSuffix}</span>
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-xl mx-auto">
               {dictionary.home.description}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-            {/* Search Panel (8 columns) */}
-            <div
-              id="tour-search"
-              className="lg:col-span-8 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-2xs flex flex-col justify-between space-y-4"
+          <div
+            id="tour-search"
+            className="rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-2xs"
+          >
+            <DepartmentSearch dictionary={dictionary} locale={locale} />
+          </div>
+
+          {/* Subtle Quick Links to Schedule & Prerequisite Map */}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/schedule"
+              className="group inline-flex items-center gap-2.5 px-3.5 py-2 rounded-lg border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 hover:border-primary/50 transition-colors text-xs shadow-2xs"
             >
-              <div className="space-y-1">
-                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  {dictionary.home.searchTitle}
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  {dictionary.home.searchDesc}
-                </p>
-              </div>
-              <DepartmentSearch dictionary={dictionary} locale={locale} />
-            </div>
+              <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">
+                {dictionary.schedule.title}
+              </span>
+              <span className="text-muted-foreground hidden sm:inline">·</span>
+              <span className="text-muted-foreground hidden sm:inline">
+                {isRtl ? 'בניית מערכת והשוואת גרסאות' : 'Build & compare timetables'}
+              </span>
+              <ArrowIcon className="h-3.5 w-3.5 text-slate-400 group-hover:text-primary transition-colors" />
+            </Link>
 
-            {/* Quick Workspace Cards (4 columns) */}
-            <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3.5">
-              <Link
-                href="/schedule"
-                className="group rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 hover:border-primary/60 transition-colors flex flex-col justify-between gap-3 shadow-2xs"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-orange-50 dark:bg-orange-950/50 border border-orange-200/70 dark:border-orange-800/60 flex items-center justify-center text-primary shrink-0">
-                    <Calendar className="h-4.5 w-4.5" />
-                  </div>
-                  <ArrowIcon className="h-4 w-4 text-slate-400 group-hover:text-primary transition-colors" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors">
-                    {dictionary.schedule.title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                    {dictionary.schedule.subtitle}
-                  </p>
-                </div>
-              </Link>
-
-              <Link
-                href="/map"
-                className="group rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 hover:border-primary/60 transition-colors flex flex-col justify-between gap-3 shadow-2xs"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-orange-50 dark:bg-orange-950/50 border border-orange-200/70 dark:border-orange-800/60 flex items-center justify-center text-primary shrink-0">
-                    <Workflow className="h-4.5 w-4.5" />
-                  </div>
-                  <ArrowIcon className="h-4 w-4 text-slate-400 group-hover:text-primary transition-colors" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors">
-                    {dictionary.map.title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                    {isRtl
-                      ? 'תרשים זרימה אינטראקטיבי של קורסי קדם ושרשראות חסימה'
-                      : 'Interactive directed graph of course prerequisites and chains'}
-                  </p>
-                </div>
-              </Link>
-            </div>
+            <Link
+              href="/map"
+              className="group inline-flex items-center gap-2.5 px-3.5 py-2 rounded-lg border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 hover:border-primary/50 transition-colors text-xs shadow-2xs"
+            >
+              <Workflow className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">
+                {dictionary.map.title}
+              </span>
+              <span className="text-muted-foreground hidden sm:inline">·</span>
+              <span className="text-muted-foreground hidden sm:inline">
+                {isRtl ? 'תרשים זרימה של קורסי קדם' : 'Interactive prerequisite graph'}
+              </span>
+              <ArrowIcon className="h-3.5 w-3.5 text-slate-400 group-hover:text-primary transition-colors" />
+            </Link>
           </div>
         </section>
 
