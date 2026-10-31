@@ -35,7 +35,12 @@ export function UserAuthMenu() {
   const { dictionary, locale } = useDictionary();
   const isRtl = locale === 'he';
   const [menuOpen, setMenuOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [user?.picture]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
@@ -82,6 +87,13 @@ export function UserAuthMenu() {
     .slice(0, 2)
     .toUpperCase();
 
+  const avatarSrc =
+    user.picture && !imgError
+      ? user.picture.includes('googleusercontent.com')
+        ? `/api/auth/avatar?u=${encodeURIComponent(user.picture)}`
+        : user.picture
+      : null;
+
   return (
     <div className="relative" ref={containerRef}>
       <button
@@ -90,13 +102,16 @@ export function UserAuthMenu() {
         className="flex items-center gap-2 h-9 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 px-2.5 transition-colors cursor-pointer shadow-xs"
         title={`${user.name} (${user.email})`}
       >
-        {user.picture ? (
+        {avatarSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={user.picture}
+            src={avatarSrc}
             alt={user.name}
+            width={20}
+            height={20}
+            decoding="async"
+            onError={() => setImgError(true)}
             className="h-5 w-5 rounded-full object-cover border border-slate-200 dark:border-slate-700"
-            referrerPolicy="no-referrer"
           />
         ) : (
           <div className="h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
@@ -122,13 +137,16 @@ export function UserAuthMenu() {
           dir={isRtl ? 'rtl' : 'ltr'}
         >
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-            {user.picture ? (
+            {avatarSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={user.picture}
+                src={avatarSrc}
                 alt={user.name}
+                width={36}
+                height={36}
+                decoding="async"
+                onError={() => setImgError(true)}
                 className="h-9 w-9 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
-                referrerPolicy="no-referrer"
               />
             ) : (
               <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0">
