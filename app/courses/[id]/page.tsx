@@ -22,6 +22,7 @@ import { getDictionary, Locale } from '@/lib/dictionaries';
 import { notFound, redirect } from 'next/navigation';
 import { CopyCourseId } from '@/components/CopyCourseId';
 import { AddToScheduleButton } from '@/components/AddToScheduleButton';
+import { CourseRefetchButton } from '@/components/CourseRefetchButton';
 import { cn } from '@/lib/utils';
 
 export default async function CoursePage({
@@ -139,6 +140,19 @@ export default async function CoursePage({
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              <CourseRefetchButton
+                courseId={id}
+                dept={deptParam}
+                degree={degParam}
+                year={reqYear}
+                semester={reqSem}
+                lastUpdated={course.lastUpdated}
+                isStale={course.isStale}
+                autoRefetchIfStale
+                refreshRouter
+                dictionary={dictionary}
+                locale={locale}
+              />
               <AddToScheduleButton
                 courseId={id}
                 dept={deptParam}
@@ -523,6 +537,20 @@ export default async function CoursePage({
               </dl>
 
               <div className="space-y-2 pt-1">
+                <CourseRefetchButton
+                  courseId={id}
+                  dept={deptParam}
+                  degree={degParam}
+                  year={reqYear}
+                  semester={reqSem}
+                  lastUpdated={course.lastUpdated}
+                  isStale={course.isStale}
+                  refreshRouter
+                  variant="inline"
+                  dictionary={dictionary}
+                  locale={locale}
+                  className="pb-1.5 border-b border-slate-100 dark:border-slate-800/80"
+                />
                 <AddToScheduleButton
                   courseId={id}
                   dept={deptParam}

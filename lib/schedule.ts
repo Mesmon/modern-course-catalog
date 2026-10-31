@@ -1,4 +1,4 @@
-import { CourseGroup } from '@/types/course';
+import { CourseDetail, CourseGroup } from '@/types/course';
 
 export interface ScheduledCourse {
   id: string;        // fullId e.g. '232.1.1011'
@@ -7,11 +7,13 @@ export interface ScheduledCourse {
   degree: string;
   year: string;
   semester: string;
+  version?: number;  // 1..4 (defaults to 1 for backwards compatibility)
   name: string;
   points: string;
   colorIndex: number;
   selectedGroups: CourseGroup[];
   allGroups: CourseGroup[];
+  lastUpdated?: string;
 }
 
 export interface ScheduleTerm {
@@ -19,8 +21,23 @@ export interface ScheduleTerm {
   semester: string;
 }
 
+export const MAX_SCHEDULE_VERSIONS = 4;
+
+export interface ScheduleVersionMeta {
+  id: number; // 1..4
+  name?: string;
+}
+
+export interface TermVersionsState {
+  activeVersion: number;
+  versions: ScheduleVersionMeta[];
+}
+
+export type ScheduleVersionsMap = Record<string, TermVersionsState>;
+
 export const SCHEDULE_STORAGE_KEY = 'weeklyScheduleCourses_v1';
 export const SCHEDULE_TERM_KEY = 'weeklyScheduleActiveTerm_v1';
+export const SCHEDULE_VERSIONS_KEY = 'weeklyScheduleVersions_v1';
 export const SCHEDULE_EVENT = 'weekly-schedule-updated';
 export const SCHEDULE_CLOUD_HYDRATED_EVENT = 'weekly-schedule-cloud-hydrated';
 
@@ -141,6 +158,247 @@ export function saveActiveTerm(term: ScheduleTerm) {
   }
 }
 
+export function getCourseVersion(course: ScheduledCourse): number {
+  const v = Number(course.version);
+  if (Number.isInteger(v) && v >= 1 && v <= MAX_SCHEDULE_VERSIONS) {
+    return v;
+  }
+  return 1;
+}
+
+export function getTermKey(year: string, semester: string): string {
+  return `${String(year)}-${String(semester)}`;
+}
+
+export function loadVersionsMap(): ScheduleVersionsMap {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(SCHEDULE_VERSIONS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+export function saveVersionsMap(map: ScheduleVersionsMap, emitEvent = true) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(SCHEDULE_VERSIONS_KEY, JSON.stringify(map));
+    if (emitEvent) {
+      window.dispatchEvent(new Event(SCHEDULE_EVENT));
+    }
+  } catch (e) {
+    console.error('Failed to save schedule versions map', e);
+  }
+}
+
+export function getTermVersionsState(
+  year: string,
+  semester: string,
+  courses?: ScheduledCourse[],
+  map?: ScheduleVersionsMap
+): TermVersionsState {
+  const termKey = getTermKey(year, semester);
+  const currentMap = map ?? loadVersionsMap();
+  const allCourses = courses ?? loadScheduledCourses();
+  const storedState = currentMap[termKey];
+
+  const versionMap = new Map<number, ScheduleVersionMeta>();
+
+  if (storedState && Array.isArray(storedState.versions)) {
+    storedState.versions.forEach(v => {
+      const id = Number(v.id);
+      if (Number.isInteger(id) && id >= 1 && id <= MAX_SCHEDULE_VERSIONS) {
+        versionMap.set(id, { id, name: v.name });
+      }
+    });
+  }
+
+  // Ensure any version present in courses for this term is represented
+  allCourses.forEach(c => {
+    if (String(c.year) === String(year) && String(c.semester) === String(semester)) {
+      const v = getCourseVersion(c);
+      if (!versionMap.has(v)) {
+        versionMap.set(v, { id: v });
+      }
+    }
+  });
+
+  if (versionMap.size === 0) {
+    versionMap.set(1, { id: 1 });
+  }
+
+  const versions = Array.from(versionMap.values())
+    .sort((a, b) => a.id - b.id)
+    .slice(0, MAX_SCHEDULE_VERSIONS);
+
+  const requestedActive = Number(storedState?.activeVersion);
+  const activeVersion = versions.some(v => v.id === requestedActive)
+    ? requestedActive
+    : versions[0].id;
+
+  return {
+    activeVersion,
+    versions,
+  };
+}
+
+export function getActiveVersionForTerm(year: string, semester: string): number {
+  return getTermVersionsState(year, semester).activeVersion;
+}
+
+export function setActiveVersionForTerm(
+  year: string,
+  semester: string,
+  versionId: number
+): TermVersionsState {
+  const map = loadVersionsMap();
+  const state = getTermVersionsState(year, semester, undefined, map);
+  const safeId = state.versions.some(v => v.id === versionId)
+    ? versionId
+    : state.versions[0].id;
+  const nextState: TermVersionsState = {
+    ...state,
+    activeVersion: safeId,
+  };
+  map[getTermKey(year, semester)] = nextState;
+  saveVersionsMap(map, true);
+  return nextState;
+}
+
+export function createScheduleVersion(
+  year: string,
+  semester: string,
+  options?: { duplicateFromVersion?: number; name?: string }
+): { state: TermVersionsState; newVersionId: number | null } {
+  const courses = loadScheduledCourses();
+  const map = loadVersionsMap();
+  const state = getTermVersionsState(year, semester, courses, map);
+
+  if (state.versions.length >= MAX_SCHEDULE_VERSIONS) {
+    return { state, newVersionId: null };
+  }
+
+  const usedIds = new Set(state.versions.map(v => v.id));
+  let newVersionId = 1;
+  for (let i = 1; i <= MAX_SCHEDULE_VERSIONS; i++) {
+    if (!usedIds.has(i)) {
+      newVersionId = i;
+      break;
+    }
+  }
+
+  const nextVersions = [
+    ...state.versions,
+    { id: newVersionId, name: options?.name?.trim() || undefined },
+  ].sort((a, b) => a.id - b.id);
+
+  const nextState: TermVersionsState = {
+    activeVersion: newVersionId,
+    versions: nextVersions,
+  };
+
+  map[getTermKey(year, semester)] = nextState;
+
+  if (options?.duplicateFromVersion !== undefined) {
+    const sourceVer = options.duplicateFromVersion;
+    const sourceCourses = courses.filter(
+      c =>
+        String(c.year) === String(year) &&
+        String(c.semester) === String(semester) &&
+        getCourseVersion(c) === sourceVer
+    );
+    const cleanedCourses = courses.filter(
+      c =>
+        !(
+          String(c.year) === String(year) &&
+          String(c.semester) === String(semester) &&
+          getCourseVersion(c) === newVersionId
+        )
+    );
+    const duplicated = sourceCourses.map(c => ({
+      ...c,
+      version: newVersionId,
+      selectedGroups: c.selectedGroups ? [...c.selectedGroups] : [],
+      allGroups: c.allGroups ? [...c.allGroups] : [],
+    }));
+    saveVersionsMap(map, false);
+    saveScheduledCourses([...cleanedCourses, ...duplicated]);
+  } else {
+    saveVersionsMap(map, true);
+  }
+
+  return { state: nextState, newVersionId };
+}
+
+export function renameScheduleVersion(
+  year: string,
+  semester: string,
+  versionId: number,
+  name: string
+): TermVersionsState {
+  const map = loadVersionsMap();
+  const state = getTermVersionsState(year, semester, undefined, map);
+  const trimmed = name.trim();
+  const nextState: TermVersionsState = {
+    ...state,
+    versions: state.versions.map(v =>
+      v.id === versionId ? { ...v, name: trimmed || undefined } : v
+    ),
+  };
+  map[getTermKey(year, semester)] = nextState;
+  saveVersionsMap(map, true);
+  return nextState;
+}
+
+export function deleteScheduleVersion(
+  year: string,
+  semester: string,
+  versionId: number
+): TermVersionsState {
+  const courses = loadScheduledCourses();
+  const map = loadVersionsMap();
+  const state = getTermVersionsState(year, semester, courses, map);
+
+  const updatedCourses = courses.filter(
+    c =>
+      !(
+        String(c.year) === String(year) &&
+        String(c.semester) === String(semester) &&
+        getCourseVersion(c) === versionId
+      )
+  );
+
+  if (state.versions.length <= 1) {
+    const resetState: TermVersionsState = {
+      activeVersion: 1,
+      versions: [{ id: 1 }],
+    };
+    map[getTermKey(year, semester)] = resetState;
+    saveVersionsMap(map, false);
+    saveScheduledCourses(updatedCourses);
+    return resetState;
+  }
+
+  const remainingVersions = state.versions.filter(v => v.id !== versionId);
+  const nextActive =
+    state.activeVersion === versionId
+      ? remainingVersions[0].id
+      : state.activeVersion;
+
+  const nextState: TermVersionsState = {
+    activeVersion: nextActive,
+    versions: remainingVersions,
+  };
+
+  map[getTermKey(year, semester)] = nextState;
+  saveVersionsMap(map, false);
+  saveScheduledCourses(updatedCourses);
+  return nextState;
+}
+
 export function loadScheduledCourses(): ScheduledCourse[] {
   if (typeof window === 'undefined') return [];
   try {
@@ -164,7 +422,11 @@ export function saveScheduledCourses(courses: ScheduledCourse[]) {
   }
 }
 
-export function hydrateScheduleFromCloud(courses: ScheduledCourse[], activeTerm?: ScheduleTerm) {
+export function hydrateScheduleFromCloud(
+  courses: ScheduledCourse[],
+  activeTerm?: ScheduleTerm,
+  versionsMap?: ScheduleVersionsMap
+) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(courses || []));
@@ -173,6 +435,9 @@ export function hydrateScheduleFromCloud(courses: ScheduledCourse[], activeTerm?
         SCHEDULE_TERM_KEY,
         JSON.stringify({ year: String(activeTerm.year), semester: String(activeTerm.semester) })
       );
+    }
+    if (versionsMap && typeof versionsMap === 'object' && !Array.isArray(versionsMap)) {
+      localStorage.setItem(SCHEDULE_VERSIONS_KEY, JSON.stringify(versionsMap));
     }
     window.dispatchEvent(new Event(SCHEDULE_CLOUD_HYDRATED_EVENT));
   } catch (e) {
@@ -229,10 +494,20 @@ export function hydrateDependencyMapFromCloud(data: {
   }
 }
 
-export function upsertScheduledCourse(course: Omit<ScheduledCourse, 'colorIndex'> & { colorIndex?: number }): ScheduledCourse[] {
+export function upsertScheduledCourse(
+  course: Omit<ScheduledCourse, 'colorIndex'> & { colorIndex?: number },
+  version?: number
+): ScheduledCourse[] {
   const current = loadScheduledCourses();
+  const targetVersion =
+    version ?? course.version ?? getActiveVersionForTerm(course.year, course.semester);
+
   const existingIdx = current.findIndex(
-    c => c.id === course.id && c.year === course.year && c.semester === course.semester
+    c =>
+      c.id === course.id &&
+      String(c.year) === String(course.year) &&
+      String(c.semester) === String(course.semester) &&
+      getCourseVersion(c) === targetVersion
   );
   let updated: ScheduledCourse[];
 
@@ -241,27 +516,42 @@ export function upsertScheduledCourse(course: Omit<ScheduledCourse, 'colorIndex'
     updated = [...current];
     updated[existingIdx] = {
       ...course,
+      version: targetVersion,
       colorIndex: course.colorIndex ?? existingColor,
     };
   } else {
-    const termCourses = current.filter(
-      c => c.year === course.year && c.semester === course.semester
+    // Reuse color if the same course is already in another version of the same semester
+    const sameCourseOtherVer = current.find(
+      c =>
+        c.id === course.id &&
+        String(c.year) === String(course.year) &&
+        String(c.semester) === String(course.semester)
     );
-    const usedColors = new Set(termCourses.map(c => c.colorIndex));
-    let nextColor = 0;
-    for (let i = 0; i < COURSE_COLOR_PALETTE.length; i++) {
-      if (!usedColors.has(i)) {
-        nextColor = i;
-        break;
+    const termVersionCourses = current.filter(
+      c =>
+        String(c.year) === String(course.year) &&
+        String(c.semester) === String(course.semester) &&
+        getCourseVersion(c) === targetVersion
+    );
+    const usedColors = new Set(termVersionCourses.map(c => c.colorIndex));
+    let nextColor = sameCourseOtherVer?.colorIndex ?? 0;
+    if (sameCourseOtherVer === undefined || usedColors.has(nextColor)) {
+      nextColor = 0;
+      for (let i = 0; i < COURSE_COLOR_PALETTE.length; i++) {
+        if (!usedColors.has(i)) {
+          nextColor = i;
+          break;
+        }
       }
-    }
-    if (usedColors.has(nextColor)) {
-      nextColor = termCourses.length % COURSE_COLOR_PALETTE.length;
+      if (usedColors.has(nextColor)) {
+        nextColor = termVersionCourses.length % COURSE_COLOR_PALETTE.length;
+      }
     }
     updated = [
       ...current,
       {
         ...course,
+        version: targetVersion,
         colorIndex: course.colorIndex ?? nextColor,
       },
     ];
@@ -271,12 +561,26 @@ export function upsertScheduledCourse(course: Omit<ScheduledCourse, 'colorIndex'
   return updated;
 }
 
-export function removeScheduledCourse(id: string, year?: string, semester?: string): ScheduledCourse[] {
+export function removeScheduledCourse(
+  id: string,
+  year?: string,
+  semester?: string,
+  version?: number
+): ScheduledCourse[] {
   const current = loadScheduledCourses();
+  const targetVersion =
+    version ?? (year && semester ? getActiveVersionForTerm(year, semester) : undefined);
+
   const updated = current.filter(c => {
     if (c.id !== id) return true;
     if (year && semester) {
-      return !(c.year === year && c.semester === semester);
+      if (String(c.year) !== String(year) || String(c.semester) !== String(semester)) {
+        return true;
+      }
+      if (targetVersion !== undefined) {
+        return getCourseVersion(c) !== targetVersion;
+      }
+      return false;
     }
     return false;
   });
@@ -284,9 +588,21 @@ export function removeScheduledCourse(id: string, year?: string, semester?: stri
   return updated;
 }
 
-export function clearScheduledCoursesForTerm(year: string, semester: string): ScheduledCourse[] {
+export function clearScheduledCoursesForTerm(
+  year: string,
+  semester: string,
+  version?: number
+): ScheduledCourse[] {
   const current = loadScheduledCourses();
-  const updated = current.filter(c => !(c.year === year && c.semester === semester));
+  const targetVersion = version ?? getActiveVersionForTerm(year, semester);
+  const updated = current.filter(
+    c =>
+      !(
+        String(c.year) === String(year) &&
+        String(c.semester) === String(semester) &&
+        getCourseVersion(c) === targetVersion
+      )
+  );
   saveScheduledCourses(updated);
   return updated;
 }
@@ -549,4 +865,217 @@ export function generateScheduleIcs(courses: ScheduledCourse[], year: string, se
   lines.push('END:VCALENDAR');
   return lines.join('\r\n');
 }
+
+export interface ScheduleVersionMetrics {
+  coursesCount: number;
+  totalCredits: number;
+  totalWeeklyHours: number;
+  activeDays: string[];
+  freeWeekdays: string[]; // out of ['א', 'ב', 'ג', 'ד', 'ה']
+  overlapCount: number;
+  gapHours: number;
+  earliestStart: string | null;
+  latestEnd: string | null;
+}
+
+const WEEKDAYS_HE = ['א', 'ב', 'ג', 'ד', 'ה'] as const;
+const ALL_DAYS_HE = ['א', 'ב', 'ג', 'ד', 'ה', 'ו'] as const;
+
+export function minutesToTimeStr(mins: number): string {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${pad2(h)}:${pad2(m)}`;
+}
+
+export function computeScheduleVersionMetrics(courses: ScheduledCourse[]): ScheduleVersionMetrics {
+  const coursesCount = courses.length;
+  const totalCredits =
+    Math.round(courses.reduce((sum, c) => sum + (parseFloat(c.points) || 0), 0) * 10) / 10;
+
+  const intervalsByDay: Record<string, { startMin: number; endMin: number }[]> = {};
+  ALL_DAYS_HE.forEach(d => {
+    intervalsByDay[d] = [];
+  });
+
+  let totalMinutes = 0;
+  let minStart = Infinity;
+  let maxEnd = -Infinity;
+
+  courses.forEach(course => {
+    (course.selectedGroups || []).forEach(group => {
+      (group.meetings || []).forEach(meeting => {
+        const day = meeting.day;
+        if (!intervalsByDay[day]) return;
+        const startMin = timeToMinutes(meeting.startTime || (meeting as any).startHour);
+        const endMin = timeToMinutes(meeting.endTime || (meeting as any).endHour);
+        if (endMin <= startMin) return;
+        intervalsByDay[day].push({ startMin, endMin });
+        totalMinutes += endMin - startMin;
+        if (startMin < minStart) minStart = startMin;
+        if (endMin > maxEnd) maxEnd = endMin;
+      });
+    });
+  });
+
+  const activeDays: string[] = [];
+  let overlapCount = 0;
+  let gapMinutes = 0;
+
+  ALL_DAYS_HE.forEach(day => {
+    const list = intervalsByDay[day];
+    if (list.length === 0) return;
+    activeDays.push(day);
+
+    const sorted = [...list].sort((a, b) =>
+      a.startMin !== b.startMin ? a.startMin - b.startMin : b.endMin - a.endMin
+    );
+
+    // Count overlapping pairs
+    for (let i = 0; i < sorted.length; i++) {
+      for (let j = i + 1; j < sorted.length; j++) {
+        if (sorted[j].startMin < sorted[i].endMin) {
+          overlapCount++;
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Merge overlapping intervals to compute actual gaps ("windows") during the day
+    const merged: { startMin: number; endMin: number }[] = [];
+    sorted.forEach(iv => {
+      if (merged.length === 0 || iv.startMin > merged[merged.length - 1].endMin) {
+        merged.push({ ...iv });
+      } else {
+        merged[merged.length - 1].endMin = Math.max(merged[merged.length - 1].endMin, iv.endMin);
+      }
+    });
+
+    for (let i = 1; i < merged.length; i++) {
+      const gap = merged[i].startMin - merged[i - 1].endMin;
+      if (gap > 0) {
+        gapMinutes += gap;
+      }
+    }
+  });
+
+  const freeWeekdays = WEEKDAYS_HE.filter(d => !activeDays.includes(d));
+
+  return {
+    coursesCount,
+    totalCredits,
+    totalWeeklyHours: Math.round((totalMinutes / 60) * 10) / 10,
+    activeDays,
+    freeWeekdays,
+    overlapCount,
+    gapHours: Math.round((gapMinutes / 60) * 10) / 10,
+    earliestStart: minStart < Infinity ? minutesToTimeStr(minStart) : null,
+    latestEnd: maxEnd > -Infinity ? minutesToTimeStr(maxEnd) : null,
+  };
+}
+
+export const COURSE_STALE_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+export function isScheduledCourseStale(lastUpdated?: string | Date | null): boolean {
+  if (!lastUpdated) return true;
+  const ts = new Date(lastUpdated).getTime();
+  if (Number.isNaN(ts)) return true;
+  return Date.now() - ts > COURSE_STALE_MS;
+}
+
+export function formatLastFetchedDate(
+  dateInput?: string | Date | null,
+  locale = 'he'
+): string | null {
+  if (!dateInput) return null;
+  const d = new Date(dateInput);
+  if (Number.isNaN(d.getTime())) return null;
+
+  const now = new Date();
+  const isSameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+
+  const timeStr = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  if (isSameDay) {
+    return locale === 'he' ? `היום, ${timeStr}` : `Today, ${timeStr}`;
+  }
+
+  const dateStr = `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`;
+  return `${dateStr} ${timeStr}`;
+}
+
+function serializeGroupsSignature(groups?: CourseGroup[]): string {
+  if (!Array.isArray(groups)) return '';
+  return groups
+    .map(g => {
+      const mSig = (g.meetings || [])
+        .map(m => `${m.day}:${m.startTime}-${m.endTime}@${m.location || ''}`)
+        .join(';');
+      return `${g.id}|${g.type}|${g.lecturer || ''}|${mSig}`;
+    })
+    .join('||');
+}
+
+export function syncRefetchedCourseToSchedule(
+  detail: CourseDetail,
+  params: { courseId: string; dept: string; degree: string; year: string; semester: string }
+): { updatedInSchedule: boolean; groupsChanged: boolean } {
+  if (typeof window === 'undefined') {
+    return { updatedInSchedule: false, groupsChanged: false };
+  }
+
+  const fullId = `${params.dept}.${params.degree}.${params.courseId}`;
+  const current = loadScheduledCourses();
+  let updatedInSchedule = false;
+  let groupsChanged = false;
+  const freshGroups = Array.isArray(detail.groups) ? detail.groups : [];
+  const lastUpdated = detail.lastUpdated || new Date().toISOString();
+
+  const updated = current.map(c => {
+    const isMatch =
+      (c.id === fullId || c.courseId === params.courseId) &&
+      String(c.year) === String(params.year) &&
+      String(c.semester) === String(params.semester);
+
+    if (!isMatch) return c;
+    updatedInSchedule = true;
+
+    const oldSig = serializeGroupsSignature(c.selectedGroups);
+    const nextSelectedGroups =
+      freshGroups.length > 0
+        ? (c.selectedGroups || []).map(oldG => {
+            const exactMatch = freshGroups.find(
+              fg => fg.id === oldG.id && fg.type === oldG.type
+            );
+            if (exactMatch) return exactMatch;
+            const idMatch = freshGroups.find(fg => fg.id === oldG.id);
+            return idMatch || oldG;
+          })
+        : c.selectedGroups;
+
+    const newSig = serializeGroupsSignature(nextSelectedGroups);
+    if (oldSig !== newSig) {
+      groupsChanged = true;
+    }
+
+    return {
+      ...c,
+      name: detail.name || c.name,
+      points: detail.points || c.points,
+      allGroups: freshGroups.length > 0 ? freshGroups : c.allGroups,
+      selectedGroups: nextSelectedGroups,
+      lastUpdated,
+    };
+  });
+
+  if (updatedInSchedule) {
+    saveScheduledCourses(updated);
+  }
+
+  return { updatedInSchedule, groupsChanged };
+}
+
+
 

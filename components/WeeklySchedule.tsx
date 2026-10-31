@@ -8,10 +8,19 @@ import { useAllCourses } from '@/hooks/useCourses';
 import {
   ScheduledCourse,
   ScheduleTerm,
+  ScheduleVersionsMap,
+  MAX_SCHEDULE_VERSIONS,
   COURSE_COLOR_PALETTE,
   loadScheduledCourses,
   loadActiveTerm,
   saveActiveTerm,
+  loadVersionsMap,
+  getTermVersionsState,
+  getCourseVersion,
+  setActiveVersionForTerm,
+  createScheduleVersion,
+  renameScheduleVersion,
+  deleteScheduleVersion,
   upsertScheduledCourse,
   removeScheduledCourse,
   clearScheduledCoursesForTerm,
@@ -26,6 +35,8 @@ import {
 } from '@/lib/schedule';
 import { CourseDetail, CourseGroup, CourseMeeting } from '@/types/course';
 import { GroupSelectorDialog } from './GroupSelectorDialog';
+import { ScheduleComparisonView } from './ScheduleComparisonView';
+import { CourseRefetchButton } from './CourseRefetchButton';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
@@ -62,6 +73,9 @@ import {
   ChevronRight,
   ChevronLeft,
   User,
+  Copy,
+  ArrowLeftRight,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -159,6 +173,11 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
   const isRtl = locale === 'he';
   const [allScheduledCourses, setAllScheduledCourses] = useState<ScheduledCourse[]>([]);
   const [activeTerm, setActiveTerm] = useState<ScheduleTerm>({ year: '2027', semester: '1' });
+  const [versionsMap, setVersionsMap] = useState<ScheduleVersionsMap>({});
+  const [isCompareMode, setIsCompareMode] = useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renamingVersionId, setRenamingVersionId] = useState<number | null>(null);
+  const [renameInput, setRenameInput] = useState('');
   const [isMounted, setIsMounted] = useState(false);
   const [mobileDay, setMobileDay] = useState<(typeof DAYS)[number]>('א');
   const [mobileViewMode, setMobileViewMode] = useState<'day' | 'week'>('day');
@@ -182,9 +201,11 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     degree: string;
     year: string;
     semester: string;
+    version: number;
     name: string;
     points: string;
     groups: CourseGroup[];
+    lastUpdated?: string;
     initialSelectedIds?: string[];
     isAlreadyScheduled?: boolean;
   } | null>(null);
@@ -213,6 +234,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     const sync = () => {
       setAllScheduledCourses(loadScheduledCourses());
       setActiveTerm(loadActiveTerm());
+      setVersionsMap(loadVersionsMap());
     };
     sync();
 
@@ -242,11 +264,65 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     saveActiveTerm(next);
   };
 
-  const scheduledCourses = useMemo(() => {
+  const termVersionsState = useMemo(() => {
+    return getTermVersionsState(
+      activeTerm.year,
+      activeTerm.semester,
+      allScheduledCourses,
+      versionsMap
+    );
+  }, [activeTerm, allScheduledCourses, versionsMap]);
+
+  const activeVersion = termVersionsState.activeVersion;
+  const termVersions = termVersionsState.versions;
+
+  const termAllVersionsCourses = useMemo(() => {
     return allScheduledCourses.filter(
-      c => String(c.year) === String(activeTerm.year) && String(c.semester) === String(activeTerm.semester)
+      c =>
+        String(c.year) === String(activeTerm.year) &&
+        String(c.semester) === String(activeTerm.semester)
     );
   }, [allScheduledCourses, activeTerm]);
+
+  const scheduledCourses = useMemo(() => {
+    return termAllVersionsCourses.filter(c => getCourseVersion(c) === activeVersion);
+  }, [termAllVersionsCourses, activeVersion]);
+
+  const handleSelectVersion = (versionId: number) => {
+    setActiveVersionForTerm(activeTerm.year, activeTerm.semester, versionId);
+  };
+
+  const handleCreateVersion = (duplicateFrom?: number) => {
+    const { newVersionId } = createScheduleVersion(activeTerm.year, activeTerm.semester, {
+      duplicateFromVersion: duplicateFrom,
+    });
+    if (newVersionId !== null) {
+      toast.success(
+        duplicateFrom !== undefined
+          ? dictionary.schedule.versionDuplicatedToast
+          : dictionary.schedule.versionCreatedToast
+      );
+    }
+  };
+
+  const handleOpenRenameVersion = (versionId: number, currentName?: string) => {
+    setRenamingVersionId(versionId);
+    setRenameInput(currentName || '');
+    setRenameDialogOpen(true);
+  };
+
+  const handleSaveRenameVersion = () => {
+    if (renamingVersionId === null) return;
+    renameScheduleVersion(activeTerm.year, activeTerm.semester, renamingVersionId, renameInput);
+    setRenameDialogOpen(false);
+    setRenamingVersionId(null);
+    toast.success(dictionary.schedule.versionRenamedToast);
+  };
+
+  const handleDeleteVersion = (versionId: number) => {
+    deleteScheduleVersion(activeTerm.year, activeTerm.semester, versionId);
+    toast.info(dictionary.schedule.versionDeletedToast);
+  };
 
   const relevantCatalogCourses = useMemo(() => {
     return (courses || []).filter((course: any) =>
@@ -310,6 +386,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
         degree: existing.degree,
         year: existing.year,
         semester: existing.semester,
+        version: activeVersion,
         name: existing.name,
         points: existing.points,
         groups: existing.allGroups,
@@ -345,18 +422,23 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
         course.name;
 
       if (groups.length <= 1 && !existing) {
-        upsertScheduledCourse({
-          id: fullId,
-          courseId: cId,
-          dept,
-          degree,
-          year,
-          semester,
-          name: offeringName,
-          points: detail.points || '0',
-          selectedGroups: groups,
-          allGroups: groups,
-        });
+        upsertScheduledCourse(
+          {
+            id: fullId,
+            courseId: cId,
+            dept,
+            degree,
+            year,
+            semester,
+            version: activeVersion,
+            name: offeringName,
+            points: detail.points || '0',
+            selectedGroups: groups,
+            allGroups: groups,
+            lastUpdated: detail.lastUpdated || new Date().toISOString(),
+          },
+          activeVersion
+        );
         toast.success(dictionary.schedule.addedToast);
       } else {
         setPendingCourse({
@@ -366,9 +448,11 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
           degree,
           year,
           semester,
+          version: activeVersion,
           name: offeringName,
           points: detail.points || '0',
           groups,
+          lastUpdated: detail.lastUpdated || new Date().toISOString(),
           initialSelectedIds: existing?.selectedGroups.map(g => g.id),
           isAlreadyScheduled: !!existing,
         });
@@ -383,7 +467,8 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     }
   };
 
-  const handleOpenCourseGroups = (course: ScheduledCourse) => {
+  const handleOpenCourseGroups = (course: ScheduledCourse, targetVersion?: number) => {
+    const ver = targetVersion ?? getCourseVersion(course) ?? activeVersion;
     setPendingCourse({
       id: course.id,
       courseId: course.courseId,
@@ -391,9 +476,11 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
       degree: course.degree,
       year: course.year,
       semester: course.semester,
+      version: ver,
       name: course.name,
       points: course.points,
       groups: course.allGroups || [],
+      lastUpdated: course.lastUpdated,
       initialSelectedIds: course.selectedGroups.map(g => g.id),
       isAlreadyScheduled: true,
     });
@@ -402,18 +489,23 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
 
   const handleConfirmGroups = (selectedGroups: CourseGroup[]) => {
     if (!pendingCourse) return;
-    upsertScheduledCourse({
-      id: pendingCourse.id,
-      courseId: pendingCourse.courseId,
-      dept: pendingCourse.dept,
-      degree: pendingCourse.degree,
-      year: pendingCourse.year,
-      semester: pendingCourse.semester,
-      name: pendingCourse.name,
-      points: pendingCourse.points,
-      selectedGroups,
-      allGroups: pendingCourse.groups,
-    });
+    upsertScheduledCourse(
+      {
+        id: pendingCourse.id,
+        courseId: pendingCourse.courseId,
+        dept: pendingCourse.dept,
+        degree: pendingCourse.degree,
+        year: pendingCourse.year,
+        semester: pendingCourse.semester,
+        version: pendingCourse.version,
+        name: pendingCourse.name,
+        points: pendingCourse.points,
+        selectedGroups,
+        allGroups: pendingCourse.groups,
+        lastUpdated: pendingCourse.lastUpdated || new Date().toISOString(),
+      },
+      pendingCourse.version
+    );
     toast.success(
       pendingCourse.isAlreadyScheduled
         ? dictionary.schedule.updatedToast
@@ -421,13 +513,13 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     );
   };
 
-  const handleRemoveCourse = (id: string, year: string, semester: string) => {
-    removeScheduledCourse(id, year, semester);
+  const handleRemoveCourse = (id: string, year: string, semester: string, version?: number) => {
+    removeScheduledCourse(id, year, semester, version ?? activeVersion);
     toast.info(dictionary.schedule.removedToast);
   };
 
   const handleClearSchedule = () => {
-    clearScheduledCoursesForTerm(activeTerm.year, activeTerm.semester);
+    clearScheduledCoursesForTerm(activeTerm.year, activeTerm.semester, activeVersion);
   };
 
   const handleDownloadIcs = () => {
@@ -436,7 +528,10 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `bgu-schedule-${activeTerm.year}-sem${activeTerm.semester}.ics`);
+    link.setAttribute(
+      'download',
+      `bgu-schedule-${activeTerm.year}-sem${activeTerm.semester}-v${activeVersion}.ics`
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -763,8 +858,17 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
               <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs shrink-0">
                 {SEMESTERS.map(sem => {
                   const isActive = activeTerm.semester === sem;
+                  const semState = getTermVersionsState(
+                    activeTerm.year,
+                    sem,
+                    allScheduledCourses,
+                    versionsMap
+                  );
                   const countInSem = allScheduledCourses.filter(
-                    c => c.year === activeTerm.year && c.semester === sem
+                    c =>
+                      String(c.year) === String(activeTerm.year) &&
+                      String(c.semester) === sem &&
+                      getCourseVersion(c) === semState.activeVersion
                   ).length;
                   return (
                     <button
@@ -810,7 +914,7 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
 
           {/* Left (RTL): Actions (Clear, Calendar Exports, Primary Add Course) */}
           <div className="flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 w-full lg:w-auto overflow-x-auto pt-1 sm:pt-0 border-t border-slate-100 sm:border-0 dark:border-slate-800/80">
-            {scheduledCourses.length > 0 && (
+            {!isCompareMode && scheduledCourses.length > 0 && (
               <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                 <button
                   type="button"
@@ -847,21 +951,178 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
               </div>
             )}
 
-            <Button
-              id="tour-schedule-add"
-              size="sm"
-              onClick={() => setSearchOpen(true)}
-              disabled={isLoadingCourse}
-              className="h-8 px-3 sm:px-3.5 rounded-lg font-semibold text-xs gap-1.5 shadow-2xs cursor-pointer ms-auto sm:ms-0"
-            >
-              {isLoadingCourse ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-              <span>{dictionary.schedule.addCourse}</span>
-            </Button>
+            {!isCompareMode && (
+              <Button
+                id="tour-schedule-add"
+                size="sm"
+                onClick={() => setSearchOpen(true)}
+                disabled={isLoadingCourse}
+                className="h-8 px-3 sm:px-3.5 rounded-lg font-semibold text-xs gap-1.5 shadow-2xs cursor-pointer ms-auto sm:ms-0"
+              >
+                {isLoadingCourse ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                <span>{dictionary.schedule.addCourse}</span>
+              </Button>
+            )}
           </div>
+        </div>
+
+        {/* ================= VERSIONS BAR (Up to 4 per semester) & COMPARE TOGGLE ================= */}
+        <div className="max-w-[1520px] mx-auto mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 sm:pb-0">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 me-1 shrink-0">
+              {dictionary.schedule.versions}:
+            </span>
+
+            {/* Version Tabs (1..4) */}
+            <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-slate-100/90 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
+              {termVersions.map(ver => {
+                const isVerActive = activeVersion === ver.id && !isCompareMode;
+                const verCoursesCount = termAllVersionsCourses.filter(
+                  c => getCourseVersion(c) === ver.id
+                ).length;
+                const label = ver.name
+                  ? `${dictionary.schedule.version} ${ver.id} (${ver.name})`
+                  : `${dictionary.schedule.version} ${ver.id}`;
+
+                return (
+                  <div
+                    key={ver.id}
+                    className={cn(
+                      'group/ver flex items-center rounded-md transition-all text-xs',
+                      activeVersion === ver.id
+                        ? 'bg-white dark:bg-slate-800 text-primary shadow-2xs font-semibold'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium'
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleSelectVersion(ver.id);
+                        if (isCompareMode) setIsCompareMode(false);
+                      }}
+                      className="px-2.5 py-1 flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    >
+                      <span>{label}</span>
+                      <span
+                        className={cn(
+                          'px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold',
+                          activeVersion === ver.id
+                            ? 'bg-primary/15 text-primary'
+                            : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                        )}
+                      >
+                        {verCoursesCount}
+                      </span>
+                    </button>
+
+                    {/* Quick actions on active version tab (Rename, Delete) */}
+                    {isVerActive && (
+                      <div className="flex items-center pe-1 gap-0.5">
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleOpenRenameVersion(ver.id, ver.name);
+                          }}
+                          title={dictionary.schedule.renameVersion}
+                          className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        {termVersions.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleDeleteVersion(ver.id);
+                            }}
+                            title={dictionary.schedule.deleteVersion}
+                            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Add / Duplicate Version Buttons (up to 4) */}
+            {termVersions.length < MAX_SCHEDULE_VERSIONS ? (
+              <div className="inline-flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleCreateVersion(undefined)}
+                  title={dictionary.schedule.newVersion}
+                  className="px-2 py-1 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 hover:border-primary hover:text-primary text-slate-600 dark:text-slate-400 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">{dictionary.schedule.newVersion}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCreateVersion(activeVersion)}
+                  title={dictionary.schedule.duplicateVersion}
+                  className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:text-primary bg-slate-50/70 dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  <Copy className="h-3 w-3" />
+                  <span className="hidden md:inline">{dictionary.schedule.duplicateVersion}</span>
+                </button>
+              </div>
+            ) : (
+              <span className="text-[11px] text-muted-foreground hidden md:inline ps-1">
+                ({dictionary.schedule.maxVersionsReached})
+              </span>
+            )}
+          </div>
+
+          {/* Compare Versions Toggle Button */}
+          <Button
+            type="button"
+            size="sm"
+            variant={isCompareMode ? 'default' : 'outline'}
+            onClick={() => setIsCompareMode(prev => !prev)}
+            className={cn(
+              'h-8 px-3 rounded-lg text-xs font-semibold gap-1.5 cursor-pointer shrink-0',
+              !isCompareMode &&
+                'border-primary/35 text-primary hover:bg-primary/5 dark:hover:bg-primary/10'
+            )}
+          >
+            <ArrowLeftRight className="h-3.5 w-3.5" />
+            <span>
+              {isCompareMode
+                ? dictionary.schedule.exitCompare
+                : dictionary.schedule.compareVersions}
+            </span>
+            {!isCompareMode && termVersions.length > 1 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-primary/15 text-primary font-mono text-[10px] font-bold">
+                {termVersions.length}
+              </span>
+            )}
+          </Button>
         </div>
       </section>
 
-      {/* ================= MAIN WORKSPACE (2-COLUMN DENSE VIEW) ================= */}
+      {isCompareMode ? (
+        <ScheduleComparisonView
+          versions={termVersions}
+          activeVersion={activeVersion}
+          termCourses={termAllVersionsCourses}
+          dictionary={dictionary}
+          locale={locale}
+          onSelectAndEditVersion={verId => {
+            handleSelectVersion(verId);
+            setIsCompareMode(false);
+          }}
+          onEditCourseInVersion={(course, verId) => {
+            handleOpenCourseGroups(course, verId);
+          }}
+          onCreateVersion={duplicateFrom => handleCreateVersion(duplicateFrom)}
+        />
+      ) : (
+      /* ================= MAIN WORKSPACE (2-COLUMN DENSE VIEW) ================= */
       <main className="flex-1 max-w-[1520px] w-full mx-auto p-3.5 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* 1. SIDEBAR (הקורסים שלי) — Second on mobile so timetable is immediately visible */}
         <aside id="tour-schedule-sidebar" className="order-2 lg:order-1 lg:col-span-3 flex flex-col gap-4 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-4 shadow-2xs">
@@ -976,6 +1237,24 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
                           {course.points} {dictionary.schedule.totalCredits}
                         </span>
                       )}
+                    </div>
+
+                    <div className="mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">
+                        {dictionary.course.lastFetched}:
+                      </span>
+                      <CourseRefetchButton
+                        courseId={course.courseId}
+                        dept={course.dept}
+                        degree={course.degree}
+                        year={course.year}
+                        semester={course.semester}
+                        lastUpdated={course.lastUpdated}
+                        autoRefetchIfStale
+                        variant="compact"
+                        dictionary={dictionary}
+                        locale={locale}
+                      />
                     </div>
                   </div>
                 );
@@ -1345,18 +1624,21 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
           )}
         </section>
       </main>
+      )}
 
       {/* Mobile Floating Action Button (FAB) from Stitch mobile.html */}
-      <div className="md:hidden fixed bottom-20 end-4 z-30">
-        <button
-          type="button"
-          onClick={() => setSearchOpen(true)}
-          className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2.5 rounded-full shadow-lg border border-primary/20 active:scale-95 transition-all text-xs font-semibold cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          <span>{dictionary.schedule.addCourse}</span>
-        </button>
-      </div>
+      {!isCompareMode && (
+        <div className="md:hidden fixed bottom-20 end-4 z-30">
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2.5 rounded-full shadow-lg border border-primary/20 active:scale-95 transition-all text-xs font-semibold cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            <span>{dictionary.schedule.addCourse}</span>
+          </button>
+        </div>
+      )}
 
       {/* Modern Course Loading Overlay when adding a course to the schedule */}
       {isLoadingCourse && loadingCourseMeta && (
@@ -1497,12 +1779,52 @@ export function WeeklySchedule({ dictionary, locale }: { dictionary: any; locale
           isAlreadyScheduled={pendingCourse.isAlreadyScheduled}
           onConfirm={handleConfirmGroups}
           onRemove={() =>
-            handleRemoveCourse(pendingCourse.id, pendingCourse.year, pendingCourse.semester)
+            handleRemoveCourse(
+              pendingCourse.id,
+              pendingCourse.year,
+              pendingCourse.semester,
+              pendingCourse.version
+            )
           }
           dictionary={dictionary}
           locale={locale}
         />
       )}
+
+      {/* Rename Version Dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent className="sm:max-w-sm" dir={isRtl ? 'rtl' : 'ltr'}>
+          <DialogHeader>
+            <DialogTitle>
+              {dictionary.schedule.renameVersion}{' '}
+              {renamingVersionId ? `${dictionary.schedule.version} ${renamingVersionId}` : ''}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <Input
+              value={renameInput}
+              onChange={e => setRenameInput(e.target.value)}
+              placeholder={dictionary.schedule.versionNamePlaceholder}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSaveRenameVersion();
+                }
+              }}
+              className={cn(isRtl ? 'text-right' : 'text-left')}
+              autoFocus
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>
+              {dictionary.schedule.cancel}
+            </Button>
+            <Button onClick={handleSaveRenameVersion}>
+              {dictionary.schedule.saveSelection}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Google Calendar Export Dialog */}
       <Dialog open={gcalDialogOpen} onOpenChange={setGcalDialogOpen}>

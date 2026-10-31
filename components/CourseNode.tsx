@@ -2,6 +2,7 @@ import { Handle, Position } from '@xyflow/react';
 import { BookOpen, Trash2, Plus, Check, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { useState, useContext, useMemo } from 'react';
 import { CourseMapContext } from './DependencyMap';
+import { CourseRefetchButton } from './CourseRefetchButton';
 import { getAvailableAcademicYears, MIN_ACADEMIC_YEAR } from '@/lib/schedule';
 import { cn } from '@/lib/utils';
 
@@ -322,6 +323,34 @@ export function CourseNode({
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800 text-[11px]">
+              <span className="text-muted-foreground">
+                {dictionary?.course?.lastFetched}:
+              </span>
+              <CourseRefetchButton
+                courseId={String(data.courseId || id)}
+                dept={String(data.dept || '202')}
+                degree={String(data.degree || '1')}
+                year={String(data.year || '2027')}
+                semester={String(data.semester || '1')}
+                lastUpdated={data.lastUpdated}
+                autoRefetchIfStale
+                variant="compact"
+                dictionary={dictionary}
+                locale={data.locale || 'he'}
+                onRefetched={() => {
+                  updateCourseTerm?.(
+                    data.courseId,
+                    data.dept,
+                    data.degree,
+                    String(data.year || '2027'),
+                    String(data.semester || '1'),
+                    data.name
+                  );
+                }}
+              />
             </div>
 
             {prerequisites.length === 0 && unlocks.length === 0 ? (

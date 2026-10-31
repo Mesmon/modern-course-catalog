@@ -26,6 +26,7 @@ export async function GET() {
           ...rest,
           offerings: validOfferings,
           activeIn: validOfferings[0]?.activeIn || rest.activeIn,
+          lastUpdated: rest.lastUpdated ? new Date(rest.lastUpdated).toISOString() : undefined,
         };
       })
       .filter(Boolean);

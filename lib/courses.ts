@@ -6,6 +6,16 @@ export interface Course {
   id: string;
   name: string;
   activeIn: string;
+  lastUpdated?: string;
+}
+
+export const COURSE_STALE_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+export function isCourseTimestampStale(lastUpdated?: string | Date | null): boolean {
+  if (!lastUpdated) return true;
+  const ts = new Date(lastUpdated).getTime();
+  if (Number.isNaN(ts)) return true;
+  return Date.now() - ts > COURSE_STALE_TTL_MS;
 }
 
 export async function getDepartmentCoursesFromDB(dept: string, degree: string, year: string, semester: string): Promise<any[]> {
@@ -35,6 +45,7 @@ export async function getDepartmentCoursesFromDB(dept: string, degree: string, y
             id: c.id,
             name: offering.name,
             activeIn: offering.activeIn,
+            lastUpdated: c.lastUpdated ? new Date(c.lastUpdated).toISOString() : undefined,
           };
         }
         return null;
@@ -139,6 +150,7 @@ export async function getDepartmentCoursesFromDB(dept: string, degree: string, y
         id: c.id,
         name: offering.name,
         activeIn: offering.activeIn,
+        lastUpdated: c.lastUpdated ? new Date(c.lastUpdated).toISOString() : undefined,
       };
     }
     return null;
@@ -147,12 +159,21 @@ export async function getDepartmentCoursesFromDB(dept: string, degree: string, y
   return (filtered as any[]).sort((a, b) => b.activeIn.localeCompare(a.activeIn));
 }
 
-export async function getCourseDetailFromDB(id: string, dept: string, degree: string, year: string, semester: string): Promise<CourseDetail | null> {
+export async function getCourseDetailFromDB(
+  id: string,
+  dept: string,
+  degree: string,
+  year: string,
+  semester: string,
+  options?: { forceRefresh?: boolean }
+): Promise<CourseDetail | null> {
   const client = await clientPromise;
   const db = client.db('course_catalog');
   const collection = db.collection('course_details');
+  const coursesCollection = db.collection('courses');
 
   const fullId = `${dept}.${degree}.${id}`;
+  const forceRefresh = Boolean(options?.forceRefresh);
   
   // Try full ID first
   let existingCourse = await collection.findOne({ id: fullId, year, semester });
@@ -168,12 +189,12 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
   }
   
   // Sometimes id is already the full id, sometimes it's just the course part
-  const baseCourse = await db.collection('courses').findOne({ 
+  const baseCourse = await coursesCollection.findOne({ 
     $or: [{ id: fullId }, { id: id }] 
   });
   const offerings = (baseCourse?.offerings || []).filter((o: any) => Number(o.year) >= 2027);
 
-  if (offerings.length > 0) {
+  if (offerings.length > 0 && !forceRefresh) {
     const requestedExists = offerings.some((o: any) => o.year === year && o.semester === semester);
     if (!requestedExists) {
       const latest = offerings[0];
@@ -210,12 +231,30 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
     };
   });
   
-  if (existingCourse && Array.isArray(existingCourse.relatedCourses) && Array.isArray(existingCourse.groups)) {
+  if (
+    !forceRefresh &&
+    existingCourse &&
+    Array.isArray(existingCourse.relatedCourses) &&
+    Array.isArray(existingCourse.groups)
+  ) {
     const { _id, ...rest } = existingCourse;
-    return { ...rest, offerings, blockedCourses } as CourseDetail;
+    const rawTs = existingCourse.lastUpdated || baseCourse?.lastUpdated;
+    const lastUpdated = rawTs ? new Date(rawTs).toISOString() : undefined;
+    const isStale = isCourseTimestampStale(lastUpdated);
+    return {
+      ...rest,
+      offerings,
+      blockedCourses,
+      lastUpdated,
+      isStale,
+    } as CourseDetail;
   }
 
-  console.log(`Course ${id} not found complete in DB, scraping...`);
+  console.log(
+    forceRefresh
+      ? `Force refetching course ${fullId} (${year}-${semester}) from BGU4U...`
+      : `Course ${id} not found complete in DB, scraping...`
+  );
   try {
     const courseDetail = await fetchCourseDetail({
       courseId: id,
@@ -225,7 +264,10 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
       semester,
     });
 
-    if (courseDetail) {
+    if (courseDetail && courseDetail.name) {
+      const now = new Date();
+      const nowIso = now.toISOString();
+
       await collection.updateOne(
         { id: courseDetail.id, year, semester },
         { 
@@ -233,19 +275,60 @@ export async function getCourseDetailFromDB(id: string, dept: string, degree: st
             ...courseDetail,
             year,
             semester,
-            lastUpdated: new Date()
+            lastUpdated: now
           }
         },
         { upsert: true }
       );
+
+      // Also update high-level courses collection timestamp so catalog views reflect the fresh fetch
+      await coursesCollection.updateOne(
+        { id: fullId },
+        {
+          $set: {
+            lastUpdated: now,
+          },
+        }
+      );
+
       courseDetail.offerings = offerings;
       courseDetail.year = year;
       courseDetail.semester = semester;
       courseDetail.blockedCourses = blockedCourses;
+      courseDetail.lastUpdated = nowIso;
+      courseDetail.isStale = false;
+      return courseDetail;
     }
+
+    // Fallback to existingCourse if scrape returned empty while force-refreshing
+    if (existingCourse) {
+      const { _id, ...rest } = existingCourse;
+      const rawTs = existingCourse.lastUpdated || baseCourse?.lastUpdated;
+      const lastUpdated = rawTs ? new Date(rawTs).toISOString() : undefined;
+      return {
+        ...rest,
+        offerings,
+        blockedCourses,
+        lastUpdated,
+        isStale: isCourseTimestampStale(lastUpdated),
+      } as CourseDetail;
+    }
+
     return courseDetail;
   } catch (err) {
     console.error(`Failed to fetch course details for ${id}`, err);
+    if (existingCourse) {
+      const { _id, ...rest } = existingCourse;
+      const rawTs = existingCourse.lastUpdated || baseCourse?.lastUpdated;
+      const lastUpdated = rawTs ? new Date(rawTs).toISOString() : undefined;
+      return {
+        ...rest,
+        offerings,
+        blockedCourses,
+        lastUpdated,
+        isStale: isCourseTimestampStale(lastUpdated),
+      } as CourseDetail;
+    }
     return null;
   }
 }

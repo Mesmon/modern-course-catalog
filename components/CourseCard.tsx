@@ -3,6 +3,8 @@
 import { Course } from '@/lib/courses';
 import { useDictionary } from '@/components/providers/DictionaryProvider';
 import { CopyCourseId } from '@/components/CopyCourseId';
+import { CourseRefetchButton } from '@/components/CourseRefetchButton';
+import { MIN_ACADEMIC_YEAR } from '@/lib/schedule';
 import { ArrowUpRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +17,11 @@ export function CourseCard({ course, isLoading = false }: CourseCardProps) {
   const parts = course.id.split('.');
   const deptId = parts[0] || '202';
   const degreeId = parts[1] || '1';
+  const shortId = parts[2] || course.id;
+  const activeParts = course.activeIn ? course.activeIn.split('-') : [];
+  const rawYear = Number(activeParts[0] || '2027');
+  const year = Number.isFinite(rawYear) && rawYear >= MIN_ACADEMIC_YEAR ? String(rawYear) : '2027';
+  const semester = activeParts[1] || '1';
   const { dictionary, locale } = useDictionary();
   const isRtl = locale !== 'en';
 
@@ -50,14 +57,14 @@ export function CourseCard({ course, isLoading = false }: CourseCardProps) {
         </h3>
       </div>
 
-      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-muted-foreground">
+      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 text-xs text-muted-foreground">
         {isLoading ? (
           <span className="inline-flex items-center gap-1.5 text-primary font-semibold">
             <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
             <span>{isRtl ? 'טוען נתוני קורס...' : 'Loading course...'}</span>
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1.5 shrink-0">
             <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
             <span>
               {dictionary.course.availableIn}:{' '}
@@ -65,11 +72,26 @@ export function CourseCard({ course, isLoading = false }: CourseCardProps) {
             </span>
           </span>
         )}
-        {isLoading ? (
-          <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
-        ) : (
-          <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-primary transition-colors" />
-        )}
+        <div className="flex items-center gap-2 min-w-0">
+          {!isLoading && (
+            <CourseRefetchButton
+              courseId={shortId}
+              dept={deptId}
+              degree={degreeId}
+              year={year}
+              semester={semester}
+              lastUpdated={(course as any).lastUpdated}
+              variant="compact"
+              dictionary={dictionary}
+              locale={locale}
+            />
+          )}
+          {isLoading ? (
+            <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
+          ) : (
+            <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-primary transition-colors shrink-0" />
+          )}
+        </div>
       </div>
     </div>
   );

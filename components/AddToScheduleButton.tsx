@@ -9,6 +9,8 @@ import {
   upsertScheduledCourse,
   removeScheduledCourse,
   saveActiveTerm,
+  getActiveVersionForTerm,
+  getCourseVersion,
   SCHEDULE_EVENT,
   SCHEDULE_CLOUD_HYDRATED_EVENT,
   ScheduledCourse,
@@ -53,12 +55,14 @@ export function AddToScheduleButton({
   useEffect(() => {
     const sync = () => {
       const list = loadScheduledCourses();
+      const activeVer = getActiveVersionForTerm(year, semester);
       setExistingEntry(
         list.find(
           c =>
             c.id === fullId &&
             String(c.year) === String(year) &&
-            String(c.semester) === String(semester)
+            String(c.semester) === String(semester) &&
+            getCourseVersion(c) === activeVer
         )
       );
     };

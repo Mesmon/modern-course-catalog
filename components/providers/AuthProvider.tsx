@@ -14,6 +14,7 @@ import {
   DEPENDENCY_MAP_EVENT,
   loadScheduledCourses,
   loadActiveTerm,
+  loadVersionsMap,
   hydrateScheduleFromCloud,
   loadDependencyMapStorage,
   hydrateDependencyMapFromCloud,
@@ -81,13 +82,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const courses = loadScheduledCourses();
       const activeTerm = loadActiveTerm();
+      const versionsMap = loadVersionsMap();
       const dependencyMap = loadDependencyMapStorage();
 
       await fetch('/api/user/sync', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          schedule: { courses, activeTerm },
+          schedule: { courses, activeTerm, versionsMap },
           dependencyMap,
         }),
       });
@@ -112,7 +114,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // 1. Sync Weekly Schedule
         if (data.schedule && Array.isArray(data.schedule.courses)) {
-          hydrateScheduleFromCloud(data.schedule.courses, data.schedule.activeTerm);
+          hydrateScheduleFromCloud(
+            data.schedule.courses,
+            data.schedule.activeTerm,
+            data.schedule.versionsMap
+          );
         } else if (data.schedule === null) {
           // First time this account syncs: preserve any existing local schedule into the cloud
           const localCourses = loadScheduledCourses();

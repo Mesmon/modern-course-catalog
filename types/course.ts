@@ -44,4 +44,6 @@ export interface CourseDetail {
   offerings?: { year: string; semester: string; activeIn: string; name: string }[];
   blockedCourses?: RelatedCourse[];
   groups?: CourseGroup[];
+  lastUpdated?: string;
+  isStale?: boolean;
 }

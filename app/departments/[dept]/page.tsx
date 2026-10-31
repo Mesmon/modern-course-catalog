@@ -6,6 +6,7 @@ import { cookies } from 'next/headers';
 import { getDictionary, Locale } from '@/lib/dictionaries';
 import { cn } from '@/lib/utils';
 import { getAvailableAcademicYears, MIN_ACADEMIC_YEAR } from '@/lib/schedule';
+import { CourseRefetchButton } from '@/components/CourseRefetchButton';
 
 export default async function DepartmentPage({
   params,
@@ -183,17 +184,31 @@ export default async function DepartmentPage({
                       </h2>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors">
-                      <span className="inline-flex items-center gap-1.5">
+                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors">
+                      <span className="inline-flex items-center gap-1.5 shrink-0">
                         <BookOpen className="h-3.5 w-3.5 text-primary/80" />
                         <span>{dictionary.department.courseDetails}</span>
                       </span>
-                      <ChevronLeft
-                        className={cn(
-                          'h-4 w-4 transition-transform',
-                          isRtl ? 'group-hover:-translate-x-0.5' : 'rotate-180 group-hover:translate-x-0.5'
-                        )}
-                      />
+                      <div className="flex items-center gap-2 min-w-0">
+                        <CourseRefetchButton
+                          courseId={course.id.split('.').pop() || course.id}
+                          dept={dept}
+                          degree={degree}
+                          year={year}
+                          semester={semester}
+                          lastUpdated={course.lastUpdated}
+                          refreshRouter
+                          variant="compact"
+                          dictionary={dictionary}
+                          locale={locale}
+                        />
+                        <ChevronLeft
+                          className={cn(
+                            'h-4 w-4 transition-transform shrink-0',
+                            isRtl ? 'group-hover:-translate-x-0.5' : 'rotate-180 group-hover:translate-x-0.5'
+                          )}
+                        />
+                      </div>
                     </div>
                   </Link>
                 ))}

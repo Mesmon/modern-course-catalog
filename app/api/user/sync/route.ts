@@ -52,6 +52,12 @@ export async function PUT(request: NextRequest) {
                 semester: String(schedule.activeTerm.semester),
               }
             : { year: '2027', semester: '1' },
+        versionsMap:
+          schedule.versionsMap &&
+          typeof schedule.versionsMap === 'object' &&
+          !Array.isArray(schedule.versionsMap)
+            ? schedule.versionsMap
+            : {},
         updatedAt: now,
       };
     }

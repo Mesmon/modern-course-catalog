@@ -920,6 +920,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
                     })),
                   ],
                   offerings: detail.offerings || [],
+                  lastUpdated: detail.lastUpdated || new Date().toISOString(),
                 },
               };
             }
