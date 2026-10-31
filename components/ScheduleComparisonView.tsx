@@ -548,341 +548,7 @@ export function ScheduleComparisonView({
         </div>
       )}
 
-      {/* 2. SUMMARY METRICS COMPARISON CARDS */}
-      <section className="space-y-3">
-        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 px-0.5">
-          {dictionary.schedule.metricsComparison}
-        </h3>
-        <div
-          className={cn(
-            'grid gap-3.5',
-            comparedVersions.length === 1 && 'grid-cols-1 max-w-md',
-            comparedVersions.length === 2 && 'grid-cols-1 md:grid-cols-2',
-            comparedVersions.length === 3 && 'grid-cols-1 md:grid-cols-3',
-            comparedVersions.length >= 4 && 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'
-          )}
-        >
-          {comparedVersions.map(v => {
-            const m = metricsByVersion[v.id];
-            const accent = VERSION_ACCENT_STYLES[v.id] || VERSION_ACCENT_STYLES[1];
-            const isBestDays =
-              minActiveDays !== null &&
-              m.coursesCount > 0 &&
-              m.activeDays.length === minActiveDays;
-            const isBestGaps =
-              minGapHours !== null && m.coursesCount > 0 && m.gapHours === minGapHours;
-            const isBestOverlaps =
-              minOverlaps !== null && m.coursesCount > 0 && m.overlapCount === minOverlaps;
-
-            return (
-              <div
-                key={v.id}
-                className={cn(
-                  'bg-white dark:bg-slate-900 border rounded-xl p-4 shadow-2xs flex flex-col justify-between gap-3.5 transition-all',
-                  v.id === activeVersion
-                    ? 'border-primary/60 ring-1 ring-primary/20'
-                    : 'border-slate-200/90 dark:border-slate-800'
-                )}
-              >
-                <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', accent.dot)} />
-                    <span className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
-                      {getVersionLabel(v)}
-                    </span>
-                    {v.id === activeVersion && (
-                      <Badge variant="secondary" className="text-[10px] font-semibold px-1.5 py-0">
-                        {dictionary.schedule.activeBadge}
-                      </Badge>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onSelectAndEditVersion(v.id)}
-                    className="h-7 px-2 text-xs font-semibold text-primary hover:text-primary hover:bg-primary/10 gap-1 shrink-0 cursor-pointer"
-                  >
-                    <Pencil className="h-3 w-3" />
-                    <span>{dictionary.schedule.switchToVersion}</span>
-                  </Button>
-                </div>
-
-                {/* Metrics rows */}
-                <div className="space-y-2.5 text-xs">
-                  {/* Courses & Credits */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">
-                      {dictionary.schedule.totalCourses} / {dictionary.schedule.totalCredits}
-                    </span>
-                    <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
-                      {m.coursesCount} {dictionary.schedule.totalCourses} · {m.totalCredits}{' '}
-                      {dictionary.schedule.totalCredits}
-                    </span>
-                  </div>
-
-                  {/* Weekly Hours */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">
-                      {dictionary.schedule.metricWeeklyHours}
-                    </span>
-                    <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
-                      {m.totalWeeklyHours} {isRtl ? 'שעות' : 'hrs'}
-                    </span>
-                  </div>
-
-                  {/* Campus Days */}
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">
-                      {dictionary.schedule.metricActiveDays}
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      {isBestDays && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300">
-                          {dictionary.schedule.bestChoice}
-                        </span>
-                      )}
-                      <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
-                        {m.activeDays.length} {isRtl ? 'ימים' : 'days'}
-                        {m.activeDays.length > 0 && (
-                          <span className="text-muted-foreground font-normal ms-1">
-                            ({m.activeDays.map(d => dictionary.schedule.daysShort[d]).join(', ')})
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Free Days (Sun-Thu) */}
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">
-                      {dictionary.schedule.metricFreeDays}
-                    </span>
-                    <div className="flex flex-wrap items-center justify-end gap-1">
-                      {m.freeWeekdays.length > 0 ? (
-                        m.freeWeekdays.map(d => (
-                          <span
-                            key={d}
-                            className="px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/60 font-semibold text-[11px]"
-                          >
-                            {dictionary.schedule.daysShort[d]}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-muted-foreground">
-                          {dictionary.schedule.allDaysActive}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Idle Gaps (Windows) */}
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">
-                      {dictionary.schedule.metricGaps}
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      {isBestGaps && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300">
-                          {dictionary.schedule.bestChoice}
-                        </span>
-                      )}
-                      <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
-                        {m.gapHours === 0
-                          ? dictionary.schedule.noGaps
-                          : `${m.gapHours} ${isRtl ? 'שעות' : 'hrs'}`}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Time Conflicts */}
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">
-                      {dictionary.schedule.metricOverlaps}
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      {isBestOverlaps && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300">
-                          {dictionary.schedule.bestChoice}
-                        </span>
-                      )}
-                      {m.overlapCount === 0 ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          <span>{dictionary.schedule.noConflicts}</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold">
-                          <AlertTriangle className="h-3.5 w-3.5" />
-                          <span>
-                            {m.overlapCount} {dictionary.schedule.overlapWarning}
-                          </span>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Daily Hours Span */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">
-                      {dictionary.schedule.metricHoursRange}
-                    </span>
-                    <span dir="ltr" className="font-mono text-slate-700 dark:text-slate-300">
-                      {m.earliestStart && m.latestEnd
-                        ? `${m.earliestStart} – ${m.latestEnd}`
-                        : '—'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* 3. COURSE & GROUP DIFFERENCES MATRIX */}
-      {courseDiffRows.length > 0 && (
-        <section className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
-          <div className="px-4 sm:px-5 py-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/50 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-              {dictionary.schedule.coursesComparison}
-            </h3>
-            <span className="text-xs text-muted-foreground font-mono">
-              {courseDiffRows.length} {dictionary.schedule.totalCourses}
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs border-collapse min-w-[640px]">
-              <thead>
-                <tr className="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-950/30 text-slate-600 dark:text-slate-400">
-                  <th className="py-2.5 px-4 text-start font-semibold w-64">
-                    {isRtl ? 'קורס' : 'Course'}
-                  </th>
-                  <th className="py-2.5 px-3 text-start font-semibold w-32">
-                    {isRtl ? 'סטטוס השוואה' : 'Status'}
-                  </th>
-                  {comparedVersions.map(v => {
-                    const accent = VERSION_ACCENT_STYLES[v.id] || VERSION_ACCENT_STYLES[1];
-                    return (
-                      <th key={v.id} className="py-2.5 px-4 text-start font-semibold">
-                        <div className="inline-flex items-center gap-1.5">
-                          <span className={cn('w-2 h-2 rounded-full', accent.dot)} />
-                          <span className="text-slate-900 dark:text-slate-100">
-                            {getVersionLabel(v)}
-                          </span>
-                        </div>
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                {courseDiffRows.map(row => {
-                  const palette =
-                    COURSE_COLOR_PALETTE[row.colorIndex % COURSE_COLOR_PALETTE.length];
-                  return (
-                    <tr
-                      key={row.id}
-                      className={cn(
-                        'transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-950/40',
-                        row.status !== 'same' && 'bg-amber-50/20 dark:bg-amber-950/10'
-                      )}
-                    >
-                      <td className="py-3 px-4 align-top">
-                        <div className="flex flex-col gap-1">
-                          <span
-                            className={cn(
-                              'w-fit font-mono text-[10px] font-semibold px-1.5 py-0.2 rounded border',
-                              palette.codeChip
-                            )}
-                          >
-                            {row.id}
-                          </span>
-                          <span className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
-                            {row.name}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td className="py-3 px-3 align-top">
-                        {row.status === 'same' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                            {dictionary.schedule.diffStatusSame}
-                          </span>
-                        )}
-                        {row.status === 'diff' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                            {dictionary.schedule.diffStatusDiff}
-                          </span>
-                        )}
-                        {row.status === 'partial' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 dark:bg-sky-950/80 text-sky-900 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
-                            {dictionary.schedule.diffStatusPartial}
-                          </span>
-                        )}
-                      </td>
-
-                      {comparedVersions.map(v => {
-                        const courseInVer = row.byVersion[v.id];
-                        if (!courseInVer) {
-                          return (
-                            <td key={v.id} className="py-3 px-4 align-top text-muted-foreground italic">
-                              {dictionary.schedule.notInVersion}
-                            </td>
-                          );
-                        }
-                        return (
-                          <td key={v.id} className="py-3 px-4 align-top">
-                            <div className="flex flex-wrap gap-1.5">
-                              {(courseInVer.selectedGroups || []).length > 0 ? (
-                                courseInVer.selectedGroups.map(g => (
-                                  <button
-                                    key={g.id}
-                                    type="button"
-                                    onClick={() => onEditCourseInVersion(courseInVer, v.id)}
-                                    className={cn(
-                                      'text-start px-2 py-1 rounded-md border text-[11px] transition-all cursor-pointer hover:shadow-2xs',
-                                      palette.bg,
-                                      palette.border,
-                                      palette.text
-                                    )}
-                                    title={dictionary.schedule.editInSchedule}
-                                  >
-                                    <div className="font-semibold">
-                                      {g.type} #{g.id}
-                                    </div>
-                                    {g.meetings && g.meetings.length > 0 && (
-                                      <div className="text-[10px] opacity-85 font-mono">
-                                        {g.meetings
-                                          .map(
-                                            m =>
-                                              `${dictionary.schedule.daysShort[m.day] || m.day} ${m.startTime}-${m.endTime}`
-                                          )
-                                          .join(', ')}
-                                      </div>
-                                    )}
-                                  </button>
-                                ))
-                              ) : (
-                                <span className="text-muted-foreground">
-                                  {dictionary.schedule.noMeetings}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {/* 4. VISUAL TIMETABLE COMPARISON (SIDE-BY-SIDE OR COMBINED OVERLAY) */}
+      {/* 2. VISUAL TIMETABLE COMPARISON (SIDE-BY-SIDE OR COMBINED OVERLAY) */}
       <section className="space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="inline-flex p-0.5 rounded-lg bg-slate-200/70 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-fit">
@@ -1238,6 +904,340 @@ export function ScheduleComparisonView({
           </div>
         )}
       </section>
+
+      {/* 3. SUMMARY METRICS COMPARISON CARDS */}
+      <section className="space-y-3">
+        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 px-0.5">
+          {dictionary.schedule.metricsComparison}
+        </h3>
+        <div
+          className={cn(
+            'grid gap-3.5',
+            comparedVersions.length === 1 && 'grid-cols-1 max-w-md',
+            comparedVersions.length === 2 && 'grid-cols-1 md:grid-cols-2',
+            comparedVersions.length === 3 && 'grid-cols-1 md:grid-cols-3',
+            comparedVersions.length >= 4 && 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4'
+          )}
+        >
+          {comparedVersions.map(v => {
+            const m = metricsByVersion[v.id];
+            const accent = VERSION_ACCENT_STYLES[v.id] || VERSION_ACCENT_STYLES[1];
+            const isBestDays =
+              minActiveDays !== null &&
+              m.coursesCount > 0 &&
+              m.activeDays.length === minActiveDays;
+            const isBestGaps =
+              minGapHours !== null && m.coursesCount > 0 && m.gapHours === minGapHours;
+            const isBestOverlaps =
+              minOverlaps !== null && m.coursesCount > 0 && m.overlapCount === minOverlaps;
+
+            return (
+              <div
+                key={v.id}
+                className={cn(
+                  'bg-white dark:bg-slate-900 border rounded-xl p-4 shadow-2xs flex flex-col justify-between gap-3.5 transition-all',
+                  v.id === activeVersion
+                    ? 'border-primary/60 ring-1 ring-primary/20'
+                    : 'border-slate-200/90 dark:border-slate-800'
+                )}
+              >
+                <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={cn('w-2.5 h-2.5 rounded-full shrink-0', accent.dot)} />
+                    <span className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
+                      {getVersionLabel(v)}
+                    </span>
+                    {v.id === activeVersion && (
+                      <Badge variant="secondary" className="text-[10px] font-semibold px-1.5 py-0">
+                        {dictionary.schedule.activeBadge}
+                      </Badge>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onSelectAndEditVersion(v.id)}
+                    className="h-7 px-2 text-xs font-semibold text-primary hover:text-primary hover:bg-primary/10 gap-1 shrink-0 cursor-pointer"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    <span>{dictionary.schedule.switchToVersion}</span>
+                  </Button>
+                </div>
+
+                {/* Metrics rows */}
+                <div className="space-y-2.5 text-xs">
+                  {/* Courses & Credits */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">
+                      {dictionary.schedule.totalCourses} / {dictionary.schedule.totalCredits}
+                    </span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                      {m.coursesCount} {dictionary.schedule.totalCourses} · {m.totalCredits}{' '}
+                      {dictionary.schedule.totalCredits}
+                    </span>
+                  </div>
+
+                  {/* Weekly Hours */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">
+                      {dictionary.schedule.metricWeeklyHours}
+                    </span>
+                    <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
+                      {m.totalWeeklyHours} {isRtl ? 'שעות' : 'hrs'}
+                    </span>
+                  </div>
+
+                  {/* Campus Days */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">
+                      {dictionary.schedule.metricActiveDays}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {isBestDays && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300">
+                          {dictionary.schedule.bestChoice}
+                        </span>
+                      )}
+                      <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
+                        {m.activeDays.length} {isRtl ? 'ימים' : 'days'}
+                        {m.activeDays.length > 0 && (
+                          <span className="text-muted-foreground font-normal ms-1">
+                            ({m.activeDays.map(d => dictionary.schedule.daysShort[d]).join(', ')})
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Free Days (Sun-Thu) */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">
+                      {dictionary.schedule.metricFreeDays}
+                    </span>
+                    <div className="flex flex-wrap items-center justify-end gap-1">
+                      {m.freeWeekdays.length > 0 ? (
+                        m.freeWeekdays.map(d => (
+                          <span
+                            key={d}
+                            className="px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/60 font-semibold text-[11px]"
+                          >
+                            {dictionary.schedule.daysShort[d]}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground">
+                          {dictionary.schedule.allDaysActive}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Idle Gaps (Windows) */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">
+                      {dictionary.schedule.metricGaps}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {isBestGaps && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300">
+                          {dictionary.schedule.bestChoice}
+                        </span>
+                      )}
+                      <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
+                        {m.gapHours === 0
+                          ? dictionary.schedule.noGaps
+                          : `${m.gapHours} ${isRtl ? 'שעות' : 'hrs'}`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Time Conflicts */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">
+                      {dictionary.schedule.metricOverlaps}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {isBestOverlaps && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300">
+                          {dictionary.schedule.bestChoice}
+                        </span>
+                      )}
+                      {m.overlapCount === 0 ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span>{dictionary.schedule.noConflicts}</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          <span>
+                            {m.overlapCount} {dictionary.schedule.overlapWarning}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Daily Hours Span */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">
+                      {dictionary.schedule.metricHoursRange}
+                    </span>
+                    <span dir="ltr" className="font-mono text-slate-700 dark:text-slate-300">
+                      {m.earliestStart && m.latestEnd
+                        ? `${m.earliestStart} – ${m.latestEnd}`
+                        : '—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 4. COURSE & GROUP DIFFERENCES MATRIX */}
+      {courseDiffRows.length > 0 && (
+        <section className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs">
+          <div className="px-4 sm:px-5 py-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/50 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+              {dictionary.schedule.coursesComparison}
+            </h3>
+            <span className="text-xs text-muted-foreground font-mono">
+              {courseDiffRows.length} {dictionary.schedule.totalCourses}
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse min-w-[640px]">
+              <thead>
+                <tr className="border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-950/30 text-slate-600 dark:text-slate-400">
+                  <th className="py-2.5 px-4 text-start font-semibold w-64">
+                    {isRtl ? 'קורס' : 'Course'}
+                  </th>
+                  <th className="py-2.5 px-3 text-start font-semibold w-32">
+                    {isRtl ? 'סטטוס השוואה' : 'Status'}
+                  </th>
+                  {comparedVersions.map(v => {
+                    const accent = VERSION_ACCENT_STYLES[v.id] || VERSION_ACCENT_STYLES[1];
+                    return (
+                      <th key={v.id} className="py-2.5 px-4 text-start font-semibold">
+                        <div className="inline-flex items-center gap-1.5">
+                          <span className={cn('w-2 h-2 rounded-full', accent.dot)} />
+                          <span className="text-slate-900 dark:text-slate-100">
+                            {getVersionLabel(v)}
+                          </span>
+                        </div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                {courseDiffRows.map(row => {
+                  const palette =
+                    COURSE_COLOR_PALETTE[row.colorIndex % COURSE_COLOR_PALETTE.length];
+                  return (
+                    <tr
+                      key={row.id}
+                      className={cn(
+                        'transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-950/40',
+                        row.status !== 'same' && 'bg-amber-50/20 dark:bg-amber-950/10'
+                      )}
+                    >
+                      <td className="py-3 px-4 align-top">
+                        <div className="flex flex-col gap-1">
+                          <span
+                            className={cn(
+                              'w-fit font-mono text-[10px] font-semibold px-1.5 py-0.2 rounded border',
+                              palette.codeChip
+                            )}
+                          >
+                            {row.id}
+                          </span>
+                          <span className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
+                            {row.name}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-3 align-top">
+                        {row.status === 'same' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                            {dictionary.schedule.diffStatusSame}
+                          </span>
+                        )}
+                        {row.status === 'diff' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                            {dictionary.schedule.diffStatusDiff}
+                          </span>
+                        )}
+                        {row.status === 'partial' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 dark:bg-sky-950/80 text-sky-900 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                            {dictionary.schedule.diffStatusPartial}
+                          </span>
+                        )}
+                      </td>
+
+                      {comparedVersions.map(v => {
+                        const courseInVer = row.byVersion[v.id];
+                        if (!courseInVer) {
+                          return (
+                            <td key={v.id} className="py-3 px-4 align-top text-muted-foreground italic">
+                              {dictionary.schedule.notInVersion}
+                            </td>
+                          );
+                        }
+                        return (
+                          <td key={v.id} className="py-3 px-4 align-top">
+                            <div className="flex flex-wrap gap-1.5">
+                              {(courseInVer.selectedGroups || []).length > 0 ? (
+                                courseInVer.selectedGroups.map(g => (
+                                  <button
+                                    key={g.id}
+                                    type="button"
+                                    onClick={() => onEditCourseInVersion(courseInVer, v.id)}
+                                    className={cn(
+                                      'text-start px-2 py-1 rounded-md border text-[11px] transition-all cursor-pointer hover:shadow-2xs',
+                                      palette.bg,
+                                      palette.border,
+                                      palette.text
+                                    )}
+                                    title={dictionary.schedule.editInSchedule}
+                                  >
+                                    <div className="font-semibold">
+                                      {g.type} #{g.id}
+                                    </div>
+                                    {g.meetings && g.meetings.length > 0 && (
+                                      <div className="text-[10px] opacity-85 font-mono">
+                                        {g.meetings
+                                          .map(
+                                            m =>
+                                              `${dictionary.schedule.daysShort[m.day] || m.day} ${m.startTime}-${m.endTime}`
+                                          )
+                                          .join(', ')}
+                                      </div>
+                                    )}
+                                  </button>
+                                ))
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  {dictionary.schedule.noMeetings}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
