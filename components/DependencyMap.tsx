@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, createContext, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -500,6 +501,13 @@ interface Department {
 export const CourseMapContext = createContext<any>(null);
 
 export function DependencyMap({ dictionary, locale }: { dictionary: any, locale: string }) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const isDark = mounted && resolvedTheme === 'dark';
+
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [open, setOpen] = useState(false);
@@ -618,7 +626,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
             fontSize: 11,
           },
           labelBgStyle: {
-            fill: '#ffffff',
+            fill: isDark ? '#0f172a' : '#ffffff',
             fillOpacity: 0.95,
             stroke: styleInfo.color,
             strokeWidth: 1,
@@ -628,7 +636,7 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
           labelBgPadding: [6, 4] as [number, number],
         };
       });
-  }, [edges, selectedRelations, activeNodeId]);
+  }, [edges, selectedRelations, activeNodeId, isDark]);
 
   const hasLoadedInitialRef = useRef(false);
   const isHydratingFromCloudRef = useRef(false);
@@ -1087,11 +1095,10 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
         )}
       </div>
 
-      {/* Flow Direction & Legend Pill */}
+      {/* Flow Direction & Legend Pill (Centered so it never collides with Controls or MiniMap) */}
       {nodes.length > 0 && (
         <div
-          className="absolute bottom-3 sm:bottom-4 z-10 flex items-center gap-2.5 sm:gap-4 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-xs text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 pointer-events-none"
-          style={{ [locale === 'he' ? 'right' : 'left']: '52px' }}
+          className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2.5 sm:gap-4 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-xs text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 pointer-events-none whitespace-nowrap"
           dir="ltr"
         >
           <div className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-200">
@@ -1136,20 +1143,27 @@ export function DependencyMap({ dictionary, locale }: { dictionary: any, locale:
             rfInstanceRef.current = instance;
           }}
           nodeTypes={nodeTypes}
+          colorMode={isDark ? 'dark' : 'light'}
+          proOptions={{ hideAttribution: true }}
           fitView
           fitViewOptions={{ padding: 0.22 }}
           minZoom={0.15}
           maxZoom={1.5}
         >
-          <Controls showInteractive={false} />
+          <Controls
+            showInteractive={false}
+            className="!rounded-lg !overflow-hidden !border !border-slate-200 dark:!border-slate-800 !bg-white dark:!bg-slate-900 !shadow-sm"
+          />
           <MiniMap
-            className="!hidden md:!block"
+            className="!hidden md:!block !rounded-xl !overflow-hidden !border !border-slate-200 dark:!border-slate-800 !bg-white dark:!bg-slate-900 !shadow-sm"
             zoomable
             pannable
-            nodeColor={(n) => (n.selected ? '#ea580c' : '#cbd5e1')}
-            maskColor="rgba(241, 245, 249, 0.7)"
+            bgColor={isDark ? '#0f172a' : '#ffffff'}
+            nodeColor={(n) => (n.selected ? '#ea580c' : isDark ? '#334155' : '#cbd5e1')}
+            nodeStrokeColor={(n) => (n.selected ? '#f97316' : isDark ? '#475569' : '#94a3b8')}
+            maskColor={isDark ? 'rgba(2, 6, 23, 0.72)' : 'rgba(241, 245, 249, 0.72)'}
           />
-          <Background color="#cbd5e1" gap={20} />
+          <Background color={isDark ? '#334155' : '#cbd5e1'} gap={20} />
         </ReactFlow>
       </CourseMapContext.Provider>
 
