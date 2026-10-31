@@ -116,6 +116,19 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
 
   return (
     <div className="w-full space-y-3" dir={isRtl ? 'rtl' : 'ltr'}>
+      {/* Clear Department Search Label & Explanation */}
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <label
+          htmlFor="dept-search-input"
+          className="text-sm font-bold text-slate-900 dark:text-slate-100"
+        >
+          {dictionary.home.searchTitle}
+        </label>
+        <span className="text-xs text-muted-foreground">
+          {dictionary.home.searchDesc}
+        </span>
+      </div>
+
       {/* Primary Department Autocomplete Input */}
       <div className="relative" ref={containerRef}>
         <form
@@ -128,6 +141,7 @@ export function DepartmentSearch({ dictionary, locale }: DepartmentSearchProps) 
           <div className="relative flex-1">
             <Search className="absolute top-1/2 -translate-y-1/2 start-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
             <Input
+              id="dept-search-input"
               name="dept"
               type="text"
               value={query}

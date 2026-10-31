@@ -14,8 +14,8 @@ export const he: Dictionary = {
     titleSuffix: 'המודרני',
     description: 'חיפוש מהיר, ממשק נקי וחוויית משתמש חלקה עבור קטלוג הקורסים של אוניברסיטת בן-גוריון.',
     searchTitle: 'חיפוש לפי מחלקה',
-    searchDesc: 'הזן את מספר המחלקה כדי לצפות בכל הקורסים המוצעים.',
-    searchPlaceholder: 'לדוגמה: 202',
+    searchDesc: 'חפש לפי שם מחלקה או מספר מחלקה כדי לצפות בקורסים המוצעים.',
+    searchPlaceholder: 'שם או מספר מחלקה (לדוגמה: 202 או מדעי המחשב)...',
     searchBtn: 'חפש עכשיו',
     features: {
       speed: {

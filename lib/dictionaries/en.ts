@@ -12,8 +12,8 @@ export const en = {
     titleSuffix: 'Course Catalog',
     description: 'Fast search, clean interface, and seamless user experience for the Ben-Gurion University course catalog.',
     searchTitle: 'Search by Department',
-    searchDesc: 'Enter the department number to view all offered courses.',
-    searchPlaceholder: 'e.g., 202',
+    searchDesc: 'Search by department name or number to view offered courses.',
+    searchPlaceholder: 'Department name or number (e.g., 202 or Computer Science)...',
     searchBtn: 'Search Now',
     features: {
       speed: {
